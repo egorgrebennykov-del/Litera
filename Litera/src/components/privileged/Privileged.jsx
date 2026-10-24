@@ -245,6 +245,13 @@ export default function Privileged() {
     };
   }, [isPrivilegedUser, selectedInquiryId]);
 
+  // Auto-select first inquiry if none is selected
+  useEffect(() => {
+    if (!selectedInquiryId && inquiries.length > 0) {
+      setSelectedInquiryId(inquiries[0].id);
+    }
+  }, [inquiries, selectedInquiryId]);
+
   const handleRunAction = async (actionId, actionTitle) => {
     setActionStatuses((prev) => ({
       ...prev,
@@ -411,20 +418,33 @@ export default function Privileged() {
   const handleSendAdminReply = async (e) => {
     e?.preventDefault();
     const text = inquiryReplyText.trim();
-    if (!text || !selectedInquiryId || sendingInquiryReply) return;
+    const targetId = selectedInquiryId || activeInquiry?.id;
+    if (!text || sendingInquiryReply) return;
+
+    if (!targetId) {
+      showNotice(
+        language === "ru"
+          ? "Выберите обращение для ответа"
+          : "Please select an inquiry to reply",
+        true,
+      );
+      return;
+    }
 
     setSendingInquiryReply(true);
     try {
+      const activeAdminUser = cookieUser || getCookieUser();
       const updated = await sendInquiryMessage({
-        inquiryId: selectedInquiryId,
+        inquiryId: targetId,
         text,
         sender: "admin",
-        senderUser: cookieUser,
+        senderUser: activeAdminUser,
       });
 
+      setSelectedInquiryId(targetId);
       setInquiryReplyText("");
       setInquiries((prev) =>
-        prev.map((inq) => (inq.id === selectedInquiryId ? updated : inq)),
+        prev.map((inq) => (inq.id === targetId ? updated : inq)),
       );
 
       const isGuest = Boolean(updated?.interlocutors_info?.isGuest);
@@ -440,7 +460,14 @@ export default function Privileged() {
         );
       }
     } catch (err) {
-      showNotice(err.message, true);
+      console.error("Failed to send admin reply:", err);
+      showNotice(
+        err?.message ||
+          (language === "ru"
+            ? "Не удалось отправить ответ"
+            : "Failed to send reply"),
+        true,
+      );
     } finally {
       setSendingInquiryReply(false);
     }
@@ -2783,7 +2810,7 @@ export default function Privileged() {
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            handleSendAdminReply();
+                            handleSendAdminReply(e);
                           }
                         }}
                         disabled={sendingInquiryReply}

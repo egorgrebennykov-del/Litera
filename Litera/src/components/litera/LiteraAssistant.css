@@ -363,17 +363,21 @@
   display: flex;
   gap: 10px;
   align-items: flex-end;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .litera-msg-row--assistant {
+  justify-content: flex-start;
   align-self: flex-start;
-  max-width: 90%;
+  max-width: 92%;
 }
 
 .litera-msg-row--user {
+  justify-content: flex-end;
   align-self: flex-end;
-  flex-direction: row-reverse;
-  max-width: 82%;
+  margin-left: auto;
+  max-width: 84%;
 }
 
 .litera-msg-avatar {
@@ -386,15 +390,23 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-width: 100%;
+}
+
+.litera-msg-row--user .litera-msg-bubble-wrap {
+  align-items: flex-end;
 }
 
 .litera-msg-bubble {
-  padding: 11px 15px;
+  padding: 11px 16px;
   border-radius: 18px;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  word-break: break-word;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  word-break: normal;
+  overflow-wrap: break-word;
   position: relative;
+  box-sizing: border-box;
+  min-width: 48px;
 }
 
 .litera-msg-row--assistant .litera-msg-bubble {
@@ -402,18 +414,22 @@
   color: var(--litera-text);
   border-bottom-left-radius: 4px;
   border: 1px solid var(--litera-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .litera-msg-row--user .litera-msg-bubble {
   background: var(--litera-user-bg);
   color: #ffffff;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 4px 12px rgba(121, 82, 179, 0.25);
+  box-shadow: 0 4px 14px rgba(121, 82, 179, 0.28);
+  text-align: left;
 }
 
 .litera-msg-text {
   margin: 0;
   white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .litera-msg-timestamp {
@@ -433,11 +449,13 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
+  white-space: nowrap;
 }
 
 .litera-typing-dots {
   display: inline-flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .litera-typing-dots span {
@@ -452,11 +470,13 @@
 .litera-typing-dots span:nth-child(2) { animation-delay: -0.16s; }
 
 .litera-typing-text {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--litera-purple);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .litera-status-inline {
