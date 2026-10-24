@@ -751,24 +751,35 @@
 
 /* Input Footer */
 .litera-chat-footer {
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-top: 1px solid var(--litera-border);
   background: var(--litera-panel-bg);
+  transition: padding 0.2s ease;
+}
+
+.litera-chat-footer.footer-expanded {
+  padding: 10px 14px 12px;
 }
 
 .litera-chat-input-form {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   background: var(--litera-purple-bg);
   border: 1px solid var(--litera-border);
   border-radius: 24px;
   padding: 4px 6px 4px 14px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, border-radius 0.2s, box-shadow 0.2s;
 }
 
 .litera-chat-input-form:focus-within {
   border-color: var(--litera-purple);
+  box-shadow: 0 0 0 2px rgba(121, 82, 179, 0.15);
+}
+
+.litera-chat-input-form.litera-input-expanded {
+  border-radius: 16px;
+  padding: 8px 8px 8px 14px;
 }
 
 .litera-chat-textarea {
@@ -777,14 +788,74 @@
   border: none;
   outline: none;
   font-size: 0.88rem;
+  line-height: 1.45;
   color: var(--litera-text);
   resize: none;
-  max-height: 80px;
+  min-height: 24px;
+  max-height: 100px;
+  overflow-y: auto;
   font-family: inherit;
+  padding: 5px 0;
+  transition: height 0.15s ease;
+}
+
+.litera-chat-textarea.expanded {
+  max-height: 260px;
+}
+
+.litera-chat-textarea::-webkit-scrollbar {
+  width: 5px;
+}
+
+.litera-chat-textarea::-webkit-scrollbar-thumb {
+  background-color: var(--litera-purple-light);
+  border-radius: 4px;
 }
 
 .litera-chat-textarea::placeholder {
   color: var(--litera-text-muted);
+}
+
+.litera-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
+.litera-expand-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(121, 82, 179, 0.12);
+  color: var(--litera-purple);
+  border: 1px solid rgba(121, 82, 179, 0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  flex-shrink: 0;
+  animation: literaScaleIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.litera-expand-btn:hover {
+  background: var(--litera-purple);
+  color: #ffffff;
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(121, 82, 179, 0.3);
+}
+
+.litera-expand-btn.active {
+  background: var(--litera-purple);
+  color: #ffffff;
+}
+
+.litera-expand-btn.active:hover {
+  background: var(--litera-purple-dark);
 }
 
 .litera-send-btn {
@@ -811,6 +882,17 @@
 .litera-send-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+@keyframes literaScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Keyframe Animations */

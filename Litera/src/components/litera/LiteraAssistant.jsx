@@ -41,6 +41,8 @@ export default function LiteraAssistant() {
   const [showGreetingBubble, setShowGreetingBubble] = useState(true);
   const [emotion, setEmotion] = useState("greeting");
   const [input, setInput] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isTooLarge, setIsTooLarge] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("typing");
   const [cartAddingId, setCartAddingId] = useState(null);
@@ -98,6 +100,33 @@ export default function LiteraAssistant() {
     }
   }, [isOpen]);
 
+  // Auto-resize input textarea and detect when content exceeds normal height
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    // Reset height temporarily to accurately measure scrollHeight
+    textarea.style.height = "auto";
+    const scrollHeight = textarea.scrollHeight;
+
+    // Detect if content is large enough to show the expand/collapse button
+    const isLarge =
+      scrollHeight > 88 ||
+      input.length > 110 ||
+      (input.match(/\n/g) || []).length >= 2;
+    setIsTooLarge(isLarge);
+
+    if (isExpanded) {
+      // Expanded mode: substantially taller (min 180px, up to 260px)
+      const targetHeight = Math.min(Math.max(scrollHeight, 180), 260);
+      textarea.style.height = `${targetHeight}px`;
+    } else {
+      // Normal auto-expand with limit (min 24px, max 100px)
+      const targetHeight = Math.min(Math.max(scrollHeight, 24), 100);
+      textarea.style.height = `${targetHeight}px`;
+    }
+  }, [input, isExpanded]);
+
   // Global listener to trigger assistant from other components (e.g. 404 page)
   useEffect(() => {
     const handleTrigger = () => handleOpen();
@@ -146,6 +175,11 @@ export default function LiteraAssistant() {
     if (!queryText || loading) return;
 
     setInput("");
+    setIsExpanded(false);
+    setIsTooLarge(false);
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     const userMsg = {
       id: generateId("user"),
       role: "user",
@@ -325,7 +359,7 @@ export default function LiteraAssistant() {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if ((e.key === "Enter" && !e.shiftKey) || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -697,9 +731,9 @@ export default function LiteraAssistant() {
             )}
 
             {/* Input Bar */}
-            <div className="litera-chat-footer">
+            <div className={`litera-chat-footer ${isExpanded ? "footer-expanded" : ""}`}>
               <form
-                className="litera-chat-input-form"
+                className={`litera-chat-input-form ${isExpanded ? "litera-input-expanded" : ""}`}
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();
@@ -707,7 +741,7 @@ export default function LiteraAssistant() {
               >
                 <textarea
                   ref={inputRef}
-                  className="litera-chat-textarea"
+                  className={`litera-chat-textarea ${isExpanded ? "expanded" : ""}`}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -715,15 +749,44 @@ export default function LiteraAssistant() {
                   rows={1}
                   disabled={loading}
                 />
-                <button
-                  type="submit"
-                  className="litera-send-btn"
-                  disabled={!input.trim() || loading}
-                  aria-label={t("assistant.send")}
-                  title={t("assistant.send")}
-                >
-                  <i className="ri-send-plane-fill" />
-                </button>
+                <div className="litera-input-actions">
+                  {(isTooLarge || isExpanded) && (
+                    <button
+                      type="button"
+                      className={`litera-expand-btn ${isExpanded ? "active" : ""}`}
+                      onClick={() => setIsExpanded((prev) => !prev)}
+                      title={
+                        language === "ru"
+                          ? isExpanded
+                            ? "Свернуть поле ввода"
+                            : "Расширить поле ввода"
+                          : isExpanded
+                            ? "Collapse input"
+                            : "Expand input"
+                      }
+                      aria-label={
+                        language === "ru"
+                          ? isExpanded
+                            ? "Свернуть поле ввода"
+                            : "Расширить поле ввода"
+                          : isExpanded
+                            ? "Collapse input"
+                            : "Expand input"
+                      }
+                    >
+                      <i className={isExpanded ? "ri-fullscreen-exit-line" : "ri-fullscreen-line"} />
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="litera-send-btn"
+                    disabled={!input.trim() || loading}
+                    aria-label={t("assistant.send")}
+                    title={t("assistant.send")}
+                  >
+                    <i className="ri-send-plane-fill" />
+                  </button>
+                </div>
               </form>
             </div>
           </div>
