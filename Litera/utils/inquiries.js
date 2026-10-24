@@ -314,9 +314,10 @@ export async function sendInquiryMessage({
   }
 
   // If sender is admin and user is guest, automatically send an email
+  let emailDeliveryResult = null;
   if (sender === "admin" && isGuest && info.userEmail) {
     try {
-      await fetch("/api/send-inquiry-email", {
+      const mailRes = await fetch("/api/send-inquiry-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -326,8 +327,17 @@ export async function sendInquiryMessage({
           adminName: senderName,
         }),
       });
+      if (mailRes.ok) {
+        emailDeliveryResult = await mailRes.json();
+      } else {
+        const errJson = await mailRes.json().catch(() => ({}));
+        emailDeliveryResult = {
+          error: errJson.message || errJson.error || "Email delivery failed",
+        };
+      }
     } catch (mailErr) {
       console.warn("Failed to dispatch email to guest:", mailErr);
+      emailDeliveryResult = { error: mailErr.message };
     }
   }
 
@@ -335,8 +345,12 @@ export async function sendInquiryMessage({
     window.dispatchEvent(new CustomEvent("litera-inquiries-updated"));
   }
 
-  const updatedRow = await patchRes.json();
-  return updatedRow?.[0] || { ...inquiry, ...updatePayload };
+  const updatedRow = await patchRes.json().catch(() => null);
+  const resultObj = updatedRow?.[0] || { ...inquiry, ...updatePayload };
+  return {
+    ...resultObj,
+    emailResult: emailDeliveryResult,
+  };
 }
 
 /**

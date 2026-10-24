@@ -449,11 +449,26 @@ export default function Privileged() {
 
       const isGuest = Boolean(updated?.interlocutors_info?.isGuest);
       if (isGuest) {
-        showNotice(
-          language === "ru"
-            ? `Ответ отправлен пользователю в чат и на email ${updated.interlocutors_info.userEmail}`
-            : `Reply sent to chat and delivered to email ${updated.interlocutors_info.userEmail}`,
-        );
+        if (updated?.emailResult?.result?.warning) {
+          showNotice(
+            language === "ru"
+              ? `Ответ отправлен в чат. В тестовом режиме Resend письмо доставлено на ${updated.emailResult.result.deliveredTo} (для отправки гостю ${updated.interlocutors_info.userEmail} подтвердите домен в resend.com)`
+              : `Reply sent to chat. Delivered to ${updated.emailResult.result.deliveredTo} in Resend sandbox mode`,
+          );
+        } else if (updated?.emailResult?.error) {
+          showNotice(
+            language === "ru"
+              ? `Ответ отправлен в чат, но email не доставлен: ${updated.emailResult.error}`
+              : `Reply sent to chat, but email delivery failed: ${updated.emailResult.error}`,
+            true,
+          );
+        } else {
+          showNotice(
+            language === "ru"
+              ? `Ответ отправлен пользователю в чат и на email ${updated.interlocutors_info.userEmail}`
+              : `Reply sent to chat and delivered to email ${updated.interlocutors_info.userEmail}`,
+          );
+        }
       } else {
         showNotice(
           language === "ru" ? "Ответ отправлен" : "Reply sent successfully",

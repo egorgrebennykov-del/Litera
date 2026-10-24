@@ -31,7 +31,7 @@ export async function sendGuestInquiryEmail({
   const fromAddress =
     process.env.RESEND_FROM || DEFAULT_FROM;
 
-  const htmlContent = `
+  const buildHtml = (targetRecipient, isSandboxNotice = false) => `
     <!DOCTYPE html>
     <html lang="ru">
     <head>
@@ -55,6 +55,13 @@ export async function sendGuestInquiryEmail({
               <!-- Body -->
               <tr>
                 <td style="padding: 32px;">
+                  ${
+                    isSandboxNotice
+                      ? `<div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; padding: 14px 16px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: #92400e; line-height: 1.5;">
+                          <strong>Тестовый режим Resend:</strong> Письмо адресовано гостю <strong>${targetRecipient}</strong>. Так как в аккаунте Resend ещё не подтверждён собственный домен (resend.com/domains), тестовые письма доставляются на аккаунт разработчика (<strong>${supportEmail}</strong>).
+                        </div>`
+                      : ""
+                  }
                   <p style="font-size: 16px; margin: 0 0 16px 0; color: #334155; line-height: 1.5;">
                     Здравствуйте!
                   </p>
@@ -90,16 +97,17 @@ export async function sendGuestInquiryEmail({
     </html>
   `;
 
-  const payload = {
-    from: fromAddress,
-    to: [cleanTo],
-    reply_to: supportEmail,
-    subject: mailSubject,
-    text: `Здравствуйте!\n\nАдминистратор ${senderName} ответил на ваше обращение:\n\n${cleanText}\n\nСлужба поддержки Litera\nКонтакты: ${supportEmail}`,
-    html: htmlContent,
-  };
+  const sendPayload = async (toEmail, isFallback = false) => {
+    const payload = {
+      from: fromAddress,
+      to: [toEmail],
+      reply_to: supportEmail,
+      subject: (isFallback ? `[Тест Resend: для ${cleanTo}] ` : "") + mailSubject,
+      text: (isFallback ? `[Тестовый режим Resend: предназначено для ${cleanTo}]\n\n` : "") +
+        `Здравствуйте!\n\nАдминистратор ${senderName} ответил на ваше обращение:\n\n${cleanText}\n\nСлужба поддержки Litera\nКонтакты: ${supportEmail}`,
+      html: buildHtml(cleanTo, isFallback),
+    };
 
-  try {
     const res = await fetch(RESEND_API_URL, {
       method: "POST",
       headers: {
@@ -110,24 +118,56 @@ export async function sendGuestInquiryEmail({
     });
 
     const responseData = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data: responseData };
+  };
 
-    if (!res.ok) {
-      console.error("[Resend API Error]", res.status, responseData);
-      throw new Error(
-        responseData?.message || `Resend dispatch failed with status ${res.status}`
+  try {
+    // 1. Primary attempt to send to guest's specified email
+    const primary = await sendPayload(cleanTo, false);
+
+    if (primary.ok) {
+      console.log(
+        `[Resend Success] Email dispatched to ${cleanTo} via Resend. Message ID: ${primary.data?.id}`
       );
+      return {
+        success: true,
+        id: primary.data?.id,
+        provider: "resend",
+        recipient: cleanTo,
+      };
     }
 
-    console.log(
-      `[Resend Success] Email dispatched to ${cleanTo} via Resend. Message ID: ${responseData?.id}`
-    );
+    // 2. Check if failure is due to unverified custom domain in Resend sandbox
+    const errMessage = primary.data?.message || "";
+    const isSandboxRestriction =
+      primary.status === 403 &&
+      (errMessage.includes("testing emails") || errMessage.includes("own email address"));
 
-    return {
-      success: true,
-      id: responseData?.id,
-      provider: "resend",
-      recipient: cleanTo,
-    };
+    if (isSandboxRestriction && supportEmail && cleanTo !== supportEmail) {
+      console.warn(
+        `[Resend Sandbox] Custom domain not verified. Sending test copy to account owner ${supportEmail}...`
+      );
+      const fallback = await sendPayload(supportEmail, true);
+      if (fallback.ok) {
+        console.log(
+          `[Resend Fallback Success] Email dispatched to developer email ${supportEmail}. Message ID: ${fallback.data?.id}`
+        );
+        return {
+          success: true,
+          id: fallback.data?.id,
+          provider: "resend",
+          recipient: cleanTo,
+          deliveredTo: supportEmail,
+          warning: "Resend sandbox mode: delivered to developer email (litera.eu@gmail.com). Add custom domain at resend.com/domains to send to external guests.",
+        };
+      }
+    }
+
+    // If still failed, log and throw
+    console.error("[Resend API Error]", primary.status, primary.data);
+    throw new Error(
+      primary.data?.message || `Resend dispatch failed with status ${primary.status}`
+    );
   } catch (err) {
     console.error("[EmailService Error] Failed to send email via Resend:", err.message);
     throw err;
