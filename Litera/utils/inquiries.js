@@ -331,6 +331,10 @@ export async function sendInquiryMessage({
     }
   }
 
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("litera-inquiries-updated"));
+  }
+
   const updatedRow = await patchRes.json();
   return updatedRow?.[0] || { ...inquiry, ...updatePayload };
 }
@@ -346,6 +350,9 @@ export async function markInquiryReadByUser(inquiryId) {
       headers,
       body: JSON.stringify({ notifications_user: 0 }),
     });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("litera-inquiries-updated"));
+    }
   } catch (err) {
     console.warn("Error marking inquiry read by user:", err);
   }
@@ -362,6 +369,9 @@ export async function markInquiryReadByAdmin(inquiryId) {
       headers,
       body: JSON.stringify({ notifications_admin: 0 }),
     });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("litera-inquiries-updated"));
+    }
   } catch (err) {
     console.warn("Error marking inquiry read by admin:", err);
   }
@@ -383,5 +393,30 @@ export async function fetchAllInquiries(adminId = null) {
   } catch (err) {
     console.warn("Error fetching all inquiries:", err);
     return [];
+  }
+}
+
+/**
+ * Fetch total unread notifications count for admin.
+ * If adminId is supplied and assigned inquiries exist, counts those; otherwise counts all unread.
+ */
+export async function fetchAdminUnreadCount(adminId = null) {
+  try {
+    const res = await fetch(`${TABLE_URL}?select=notifications_admin,interlocutors_info`, { headers });
+    if (!res.ok) return 0;
+    const list = await res.json();
+    if (!Array.isArray(list)) return 0;
+
+    if (adminId) {
+      const myInqs = list.filter((i) => i.interlocutors_info?.adminId === adminId);
+      if (myInqs.length > 0) {
+        return myInqs.reduce((acc, inq) => acc + (Number(inq.notifications_admin) || 0), 0);
+      }
+    }
+
+    return list.reduce((acc, inq) => acc + (Number(inq.notifications_admin) || 0), 0);
+  } catch (err) {
+    console.warn("Error fetching admin unread count:", err);
+    return 0;
   }
 }

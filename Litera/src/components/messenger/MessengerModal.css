@@ -5,12 +5,12 @@
   inset: 0;
   pointer-events: none;
   background-color: transparent;
-  z-index: 10000;
+  z-index: 10005;
   display: flex;
   justify-content: flex-end;
   align-items: flex-end;
   padding-right: 24px;
-  padding-bottom: 110px; /* Appears vertically above the AI assistant button */
+  padding-bottom: 165px; /* Appears vertically above the AI assistant button and tooltip */
   padding-left: 20px;
   padding-top: 20px;
   animation: literaFadeIn 0.2s ease-out;
@@ -30,7 +30,7 @@
   width: 380px;
   max-width: calc(100vw - 32px);
   height: 520px;
-  max-height: calc(100vh - 128px);
+  max-height: calc(100vh - 195px);
   background: var(--body-color, #ffffff);
   border-radius: 20px;
   box-shadow:
@@ -301,17 +301,117 @@
   margin: 0;
 }
 
+.inquiry-msg-row {
+  display: flex !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 2px 0 !important;
+}
+
+.inquiry-msg-row--user {
+  justify-content: flex-end !important;
+  align-items: flex-end !important;
+}
+
+.inquiry-msg-row--admin {
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+}
+
+.inquiry-msg-bubble {
+  max-width: 82% !important;
+  padding: 10px 14px !important;
+  border-radius: 16px !important;
+  font-size: 13.5px !important;
+  line-height: 1.45 !important;
+  word-break: break-word !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+}
+
+.inquiry-msg-row--user .inquiry-msg-bubble {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border-bottom-right-radius: 4px !important;
+  border-bottom-left-radius: 16px !important;
+  border-top-right-radius: 16px !important;
+  border-top-left-radius: 16px !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25) !important;
+}
+
+.inquiry-msg-row--admin .inquiry-msg-bubble {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+  background: var(--body-color, #f1f5f9) !important;
+  color: var(--title-color, #1e293b) !important;
+  border: 1px solid var(--border-color, #e2e8f0) !important;
+  border-bottom-left-radius: 4px !important;
+  border-bottom-right-radius: 16px !important;
+  border-top-right-radius: 16px !important;
+  border-top-left-radius: 16px !important;
+}
+
+.inquiry-msg-sender {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #6366f1 !important;
+  margin-bottom: 4px !important;
+}
+
+.inquiry-msg-text {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.inquiry-msg-meta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 5px !important;
+  margin-top: 4px !important;
+}
+
+.inquiry-msg-time {
+  font-size: 10px !important;
+  opacity: 0.75 !important;
+}
+
+.inquiry-msg-row--user .inquiry-msg-time {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.inquiry-msg-row--admin .inquiry-msg-time {
+  color: var(--text-color, #64748b) !important;
+}
+
+.inquiry-msg-email-badge {
+  color: #4f46e5 !important;
+  font-size: 12px !important;
+  display: inline-flex !important;
+}
+
+/* Fallback support for older selectors */
 .litera-msg-row {
-  display: flex;
-  width: 100%;
+  display: flex !important;
+  width: 100% !important;
 }
 
 .litera-msg-row--user {
-  justify-content: flex-end;
+  justify-content: flex-end !important;
+}
+
+.litera-msg-row--user .litera-msg-bubble {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border-bottom-right-radius: 4px !important;
 }
 
 .litera-msg-row--admin {
-  justify-content: flex-start;
+  justify-content: flex-start !important;
 }
 
 .litera-msg-bubble {
@@ -322,12 +422,6 @@
   line-height: 1.45;
   word-break: break-word;
   position: relative;
-}
-
-.litera-msg-row--user .litera-msg-bubble {
-  background: #4f46e5;
-  color: #ffffff;
-  border-bottom-right-radius: 4px;
 }
 
 .litera-msg-row--admin .litera-msg-bubble {
@@ -499,14 +593,14 @@
   .litera-messenger-overlay {
     padding-right: 12px;
     padding-left: 12px;
-    padding-bottom: 96px;
+    padding-bottom: 145px;
     padding-top: 12px;
   }
   .litera-messenger-container {
     width: 100%;
-    height: 500px;
+    height: 480px;
     max-width: 100%;
-    max-height: calc(100vh - 110px);
+    max-height: calc(100vh - 165px);
     border-radius: 18px;
   }
   .litera-messenger-header {

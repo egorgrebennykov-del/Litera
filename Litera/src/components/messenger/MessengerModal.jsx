@@ -444,22 +444,22 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
                   return (
                     <div
                       key={msg.id || idx}
-                      className={`litera-msg-row ${isUser ? "litera-msg-row--user" : "litera-msg-row--admin"}`}
+                      className={`inquiry-msg-row ${isUser ? "inquiry-msg-row--user" : "inquiry-msg-row--admin"}`}
                     >
-                      <div className="litera-msg-bubble">
+                      <div className="inquiry-msg-bubble">
                         {!isUser && (
-                          <div className="litera-msg-sender">
+                          <div className="inquiry-msg-sender">
                             {msg.senderName || adminName}
                           </div>
                         )}
-                        <div className="litera-msg-text">{msg.text}</div>
-                        <div className="litera-msg-meta">
-                          <span className="litera-msg-time">
+                        <div className="inquiry-msg-text">{msg.text}</div>
+                        <div className="inquiry-msg-meta">
+                          <span className="inquiry-msg-time">
                             {formatMsgTime(msg.timestamp)}
                           </span>
                           {!isUser && msg.deliveredViaEmail && (
                             <span
-                              className="litera-msg-email-badge"
+                              className="inquiry-msg-email-badge"
                               title={
                                 language === "ru"
                                   ? "Отправлено также на вашу электронную почту"

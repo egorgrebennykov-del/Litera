@@ -224,6 +224,7 @@
 }
 
 .nav__settings-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -236,6 +237,35 @@
 .nav__settings-btn:hover {
   color: var(--first-color);
   transform: rotate(45deg);
+}
+
+.nav__profile-privileged-link {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100%;
+}
+
+.nav__profile-link-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav__dropdown-badge {
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  line-height: 1;
 }
 
 .nav__profile-roles-row {

@@ -11,7 +11,7 @@ import {
 } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
 import MessengerModal from "../messenger/MessengerModal";
-import { fetchUserInquiry } from "../../../utils/inquiries";
+import { fetchUserInquiry, fetchAdminUnreadCount } from "../../../utils/inquiries";
 import "./Header.css";
 
 const navClass = ({ isActive }) =>
@@ -32,21 +32,23 @@ export default function Header({ theme, isLight, onSearch }) {
   const [userRoles, setUserRoles] = useState(() => resolveUserRoles(user));
   const [isMessengerOpen, setIsMessengerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [adminUnreadCount, setAdminUnreadCount] = useState(0);
 
   const isAdminOrDev =
     userRoles.includes("admin") || userRoles.includes("developer");
 
+  // Check unread messages for regular user
   useEffect(() => {
     if (isAdminOrDev) return;
     const checkUnread = async () => {
       try {
         const guestEmail = localStorage.getItem("litera_guest_inquiry_email");
         const inq = await fetchUserInquiry({
-          userId: loggedIn ? user?.id : null,
+          userId: loggedIn ? (user?.id || getCookieUser()?.id) : null,
           userEmail: loggedIn ? null : guestEmail,
         });
         if (inq?.notifications_user) {
-          setUnreadCount(inq.notifications_user);
+          setUnreadCount(Number(inq.notifications_user));
         } else {
           setUnreadCount(0);
         }
@@ -55,9 +57,36 @@ export default function Header({ theme, isLight, onSearch }) {
       }
     };
     checkUnread();
-    const interval = setInterval(checkUnread, 10000);
-    return () => clearInterval(interval);
+    const interval = setInterval(checkUnread, 5000);
+    const onUpdated = () => checkUnread();
+    window.addEventListener("litera-inquiries-updated", onUpdated);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("litera-inquiries-updated", onUpdated);
+    };
   }, [loggedIn, user?.id, isAdminOrDev]);
+
+  // Check unread messages for admin / privileged user
+  useEffect(() => {
+    if (!isPrivilegedUser && !isAdminOrDev) return;
+    const checkAdminUnread = async () => {
+      try {
+        const currentUserId = user?.id || getCookieUser()?.id;
+        const cnt = await fetchAdminUnreadCount(currentUserId);
+        setAdminUnreadCount(cnt);
+      } catch {
+        // ignore
+      }
+    };
+    checkAdminUnread();
+    const interval = setInterval(checkAdminUnread, 5000);
+    const onUpdated = () => checkAdminUnread();
+    window.addEventListener("litera-inquiries-updated", onUpdated);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("litera-inquiries-updated", onUpdated);
+    };
+  }, [isPrivilegedUser, isAdminOrDev, user?.id]);
 
   useEffect(() => {
     if (!loggedIn) {
@@ -386,9 +415,15 @@ export default function Header({ theme, isLight, onSearch }) {
                           to="/privileged"
                           role="menuitem"
                           onClick={() => setIsDropdownOpen(false)}
+                          className="nav__profile-privileged-link"
                         >
-                          <i className="ri-shield-check-line" />
-                          <span>{t("privileged.title")}</span>
+                          <span className="nav__profile-link-content">
+                            <i className="ri-shield-check-line" />
+                            <span>{t("privileged.title")}</span>
+                          </span>
+                          {adminUnreadCount > 0 && (
+                            <span className="nav__dropdown-badge">{adminUnreadCount}</span>
+                          )}
                         </Link>
                       </li>
                     )}
@@ -446,6 +481,9 @@ export default function Header({ theme, isLight, onSearch }) {
               aria-label={t("privileged.title")}
             >
               <i className="ri-settings-3-line settings-button" id="settings-button" />
+              {adminUnreadCount > 0 && (
+                <span className="nav__badge-count">{adminUnreadCount}</span>
+              )}
             </Link>
           )}
 
