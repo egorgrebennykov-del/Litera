@@ -73,8 +73,8 @@ export default function NotFound() {
         {/* Primary Action Buttons */}
         <div className="not-found__actions">
           <Link to="/" className="button not-found__btn-primary">
-            <i className="ri-home-4-line" />
-            <span>{t("notFound.goHome")}</span>
+            <i className="ri-home-4-line not-found__btn-icon" />
+            <span className="not-found__btn-text">{t("notFound.goHome")}</span>
           </Link>
 
           <button
@@ -82,8 +82,10 @@ export default function NotFound() {
             className="button button--ghost not-found__btn-assistant"
             onClick={handleOpenAssistant}
           >
-            <i className="ri-sparkling-fill" />
-            <span>{t("notFound.askAssistant")}</span>
+            <i className="ri-chat-smile-2-line not-found__btn-icon" />
+            <span className="not-found__btn-text">
+              {t("notFound.askAssistant")}
+            </span>
           </button>
         </div>
 

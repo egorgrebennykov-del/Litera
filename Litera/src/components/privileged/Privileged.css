@@ -122,11 +122,20 @@
 }
 
 .privileged__refresh-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.65rem !important;
+  padding: 0.55rem 1.15rem;
+  font-size: var(--small-font-size);
+  font-weight: 600;
+}
+
+.privileged__refresh-icon {
+  font-size: 1.25rem !important;
+  margin-right: 0.35rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  font-size: var(--small-font-size);
 }
 
 .privileged__spin {
@@ -792,9 +801,16 @@
 }
 
 .privileged__create-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.65rem !important;
+}
+
+.privileged__create-btn .privileged__btn-icon,
+.privileged__empty-create-btn .privileged__btn-icon {
+  font-size: 1.25rem;
+  margin-right: 0.35rem;
 }
 
 /* Modal */
@@ -2356,9 +2372,10 @@
 }
 
 .privileged__empty-create-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.65rem !important;
   padding: 0.85rem 2rem;
   font-size: var(--normal-font-size);
   font-weight: 600;

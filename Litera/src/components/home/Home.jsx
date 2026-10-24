@@ -73,6 +73,11 @@ export default function Home() {
         <SmallAnnouncements items={announcements} />
       </div>
 
+      {/* Large Announcement Poster / Roulette - Centered & Wide across the page */}
+      <div className="container home__large-announcement-wrap">
+        <LargeAnnouncementRoulette items={announcements} />
+      </div>
+
       <div className="home__container container grid">
         <div className="home__data">
           <h1 className="home__title">{t("home.title")}</h1>
@@ -82,9 +87,6 @@ export default function Home() {
           </Link>
         </div>
         <div className="home__images">
-          {/* Large Announcement Poster / Roulette above the book carousel */}
-          <LargeAnnouncementRoulette items={announcements} />
-
           <div className="carousel">
             <div className="home__swiper swiper">
               <div className="swiper-wrapper">

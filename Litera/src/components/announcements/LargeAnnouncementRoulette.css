@@ -1,10 +1,11 @@
 .litera-poster-roulette-container {
   width: 100%;
-  margin-bottom: 24px;
+  max-width: 1220px;
+  margin: 0 auto 2.5rem auto;
   position: relative;
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 36px -6px rgba(0, 0, 0, 0.16);
   background: var(--container-color, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
 }
@@ -12,8 +13,9 @@
 .litera-poster-slide-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 7;
-  max-height: 280px;
+  aspect-ratio: 21 / 8;
+  max-height: 460px;
+  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;

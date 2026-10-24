@@ -1239,9 +1239,9 @@ export default function Privileged() {
           title={t("privileged.refreshTitle")}
         >
           <i
-            className={`ri-refresh-line ${loadingData ? "privileged__spin" : ""}`}
+            className={`ri-restart-line privileged__refresh-icon ${loadingData ? "privileged__spin" : ""}`}
           />
-          {t("privileged.refresh")}
+          <span className="privileged__refresh-text">{t("privileged.refresh")}</span>
         </button>
       </div>
 
@@ -1256,7 +1256,6 @@ export default function Privileged() {
         >
           <i className="ri-user-line" />
           <span>{t("privileged.tabs.users")}</span>
-          <span className="privileged__nav-count">{users.length}</span>
         </button>
 
         <button
@@ -1268,9 +1267,6 @@ export default function Privileged() {
         >
           <i className="ri-vip-crown-line" />
           <span>{t("privileged.tabs.privileged")}</span>
-          <span className="privileged__nav-count privileged__nav-count--star">
-            {privilegedUsers.length}
-          </span>
         </button>
 
         <button
@@ -1282,7 +1278,6 @@ export default function Privileged() {
         >
           <i className="ri-coupon-3-line" />
           <span>{t("privileged.tabs.coupons")}</span>
-          <span className="privileged__nav-count">{coupons.length}</span>
         </button>
 
         <button
@@ -1294,7 +1289,6 @@ export default function Privileged() {
         >
           <i className="ri-shopping-bag-3-line" />
           <span>{t("privileged.tabs.orders")}</span>
-          <span className="privileged__nav-count">{orders.length}</span>
         </button>
 
         <button
@@ -1306,14 +1300,11 @@ export default function Privileged() {
         >
           <i className="ri-customer-service-2-line" />
           <span>{language === "ru" ? "Мессенджер" : "Messenger"}</span>
-          <span className="privileged__nav-count">
-            {inquiries.length}
-            {totalAdminUnread > 0 && (
-              <span className="privileged__unread-indicator">
-                +{totalAdminUnread}
-              </span>
-            )}
-          </span>
+          {totalAdminUnread > 0 && (
+            <span className="privileged__unread-indicator">
+              +{totalAdminUnread}
+            </span>
+          )}
         </button>
 
         <button
@@ -1325,7 +1316,6 @@ export default function Privileged() {
         >
           <i className="ri-megaphone-line" />
           <span>{language === "ru" ? "Объявления" : "Announcements"}</span>
-          <span className="privileged__nav-count">{announcements.length}</span>
         </button>
 
         <button
@@ -3188,8 +3178,10 @@ export default function Privileged() {
                 className="button privileged__create-btn"
                 onClick={handleOpenCreateAnnouncement}
               >
-                <i className="ri-add-line" />
-                {language === "ru" ? "Создать объявление" : "New Announcement"}
+                <i className="ri-add-line privileged__btn-icon" />
+                <span className="privileged__btn-text">
+                  {language === "ru" ? "Создать объявление" : "New Announcement"}
+                </span>
               </button>
             </div>
 
@@ -3242,8 +3234,10 @@ export default function Privileged() {
                   className="button privileged__empty-create-btn"
                   onClick={handleOpenCreateAnnouncement}
                 >
-                  <i className="ri-add-line" />
-                  {language === "ru" ? "Создать объявление" : "New Announcement"}
+                  <i className="ri-add-line privileged__btn-icon" />
+                  <span className="privileged__btn-text">
+                    {language === "ru" ? "Создать объявление" : "New Announcement"}
+                  </span>
                 </button>
               </div>
             ) : (
