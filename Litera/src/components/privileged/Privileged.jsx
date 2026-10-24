@@ -22,6 +22,13 @@ import {
   sendInquiryMessage,
   markInquiryReadByAdmin,
 } from "../../../utils/inquiries";
+import {
+  fetchAllAnnouncementsAdmin,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+  reorderAnnouncements,
+} from "../../../utils/announcements";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
@@ -115,6 +122,20 @@ export default function Privileged() {
   const [inquiryFilter, setInquiryFilter] = useState("all"); // "all" | "unread" | "guest" | "registered"
   const [inquirySearch, setInquirySearch] = useState("");
 
+  // Announcements state
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementModalOpen, setAnnouncementModalOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
+  const [savingAnnouncement, setSavingAnnouncement] = useState(false);
+  const [announcementFilter, setAnnouncementFilter] = useState("all"); // "all" | "small" | "large"
+  const [announcementType, setAnnouncementType] = useState("small"); // "small" | "large"
+  const [announcementText, setAnnouncementText] = useState("");
+  const [announcementImageUrl, setAnnouncementImageUrl] = useState("");
+  const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
+  const [announcementFrom, setAnnouncementFrom] = useState("");
+  const [announcementUntil, setAnnouncementUntil] = useState("");
+  const [announcementActive, setAnnouncementActive] = useState(true);
+
   // Check auth and verify privileged role/status
   useEffect(() => {
     if (!loggedIn) return;
@@ -145,12 +166,18 @@ export default function Privileged() {
     if (!isPrivilegedUser) return;
     let cancelled = false;
 
-    Promise.all([getAllUsers(), getAllOrdersAdmin(), getAllCoupons()])
-      .then(([usersList, ordersList, couponsList]) => {
+    Promise.all([
+      getAllUsers(),
+      getAllOrdersAdmin(),
+      getAllCoupons(),
+      fetchAllAnnouncementsAdmin(),
+    ])
+      .then(([usersList, ordersList, couponsList, annList]) => {
         if (!cancelled) {
           setUsers(usersList);
           setOrders(ordersList);
           setCoupons(couponsList);
+          if (Array.isArray(annList)) setAnnouncements(annList);
         }
       })
       .catch((err) => {
@@ -192,16 +219,19 @@ export default function Privileged() {
   const handleRefresh = async () => {
     setLoadingData(true);
     try {
-      const [usersList, ordersList, couponsList, inqList] = await Promise.all([
-        getAllUsers(),
-        getAllOrdersAdmin(),
-        getAllCoupons(),
-        fetchAllInquiries(),
-      ]);
+      const [usersList, ordersList, couponsList, inqList, annList] =
+        await Promise.all([
+          getAllUsers(),
+          getAllOrdersAdmin(),
+          getAllCoupons(),
+          fetchAllInquiries(),
+          fetchAllAnnouncementsAdmin(),
+        ]);
       setUsers(usersList);
       setOrders(ordersList);
       setCoupons(couponsList);
       if (Array.isArray(inqList)) setInquiries(inqList);
+      if (Array.isArray(annList)) setAnnouncements(annList);
       if (activeSection === "git-actions") {
         const res = await fetch("/api/actions-status");
         if (res.ok) {
@@ -711,6 +741,239 @@ export default function Privileged() {
     }
   };
 
+  // Announcement Handlers
+  const handleOpenCreateAnnouncement = () => {
+    const now = new Date();
+    const formatIsoForInput = (d) => {
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    setEditingAnnouncement(null);
+    setAnnouncementType("small");
+    setAnnouncementText("");
+    setAnnouncementImageUrl("");
+    setAnnouncementLinkUrl("");
+    setAnnouncementFrom(formatIsoForInput(now));
+    // Default until to +7 days
+    const defaultUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    setAnnouncementUntil(formatIsoForInput(defaultUntil));
+    setAnnouncementActive(true);
+    setAnnouncementModalOpen(true);
+  };
+
+  const handleOpenEditAnnouncement = (ann) => {
+    const formatIsoForInput = (isoStr) => {
+      if (!isoStr) return "";
+      try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return "";
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch {
+        return "";
+      }
+    };
+
+    setEditingAnnouncement(ann);
+    setAnnouncementType(ann.type || "small");
+    setAnnouncementText(ann.text || "");
+    setAnnouncementImageUrl(ann.imageUrl || "");
+    setAnnouncementLinkUrl(ann.linkUrl || "");
+    setAnnouncementFrom(formatIsoForInput(ann.from));
+    setAnnouncementUntil(formatIsoForInput(ann.until));
+    setAnnouncementActive(ann.active !== false);
+    setAnnouncementModalOpen(true);
+  };
+
+  const handleSaveAnnouncement = async (e) => {
+    if (e) e.preventDefault();
+
+    if (!announcementUntil) {
+      showNotice(
+        language === "ru"
+          ? "Пожалуйста, укажите срок окончания показа объявления (обязательно)"
+          : "Please specify the expiration date/time (required)",
+        true,
+      );
+      return;
+    }
+
+    if (announcementType === "large" && !announcementImageUrl.trim()) {
+      showNotice(
+        language === "ru"
+          ? "Для большого объявления укажите ссылку на фото"
+          : "Please provide a photo URL for the large announcement",
+        true,
+      );
+      return;
+    }
+
+    if (announcementType === "small" && !announcementText.trim()) {
+      showNotice(
+        language === "ru"
+          ? "Для небольшого объявления введите текст"
+          : "Please enter text for the small announcement",
+        true,
+      );
+      return;
+    }
+
+    setSavingAnnouncement(true);
+    try {
+      if (editingAnnouncement) {
+        const updated = await updateAnnouncement(editingAnnouncement.id, {
+          type: announcementType,
+          text: announcementText,
+          imageUrl: announcementImageUrl,
+          linkUrl: announcementLinkUrl,
+          from: announcementFrom || new Date().toISOString(),
+          until: announcementUntil,
+          active: announcementActive,
+          order: editingAnnouncement.order,
+        });
+
+        setAnnouncements((prev) =>
+          prev.map((item) =>
+            item.id === editingAnnouncement.id ? updated : item,
+          ),
+        );
+        showNotice(
+          language === "ru"
+            ? "Объявление успешно обновлено"
+            : "Announcement updated successfully",
+        );
+      } else {
+        const maxOrder = announcements.reduce(
+          (max, a) => Math.max(max, a.order || 0),
+          0,
+        );
+        const created = await createAnnouncement({
+          type: announcementType,
+          text: announcementText,
+          imageUrl: announcementImageUrl,
+          linkUrl: announcementLinkUrl,
+          from: announcementFrom || new Date().toISOString(),
+          until: announcementUntil,
+          order: maxOrder + 1,
+          userId: cookieUser?.id,
+        });
+
+        setAnnouncements((prev) => [...prev, created]);
+        showNotice(
+          language === "ru"
+            ? "Объявление успешно создано"
+            : "Announcement created successfully",
+        );
+      }
+      setAnnouncementModalOpen(false);
+    } catch (err) {
+      console.error("Save announcement error:", err);
+      showNotice(err.message || "Ошибка сохранения объявления", true);
+    } finally {
+      setSavingAnnouncement(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id) => {
+    const confirmed = window.confirm(
+      language === "ru"
+        ? "Вы уверены, что хотите удалить это объявление?"
+        : "Are you sure you want to delete this announcement?",
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteAnnouncement(id);
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+      showNotice(
+        language === "ru" ? "Объявление удалено" : "Announcement deleted",
+      );
+    } catch (err) {
+      console.error("Delete announcement error:", err);
+      showNotice(err.message || "Ошибка при удалении", true);
+    }
+  };
+
+  const handleMoveAnnouncement = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= announcements.length) return;
+
+    const newList = [...announcements];
+    const [movedItem] = newList.splice(index, 1);
+    newList.splice(targetIndex, 0, movedItem);
+
+    const reordered = newList.map((item, idx) => ({ ...item, order: idx + 1 }));
+    setAnnouncements(reordered);
+
+    try {
+      await reorderAnnouncements(reordered);
+      showNotice(
+        language === "ru"
+          ? "Порядок показывания сохранён"
+          : "Announcement order updated",
+      );
+    } catch (err) {
+      console.error("Reorder error:", err);
+      showNotice(err.message || "Ошибка обновления порядка", true);
+    }
+  };
+
+  const handleToggleAnnouncementActive = async (ann) => {
+    try {
+      const updated = await updateAnnouncement(ann.id, {
+        ...ann,
+        active: !ann.active,
+      });
+      setAnnouncements((prev) =>
+        prev.map((item) => (item.id === ann.id ? updated : item)),
+      );
+      showNotice(
+        language === "ru"
+          ? updated.active
+            ? "Объявление активировано"
+            : "Объявление приостановлено"
+          : updated.active
+          ? "Announcement activated"
+          : "Announcement paused",
+      );
+    } catch (err) {
+      showNotice(err.message || "Ошибка обновления", true);
+    }
+  };
+
+  const getAnnouncementStatusInfo = (ann) => {
+    if (!ann.active) {
+      return {
+        label: language === "ru" ? "Приостановлено" : "Paused",
+        badgeClass: "privileged__ann-badge--inactive",
+        icon: "ri-pause-circle-line",
+      };
+    }
+    const now = new Date();
+    const until = new Date(ann.until);
+    const from = ann.from ? new Date(ann.from) : null;
+
+    if (until < now) {
+      return {
+        label: language === "ru" ? "Истекло" : "Expired",
+        badgeClass: "privileged__ann-badge--expired",
+        icon: "ri-time-line",
+      };
+    }
+    if (from && from > now) {
+      return {
+        label: language === "ru" ? "Запланировано" : "Scheduled",
+        badgeClass: "privileged__ann-badge--scheduled",
+        icon: "ri-calendar-event-line",
+      };
+    }
+    return {
+      label: language === "ru" ? "Активно" : "Active",
+      badgeClass: "privileged__ann-badge--active",
+      icon: "ri-checkbox-circle-line",
+    };
+  };
+
   if (checkingAuth) {
     return (
       <section className="privileged section container">
@@ -1033,6 +1296,18 @@ export default function Privileged() {
               </span>
             )}
           </span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === "announcements"}
+          className={`privileged__nav-btn ${activeSection === "announcements" ? "privileged__nav-btn--active" : ""}`}
+          onClick={() => setActiveSection("announcements")}
+        >
+          <i className="ri-megaphone-line" />
+          <span>{language === "ru" ? "Объявления" : "Announcements"}</span>
+          <span className="privileged__nav-count">{announcements.length}</span>
         </button>
 
         <button
@@ -2874,7 +3149,592 @@ export default function Privileged() {
           </div>
         )}
 
-        {/* SECTION 6: GIT ACTIONS (ПОСЛЕДНИЙ РАЗДЕЛ) */}
+        {/* SECTION 6: ОБЪЯВЛЕНИЯ (ANNOUNCEMENTS) */}
+        {activeSection === "announcements" && (
+          <div className="privileged__panel">
+            <div className="privileged__panel-header">
+              <div>
+                <h2 className="privileged__panel-title">
+                  <i className="ri-megaphone-line" />
+                  {language === "ru" ? "Объявления" : "Announcements"}
+                </h2>
+                <span className="privileged__stats-text">
+                  {language === "ru"
+                    ? "Управление вставками вверху страницы и плакатами над рулеткой"
+                    : "Manage top banner announcements and roulette posters"}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="button privileged__create-btn"
+                onClick={handleOpenCreateAnnouncement}
+              >
+                <i className="ri-add-line" />
+                {language === "ru" ? "Создать объявление" : "New Announcement"}
+              </button>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="privileged__ann-filter-tabs">
+              <button
+                type="button"
+                className={`privileged__ann-filter-btn ${announcementFilter === "all" ? "privileged__ann-filter-btn--active" : ""}`}
+                onClick={() => setAnnouncementFilter("all")}
+              >
+                {language === "ru" ? "Все объявления" : "All Announcements"} (
+                {announcements.length})
+              </button>
+              <button
+                type="button"
+                className={`privileged__ann-filter-btn ${announcementFilter === "small" ? "privileged__ann-filter-btn--active" : ""}`}
+                onClick={() => setAnnouncementFilter("small")}
+              >
+                <i className="ri-layout-top-line" />
+                {language === "ru" ? "Вставки вверху" : "Top Insets"} (
+                {announcements.filter((a) => a.type === "small").length})
+              </button>
+              <button
+                type="button"
+                className={`privileged__ann-filter-btn ${announcementFilter === "large" ? "privileged__ann-filter-btn--active" : ""}`}
+                onClick={() => setAnnouncementFilter("large")}
+              >
+                <i className="ri-image-2-line" />
+                {language === "ru" ? "Плакаты над рулеткой" : "Roulette Posters"} (
+                {announcements.filter((a) => a.type === "large").length})
+              </button>
+            </div>
+
+            {/* Announcements List */}
+            {announcements.length === 0 ? (
+              <div className="privileged__empty-state">
+                <i className="ri-megaphone-line privileged__empty-icon" />
+                <p className="privileged__empty-text">
+                  {language === "ru"
+                    ? "Объявлений пока нет. Создайте первое объявление!"
+                    : "No announcements yet. Create the first one!"}
+                </p>
+                <button
+                  type="button"
+                  className="button privileged__create-btn"
+                  onClick={handleOpenCreateAnnouncement}
+                >
+                  <i className="ri-add-line" />
+                  {language === "ru" ? "Создать объявление" : "New Announcement"}
+                </button>
+              </div>
+            ) : (
+              <div className="privileged__ann-list">
+                {announcements
+                  .filter((item) => {
+                    if (announcementFilter === "small") return item.type === "small";
+                    if (announcementFilter === "large") return item.type === "large";
+                    return true;
+                  })
+                  .map((ann) => {
+                    const statusInfo = getAnnouncementStatusInfo(ann);
+                    const originalIndex = announcements.findIndex(
+                      (a) => a.id === ann.id,
+                    );
+
+                    return (
+                      <div
+                        key={ann.id}
+                        className={`privileged__ann-card ${!ann.active ? "privileged__ann-card--disabled" : ""}`}
+                      >
+                        {/* Order & Reorder Controls */}
+                        <div className="privileged__ann-order-col">
+                          <span className="privileged__ann-order-badge">
+                            #{originalIndex + 1}
+                          </span>
+                          <div className="privileged__ann-order-actions">
+                            <button
+                              type="button"
+                              className="privileged__ann-order-btn"
+                              title={
+                                language === "ru"
+                                  ? "Поднять выше"
+                                  : "Move up"
+                              }
+                              disabled={originalIndex === 0}
+                              onClick={() =>
+                                handleMoveAnnouncement(originalIndex, -1)
+                              }
+                            >
+                              <i className="ri-arrow-up-s-line" />
+                            </button>
+                            <button
+                              type="button"
+                              className="privileged__ann-order-btn"
+                              title={
+                                language === "ru"
+                                  ? "Опустить ниже"
+                                  : "Move down"
+                              }
+                              disabled={
+                                originalIndex === announcements.length - 1
+                              }
+                              onClick={() =>
+                                handleMoveAnnouncement(originalIndex, 1)
+                              }
+                            >
+                              <i className="ri-arrow-down-s-line" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Card Content & Preview */}
+                        <div className="privileged__ann-content-col">
+                          <div className="privileged__ann-header-row">
+                            <div className="privileged__ann-tags">
+                              <span
+                                className={`privileged__ann-type-tag privileged__ann-type-tag--${ann.type}`}
+                              >
+                                <i
+                                  className={
+                                    ann.type === "large"
+                                      ? "ri-image-2-line"
+                                      : "ri-layout-top-line"
+                                  }
+                                />
+                                {ann.type === "large"
+                                  ? language === "ru"
+                                    ? "Большой плакат (рулетка)"
+                                    : "Large Poster (roulette)"
+                                  : language === "ru"
+                                  ? "Небольшая вставка (вверху)"
+                                  : "Small Inset (top)"}
+                              </span>
+
+                              <span
+                                className={`privileged__ann-status-badge ${statusInfo.badgeClass}`}
+                              >
+                                <i className={statusInfo.icon} />
+                                {statusInfo.label}
+                              </span>
+                            </div>
+
+                            {/* Actions: Edit, Toggle Active, Delete */}
+                            <div className="privileged__ann-actions">
+                              <button
+                                type="button"
+                                className="privileged__ann-action-btn"
+                                title={
+                                  ann.active
+                                    ? language === "ru"
+                                      ? "Приостановить"
+                                      : "Pause"
+                                    : language === "ru"
+                                    ? "Включить"
+                                    : "Enable"
+                                }
+                                onClick={() =>
+                                  handleToggleAnnouncementActive(ann)
+                                }
+                              >
+                                <i
+                                  className={
+                                    ann.active
+                                      ? "ri-pause-circle-line"
+                                      : "ri-play-circle-line"
+                                  }
+                                />
+                              </button>
+                              <button
+                                type="button"
+                                className="privileged__ann-action-btn"
+                                title={
+                                  language === "ru" ? "Редактировать" : "Edit"
+                                }
+                                onClick={() => handleOpenEditAnnouncement(ann)}
+                              >
+                                <i className="ri-edit-line" />
+                              </button>
+                              <button
+                                type="button"
+                                className="privileged__ann-action-btn privileged__ann-action-btn--delete"
+                                title={
+                                  language === "ru" ? "Удалить" : "Delete"
+                                }
+                                onClick={() => handleDeleteAnnouncement(ann.id)}
+                              >
+                                <i className="ri-delete-bin-line" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Preview Area */}
+                          <div className="privileged__ann-preview-box">
+                            {ann.type === "large" ? (
+                              <div className="privileged__ann-large-preview">
+                                {ann.imageUrl ? (
+                                  <img
+                                    src={ann.imageUrl}
+                                    alt="Poster Preview"
+                                    className="privileged__ann-poster-img"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                      const next = e.currentTarget.nextElementSibling;
+                                      if (next) next.style.display = "flex";
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className="privileged__ann-img-fallback"
+                                  style={{
+                                    display: ann.imageUrl ? "none" : "flex",
+                                  }}
+                                >
+                                  <i className="ri-image-line" />
+                                  <span>
+                                    {language === "ru"
+                                      ? "Изображение недоступно"
+                                      : "Image not available"}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="privileged__ann-small-preview">
+                                <i className="ri-information-line privileged__ann-info-icon" />
+                                <span className="privileged__ann-text-preview">
+                                  {ann.text}
+                                </span>
+                                <span
+                                  className="privileged__ann-close-demo"
+                                  title="Кнопка закрытия для пользователя"
+                                >
+                                  <i className="ri-close-line" />
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer Details */}
+                          <div className="privileged__ann-footer-row">
+                            <div className="privileged__ann-dates">
+                              <span
+                                title={
+                                  language === "ru"
+                                    ? "Дата начала"
+                                    : "Start date"
+                                }
+                              >
+                                <i className="ri-calendar-line" />{" "}
+                                <strong>
+                                  {language === "ru" ? "С:" : "From:"}
+                                </strong>{" "}
+                                {formatDate(ann.from, language)}
+                              </span>
+                              <span
+                                className="privileged__ann-until-date"
+                                title={
+                                  language === "ru"
+                                    ? "Срок окончания (обязательно)"
+                                    : "Expiration date (required)"
+                                }
+                              >
+                                <i className="ri-calendar-check-line" />{" "}
+                                <strong>
+                                  {language === "ru" ? "По:" : "Until:"}
+                                </strong>{" "}
+                                {formatDate(ann.until, language)}
+                              </span>
+                            </div>
+
+                            {ann.linkUrl && (
+                              <a
+                                href={ann.linkUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="privileged__ann-link"
+                              >
+                                <i className="ri-link" />
+                                <span>{ann.linkUrl}</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Modal for Creating / Editing Announcement */}
+            {announcementModalOpen && (
+              <div
+                className="privileged__modal-backdrop"
+                onClick={() => setAnnouncementModalOpen(false)}
+              >
+                <div
+                  className="privileged__modal privileged__modal--announcement"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="privileged__modal-header">
+                    <h3 className="privileged__modal-title">
+                      <i className="ri-megaphone-line" />
+                      {editingAnnouncement
+                        ? language === "ru"
+                          ? "Редактировать объявление"
+                          : "Edit Announcement"
+                        : language === "ru"
+                        ? "Новое объявление"
+                        : "New Announcement"}
+                    </h3>
+                    <button
+                      type="button"
+                      className="privileged__modal-close"
+                      onClick={() => setAnnouncementModalOpen(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={handleSaveAnnouncement}
+                    className="privileged__modal-body"
+                  >
+                    {/* Choose Type */}
+                    <div className="privileged__form-group">
+                      <label className="privileged__form-label">
+                        {language === "ru"
+                          ? "Тип объявления"
+                          : "Announcement Type"}
+                      </label>
+                      <div className="privileged__ann-type-selector">
+                        <button
+                          type="button"
+                          className={`privileged__ann-type-card ${announcementType === "small" ? "privileged__ann-type-card--selected" : ""}`}
+                          onClick={() => setAnnouncementType("small")}
+                        >
+                          <i className="ri-layout-top-line privileged__ann-card-icon" />
+                          <div className="privileged__ann-card-text">
+                            <strong>
+                              {language === "ru"
+                                ? "Небольшая вставка"
+                                : "Small Top Inset"}
+                            </strong>
+                            <span>
+                              {language === "ru"
+                                ? "Появляется в самом верху главной страницы, закрывается крестиком"
+                                : "Appears at the very top of the home page, dismissible with X"}
+                            </span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`privileged__ann-type-card ${announcementType === "large" ? "privileged__ann-type-card--selected" : ""}`}
+                          onClick={() => setAnnouncementType("large")}
+                        >
+                          <i className="ri-image-2-line privileged__ann-card-icon" />
+                          <div className="privileged__ann-card-text">
+                            <strong>
+                              {language === "ru"
+                                ? "Большой плакат"
+                                : "Large Poster"}
+                            </strong>
+                            <span>
+                              {language === "ru"
+                                ? "Баннер над рулеткой из книг (только ссылка на фото, создаёт рулетку если несколько)"
+                                : "Banner above book roulette (photo link only, interactive roulette if multiple)"}
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Small announcement content */}
+                    {announcementType === "small" ? (
+                      <div className="privileged__form-group">
+                        <label className="privileged__form-label">
+                          {language === "ru"
+                            ? "Текст объявления *"
+                            : "Announcement Text *"}
+                        </label>
+                        <textarea
+                          className="privileged__form-textarea"
+                          rows={3}
+                          required
+                          value={announcementText}
+                          onChange={(e) => setAnnouncementText(e.target.value)}
+                          placeholder={
+                            language === "ru"
+                              ? "Например: Внимание! 1-3 мая магазин работает в обычном режиме. При заказе от 50€ доставка бесплатно!"
+                              : "e.g. Attention! Holiday weekend special: Free shipping on orders over €50!"
+                          }
+                        />
+                      </div>
+                    ) : (
+                      /* Large announcement photo link */
+                      <div className="privileged__form-group">
+                        <label className="privileged__form-label">
+                          {language === "ru"
+                            ? "Ссылка на фото плаката (URL) *"
+                            : "Poster Image URL *"}
+                        </label>
+                        <input
+                          type="url"
+                          className="privileged__form-input"
+                          required
+                          value={announcementImageUrl}
+                          onChange={(e) =>
+                            setAnnouncementImageUrl(e.target.value)
+                          }
+                          placeholder="https://example.com/banner-promo.jpg"
+                        />
+                        <span className="privileged__form-hint">
+                          {language === "ru"
+                            ? "Для большого объявления используется только ссылка на фото. Рекомендуемые пропорции: 16:6 или 1200x450px"
+                            : "For large announcements, only a photo link is used. Recommended ratio: 16:6 or 1200x450px"}
+                        </span>
+
+                        {/* Live image preview */}
+                        {announcementImageUrl && (
+                          <div className="privileged__ann-modal-preview">
+                            <img
+                              src={announcementImageUrl}
+                              alt="Live Preview"
+                              className="privileged__ann-modal-preview-img"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                              onLoad={(e) => {
+                                e.currentTarget.style.display = "block";
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Optional link URL */}
+                    <div className="privileged__form-group">
+                      <label className="privileged__form-label">
+                        {language === "ru"
+                          ? "Ссылка при нажатии (необязательно)"
+                          : "Target Link URL (optional)"}
+                      </label>
+                      <input
+                        type="url"
+                        className="privileged__form-input"
+                        value={announcementLinkUrl}
+                        onChange={(e) =>
+                          setAnnouncementLinkUrl(e.target.value)
+                        }
+                        placeholder="https://kazbook.com/promo или /books"
+                      />
+                      <span className="privileged__form-hint">
+                        {language === "ru"
+                          ? "Куда перейдет пользователь при клике на плакат или ссылку во вставке"
+                          : "Where the user will be directed upon clicking"}
+                      </span>
+                    </div>
+
+                    {/* Schedule dates: From & Until */}
+                    <div className="privileged__ann-dates-grid">
+                      <div className="privileged__form-group">
+                        <label className="privileged__form-label">
+                          {language === "ru"
+                            ? "Начало показа (по умолчанию сейчас)"
+                            : "Start Date (defaults to now)"}
+                        </label>
+                        <input
+                          type="datetime-local"
+                          className="privileged__form-input"
+                          value={announcementFrom}
+                          onChange={(e) =>
+                            setAnnouncementFrom(e.target.value)
+                          }
+                        />
+                      </div>
+
+                      <div className="privileged__form-group">
+                        <label className="privileged__form-label">
+                          {language === "ru"
+                            ? "Срок окончания показа (обязательно) *"
+                            : "End Date / Expiration (required) *"}
+                        </label>
+                        <input
+                          type="datetime-local"
+                          required
+                          className="privileged__form-input privileged__form-input--required"
+                          value={announcementUntil}
+                          onChange={(e) =>
+                            setAnnouncementUntil(e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <span className="privileged__form-hint">
+                      {language === "ru"
+                        ? "После наступления срока окончания объявление автоматически скроется с главной страницы."
+                        : "After the end date, the announcement will automatically stop showing on the main page."}
+                    </span>
+
+                    {/* Status toggle if editing */}
+                    {editingAnnouncement && (
+                      <div
+                        className="privileged__form-group"
+                        style={{ marginTop: "1rem" }}
+                      >
+                        <label className="privileged__checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={announcementActive}
+                            onChange={(e) =>
+                              setAnnouncementActive(e.target.checked)
+                            }
+                          />
+                          <span>
+                            {language === "ru"
+                              ? "Активно (показывать на сайте)"
+                              : "Active (show on site)"}
+                          </span>
+                        </label>
+                      </div>
+                    )}
+
+                    <div className="privileged__modal-actions">
+                      <button
+                        type="button"
+                        className="button privileged__cancel-btn"
+                        onClick={() => setAnnouncementModalOpen(false)}
+                      >
+                        {language === "ru" ? "Отмена" : "Cancel"}
+                      </button>
+                      <button
+                        type="submit"
+                        className="button privileged__submit-btn"
+                        disabled={savingAnnouncement}
+                      >
+                        {savingAnnouncement ? (
+                          <>
+                            <i className="ri-loader-4-line privileged__button-spin" />
+                            {language === "ru" ? "Сохранение..." : "Saving..."}
+                          </>
+                        ) : (
+                          <>
+                            <i className="ri-check-line" />
+                            {editingAnnouncement
+                              ? language === "ru"
+                                ? "Сохранить изменения"
+                                : "Save Changes"
+                              : language === "ru"
+                              ? "Создать объявление"
+                              : "Create Announcement"}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SECTION 7: GIT ACTIONS (ПОСЛЕДНИЙ РАЗДЕЛ) */}
         {activeSection === "git-actions" && (
           <div className="privileged__panel">
             <div className="privileged__panel-header">

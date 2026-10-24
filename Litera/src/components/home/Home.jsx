@@ -5,6 +5,9 @@ import getHomepageBooks from "../../../utils/getHomepageBooks";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
+import SmallAnnouncements from "../announcements/SmallAnnouncements";
+import LargeAnnouncementRoulette from "../announcements/LargeAnnouncementRoulette";
+import { fetchActiveAnnouncements } from "../../../utils/announcements";
 import "./Home.css";
 
 export default function Home() {
@@ -13,6 +16,22 @@ export default function Home() {
   const [books, setBooks] = useState([]);
   const [booksError, setBooksError] = useState(false);
   const [booksReady, setBooksReady] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveAnnouncements()
+      .then((items) => {
+        if (!cancelled && Array.isArray(items)) {
+          setAnnouncements(items);
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch active announcements:", err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +68,11 @@ export default function Home() {
 
   return (
     <section className="home section" id="home">
+      {/* Top Small Announcements Stack */}
+      <div className="container">
+        <SmallAnnouncements items={announcements} />
+      </div>
+
       <div className="home__container container grid">
         <div className="home__data">
           <h1 className="home__title">{t("home.title")}</h1>
@@ -58,6 +82,9 @@ export default function Home() {
           </Link>
         </div>
         <div className="home__images">
+          {/* Large Announcement Poster / Roulette above the book carousel */}
+          <LargeAnnouncementRoulette items={announcements} />
+
           <div className="carousel">
             <div className="home__swiper swiper">
               <div className="swiper-wrapper">
