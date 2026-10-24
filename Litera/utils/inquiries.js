@@ -43,13 +43,21 @@ export async function getCandidateAdmins() {
  * Assigns an admin to an inquiry using load-balancing (least inquiries assigned).
  */
 export async function assignAdminForNewInquiry() {
-  const admins = await getCandidateAdmins();
-  if (admins.length === 1) {
-    return admins[0];
-  }
-
-  // Query all inquiries to count distribution
   try {
+    const admins = await getCandidateAdmins();
+    if (!admins || admins.length === 0) {
+      return {
+        id: "litera_admin_default",
+        firstName: "Администратор",
+        lastName: "Litera",
+        email: "support@litera.md",
+      };
+    }
+    if (admins.length === 1) {
+      return admins[0];
+    }
+
+    // Query all inquiries to count distribution
     const res = await fetch(`${TABLE_URL}?select=interlocutors_info`, { headers });
     if (res.ok) {
       const list = await res.json();
@@ -81,11 +89,16 @@ export async function assignAdminForNewInquiry() {
 
       return selectedAdmin;
     }
+    return admins[0];
   } catch (err) {
     console.warn("Error calculating admin load balance:", err);
+    return {
+      id: "litera_admin_default",
+      firstName: "Администратор",
+      lastName: "Litera",
+      email: "support@litera.md",
+    };
   }
-
-  return admins[0];
 }
 
 /**
@@ -107,20 +120,30 @@ export async function fetchInquiryById(inquiryId) {
  */
 export async function fetchUserInquiry({ userId = null, userEmail = null }) {
   try {
-    let url = `${TABLE_URL}?select=*&order=created_at.desc`;
     if (userId) {
-      url += `&interlocutors_info->>userId=eq.${encodeURIComponent(userId)}`;
-    } else if (userEmail) {
-      const cleanEmail = userEmail.trim().toLowerCase();
-      url += `&interlocutors_info->>userEmail=eq.${encodeURIComponent(cleanEmail)}`;
-    } else {
-      return null;
+      const url = `${TABLE_URL}?select=*&interlocutors_info->>userId=eq.${encodeURIComponent(userId)}&order=created_at.desc&limit=1`;
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const list = await res.json();
+        if (Array.isArray(list) && list.length > 0) {
+          return list[0];
+        }
+      }
     }
 
-    const res = await fetch(url, { headers });
-    if (!res.ok) return null;
-    const list = await res.json();
-    return list?.[0] || null;
+    if (userEmail) {
+      const cleanEmail = userEmail.trim().toLowerCase();
+      const url = `${TABLE_URL}?select=*&interlocutors_info->>userEmail=eq.${encodeURIComponent(cleanEmail)}&order=created_at.desc&limit=1`;
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const list = await res.json();
+        if (Array.isArray(list) && list.length > 0) {
+          return list[0];
+        }
+      }
+    }
+
+    return null;
   } catch (err) {
     console.warn("Error fetching user inquiry:", err);
     return null;
@@ -132,12 +155,44 @@ export async function fetchUserInquiry({ userId = null, userEmail = null }) {
  */
 export async function getOrCreateInquiry({ user = null, guestEmail = null, guestName = "Гость" }) {
   const userId = user?.id || null;
-  const userEmail = (user?.email || guestEmail || "").trim().toLowerCase();
-  const userName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : guestName;
-  const isGuest = !user;
+  let userEmail = (user?.email || guestEmail || "").trim().toLowerCase();
+  let userName = user
+    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "Пользователь"
+    : guestName;
 
-  if (!userEmail) {
-    throw new Error("Email is required to start a chat with admin");
+  // If user is registered but email was not provided in cookie, look up in database
+  if (userId && (!userEmail || !userName || userName === "Пользователь")) {
+    try {
+      const uRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/user?id=eq.${encodeURIComponent(userId)}&limit=1`,
+        { headers }
+      );
+      if (uRes.ok) {
+        const uList = await uRes.json();
+        const found = uList?.[0];
+        if (found) {
+          if (!userEmail && found.email) {
+            userEmail = found.email.trim().toLowerCase();
+          }
+          if (!userName || userName === "Пользователь") {
+            userName = `${found.firstName || ""} ${found.lastName || ""}`.trim() || found.email || "Пользователь";
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn("Could not query user table for inquiry details:", dbErr);
+    }
+  }
+
+  // Fallback email for registered users so lack of email in cookie never blocks messaging
+  if (userId && !userEmail) {
+    userEmail = `user_${userId.slice(0, 8)}@litera.customer`;
+  }
+
+  const isGuest = !userId;
+
+  if (isGuest && !userEmail) {
+    throw new Error("Пожалуйста, укажите ваш email для связи с администратором");
   }
 
   // Check if inquiry already exists
@@ -148,17 +203,20 @@ export async function getOrCreateInquiry({ user = null, guestEmail = null, guest
 
   // Load-balance and pick an admin
   const assignedAdmin = await assignAdminForNewInquiry();
-  const adminName = `${assignedAdmin.firstName || ""} ${assignedAdmin.lastName || ""}`.trim() || assignedAdmin.email || "Администратор";
+  const adminName =
+    `${assignedAdmin.firstName || ""} ${assignedAdmin.lastName || ""}`.trim() ||
+    assignedAdmin.email ||
+    "Администратор";
 
   const newInquiryPayload = {
     interlocutors_info: {
       userId,
       userEmail,
-      userName,
+      userName: userName || "Пользователь",
       isGuest,
       adminId: assignedAdmin.id,
       adminName,
-      adminEmail: assignedAdmin.email,
+      adminEmail: assignedAdmin.email || "",
     },
     chat: [],
     notifications_admin: 0,
@@ -191,13 +249,19 @@ export async function sendInquiryMessage({
   senderUser = null,
 }) {
   if (!inquiryId || !text?.trim()) {
-    throw new Error("Inquiry ID and message text are required");
+    throw new Error("Не указан ID диалога или текст сообщения");
   }
 
   const cleanText = text.trim();
-  const inquiry = await fetchInquiryById(inquiryId);
+  let inquiry = await fetchInquiryById(inquiryId);
   if (!inquiry) {
-    throw new Error("Inquiry not found");
+    // Retry once in case of network latency
+    await new Promise((r) => setTimeout(r, 400));
+    inquiry = await fetchInquiryById(inquiryId);
+  }
+
+  if (!inquiry) {
+    throw new Error("Диалог не найден. Попробуйте обновить страницу.");
   }
 
   const info = inquiry.interlocutors_info || {};
@@ -245,7 +309,8 @@ export async function sendInquiryMessage({
   );
 
   if (!patchRes.ok) {
-    throw new Error("Could not deliver message to inquiry");
+    const errData = await patchRes.json().catch(() => null);
+    throw new Error(errData?.message || "Не удалось отправить сообщение на сервер");
   }
 
   // If sender is admin and user is guest, automatically send an email

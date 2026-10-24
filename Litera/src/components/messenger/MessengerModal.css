@@ -440,6 +440,23 @@
   cursor: not-allowed;
 }
 
+.litera-messenger-send-error {
+  padding: 8px 14px;
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-top: 1px solid #fee2e2;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: literaFadeIn 0.2s ease-out;
+}
+
+.litera-messenger-send-error i {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
 /* Nav Messenger Button Badge */
 .nav__messenger-btn {
   position: relative;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getCookieUser, isLoggedIn } from "../../../utils/auth";
+import { getCookieUser, isLoggedIn, getProfile } from "../../../utils/auth";
 import {
   getOrCreateInquiry,
   sendInquiryMessage,
@@ -25,7 +25,7 @@ function formatMsgTime(isoStr) {
 export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
   const { language } = useLanguage();
   const loggedIn = isLoggedIn();
-  const user = loggedIn ? getCookieUser() : null;
+  const [currentUser, setCurrentUser] = useState(() => (loggedIn ? getCookieUser() : null));
 
   const [guestEmail, setGuestEmail] = useState(() => {
     return localStorage.getItem(GUEST_EMAIL_KEY) || "";
@@ -36,6 +36,7 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
   const [emailInput, setEmailInput] = useState(guestEmail);
   const [nameInput, setNameInput] = useState(guestName);
   const [emailError, setEmailError] = useState("");
+  const [sendError, setSendError] = useState("");
 
   const [inquiry, setInquiry] = useState(null);
   const inquiryRef = useRef(null);
@@ -50,6 +51,17 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
 
   const isIdentified = loggedIn || (Boolean(guestEmail) && !isEditingGuest);
 
+  // Auto-fetch profile for logged-in user if email is missing in cookie
+  useEffect(() => {
+    if (loggedIn && (!currentUser || !currentUser.email)) {
+      getProfile()
+        .then((p) => {
+          if (p) setCurrentUser(p);
+        })
+        .catch((pErr) => console.warn("Failed to fetch profile in messenger:", pErr));
+    }
+  }, [loggedIn]);
+
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
@@ -58,18 +70,32 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
   const ensureInquiry = async (emailOverride = null, nameOverride = null) => {
     if (inquiryRef.current?.id) return inquiryRef.current;
 
-    const targetEmail = loggedIn
-      ? user?.email
-      : (emailOverride || guestEmail || localStorage.getItem(GUEST_EMAIL_KEY) || "").trim().toLowerCase();
-    const targetName = loggedIn
-      ? `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.email || "Пользователь"
-      : (nameOverride || guestName || localStorage.getItem(GUEST_NAME_KEY) || "Гость").trim();
-
-    if (!loggedIn && !targetEmail) return null;
-
+    setSendError("");
     try {
+      let activeUser = loggedIn ? (currentUser || getCookieUser()) : null;
+      if (loggedIn && (!activeUser || !activeUser.email)) {
+        try {
+          const profile = await getProfile();
+          if (profile) {
+            activeUser = profile;
+            setCurrentUser(profile);
+          }
+        } catch (pErr) {
+          console.warn("Could not load user profile:", pErr);
+        }
+      }
+
+      const targetEmail = loggedIn
+        ? (activeUser?.email || "")
+        : (emailOverride || guestEmail || localStorage.getItem(GUEST_EMAIL_KEY) || "").trim().toLowerCase();
+      const targetName = loggedIn
+        ? `${activeUser?.firstName || ""} ${activeUser?.lastName || ""}`.trim() || activeUser?.email || "Пользователь"
+        : (nameOverride || guestName || localStorage.getItem(GUEST_NAME_KEY) || "Гость").trim();
+
+      if (!loggedIn && !targetEmail) return null;
+
       const inq = await getOrCreateInquiry({
-        user: loggedIn ? user : null,
+        user: loggedIn ? activeUser : null,
         guestEmail: loggedIn ? null : targetEmail,
         guestName: loggedIn ? null : targetName,
       });
@@ -88,6 +114,12 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
       }
     } catch (err) {
       console.warn("Failed to ensure inquiry:", err);
+      setSendError(
+        err?.message ||
+          (language === "ru"
+            ? "Не удалось подключиться к чату"
+            : "Could not connect to chat")
+      );
     }
     return null;
   };
@@ -186,6 +218,7 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
     const text = inputText.trim();
     if (!text || sending) return;
 
+    setSendError("");
     setSending(true);
 
     try {
@@ -195,16 +228,19 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
       }
 
       if (!activeInquiry?.id) {
-        console.error("Could not obtain inquiry ID");
-        setSending(false);
-        return;
+        throw new Error(
+          language === "ru"
+            ? "Не удалось инициализировать чат с администратором. Пожалуйста, попробуйте еще раз."
+            : "Could not initialize chat with administrator. Please try again."
+        );
       }
 
+      const activeUser = loggedIn ? (currentUser || getCookieUser()) : null;
       const optimisticMsg = {
         id: `opt_${Date.now()}`,
         sender: "user",
         senderName: loggedIn
-          ? `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.email || "Пользователь"
+          ? `${activeUser?.firstName || ""} ${activeUser?.lastName || ""}`.trim() || activeUser?.email || "Пользователь"
           : guestName || localStorage.getItem(GUEST_NAME_KEY) || "Гость",
         text,
         timestamp: new Date().toISOString(),
@@ -218,7 +254,7 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
         inquiryId: activeInquiry.id,
         text,
         sender: "user",
-        senderUser: loggedIn ? user : null,
+        senderUser: activeUser,
       });
 
       if (updatedInq) {
@@ -230,7 +266,13 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
       }
     } catch (err) {
       console.error("Failed to send message:", err);
-      ensureInquiry();
+      setInputText(text);
+      setSendError(
+        err?.message ||
+          (language === "ru"
+            ? "Не удалось отправить сообщение. Пожалуйста, попробуйте ещё раз."
+            : "Failed to send message. Please try again.")
+      );
     } finally {
       setSending(false);
     }
@@ -436,6 +478,14 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Error Banner if sending or connecting failed */}
+            {sendError && (
+              <div className="litera-messenger-send-error">
+                <i className="ri-error-warning-line" />
+                <span>{sendError}</span>
+              </div>
+            )}
+
             {/* Input Footer */}
             <form className="litera-messenger-footer" onSubmit={handleSend}>
               <textarea
@@ -447,13 +497,15 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
                     : "Type a message..."
                 }
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={(e) => {
+                  setInputText(e.target.value);
+                  if (sendError) setSendError("");
+                }}
                 onKeyDown={handleKeyDown}
                 disabled={sending}
               />
               <button
-                type="button"
-                onClick={handleSend}
+                type="submit"
                 className="litera-messenger-send-btn"
                 disabled={!inputText.trim() || sending}
                 title={language === "ru" ? "Отправить (Enter)" : "Send (Enter)"}

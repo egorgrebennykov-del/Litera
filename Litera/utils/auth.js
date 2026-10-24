@@ -90,13 +90,15 @@ export function formatStatusName(status, language = "ru") {
   return language === "ru" ? "Юзер" : "User";
 }
 
-const setUserCookie = ({ id, firstName, role, status, roles }) => {
+export const setUserCookie = ({ id, firstName, lastName, email, role, status, roles }) => {
   const userStatus = status || (role === "privileged" ? "privileged" : "user");
   const resolvedRoles = roles || resolveUserRoles({ role, status: userStatus });
   const value = encodeURIComponent(
     JSON.stringify({
       id,
-      firstName,
+      firstName: firstName || "",
+      lastName: lastName || "",
+      email: email || "",
       status: userStatus,
       role: resolvedRoles[0] || "user",
       roles: resolvedRoles,
@@ -231,6 +233,8 @@ export async function getProfile() {
   setUserCookie({
     id: cookieUser.id,
     firstName: row?.firstName || cookieUser.firstName,
+    lastName: row?.lastName || cookieUser.lastName || "",
+    email: row?.email || cookieUser.email || "",
     status: userStatus,
     role: primaryRole,
     roles: userRoles,
