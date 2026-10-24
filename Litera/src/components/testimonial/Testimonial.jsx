@@ -9,6 +9,7 @@ import {
 } from "../../../utils/feedbacks";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
+import { useConfirm } from "../../context/ConfirmContext";
 import "./Testimonial.css";
 
 function formatReviewDate(dateString, language) {
@@ -35,6 +36,7 @@ function getInitials(firstName, lastName) {
 
 export default function Testimonial() {
   const { language, t } = useLanguage();
+  const confirm = useConfirm();
   const loggedIn = isLoggedIn();
   const [user, setUser] = useState(getCookieUser);
 
@@ -191,7 +193,14 @@ export default function Testimonial() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm(t("testimonial.confirmDelete"))) return;
+    const ok = await confirm({
+      title: language === "ru" ? "Удаление отзыва" : "Delete Review",
+      message: t("testimonial.confirmDelete"),
+      confirmText: language === "ru" ? "Удалить" : "Delete",
+      type: "danger",
+    });
+    if (!ok) return;
+
     setActionError("");
     setDeletingId(id);
     try {

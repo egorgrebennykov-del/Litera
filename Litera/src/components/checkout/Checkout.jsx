@@ -16,6 +16,7 @@ import { createOrderInProgress } from "../../../utils/orders";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
+import { useConfirm } from "../../context/ConfirmContext";
 import PhoneInput from "../common/PhoneInput";
 import {
   findCountryByPhone,
@@ -52,6 +53,7 @@ function formatPrice(price, currency, language) {
 
 export default function Checkout() {
   const { language, t } = useLanguage();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const loggedIn = isLoggedIn();
   const user = getCookieUser();
@@ -145,6 +147,14 @@ export default function Checkout() {
 
   const handleDeleteSavedPhone = async (phoneToDelete) => {
     if (!user?.id) return;
+    const ok = await confirm({
+      title: language === "ru" ? "Удалить номер телефона?" : "Delete Phone Number?",
+      message: `${language === "ru" ? "Удалить сохранённый номер" : "Delete saved phone"} ${phoneToDelete}?`,
+      confirmText: language === "ru" ? "Удалить" : "Delete",
+      type: "danger",
+    });
+    if (!ok) return;
+
     try {
       const updated = await deleteUserPhone(user.id, phoneToDelete);
       setSavedPhones(updated);
@@ -289,6 +299,17 @@ export default function Checkout() {
   // Handle address deletion
   const handleDeleteAddress = async (id, e) => {
     e.stopPropagation();
+    const ok = await confirm({
+      title: language === "ru" ? "Удалить адрес?" : "Delete Address?",
+      message:
+        language === "ru"
+          ? "Вы действительно хотите удалить этот сохранённый адрес доставки?"
+          : "Are you sure you want to delete this saved delivery address?",
+      confirmText: language === "ru" ? "Удалить адрес" : "Delete Address",
+      type: "danger",
+    });
+    if (!ok) return;
+
     try {
       const updated = await deleteUserAddress(user.id, id);
       setSavedAddresses(updated);

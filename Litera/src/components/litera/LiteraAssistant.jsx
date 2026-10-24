@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import LiteraCharacter from "./LiteraCharacter";
 import BookImage from "../common/BookImage";
 import { useLanguage } from "../../context/languageContext";
+import { useConfirm, useAlert } from "../../context/ConfirmContext";
 import { addToCart, getCart } from "../../../utils/cart";
 import { isLoggedIn, getCookieUser } from "../../../utils/auth";
 import "./LiteraAssistant.css";
@@ -31,6 +32,8 @@ const STORE_NAMES = {
 
 export default function LiteraAssistant() {
   const { language, t } = useLanguage();
+  const confirm = useConfirm();
+  const customAlert = useAlert();
   const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -107,22 +110,28 @@ export default function LiteraAssistant() {
     setEmotion("neutral");
   };
 
-  const handleClearHistory = () => {
-    if (window.confirm(t("assistant.clearHistoryConfirm"))) {
-      const freshWelcome = [
-        {
-          id: generateId("msg"),
-          role: "assistant",
-          content: t("assistant.welcome"),
-          emotion: "greeting",
-          timestamp: getNowIso(),
-          books: [],
-        },
-      ];
-      setMessages(freshWelcome);
-      setEmotion("greeting");
-      sessionStorage.removeItem(STORAGE_KEY);
-    }
+  const handleClearHistory = async () => {
+    const ok = await confirm({
+      title: language === "ru" ? "Очистить историю диалога?" : "Clear Chat History?",
+      message: t("assistant.clearHistoryConfirm"),
+      confirmText: language === "ru" ? "Очистить" : "Clear",
+      type: "warning",
+    });
+    if (!ok) return;
+
+    const freshWelcome = [
+      {
+        id: generateId("msg"),
+        role: "assistant",
+        content: t("assistant.welcome"),
+        emotion: "greeting",
+        timestamp: getNowIso(),
+        books: [],
+      },
+    ];
+    setMessages(freshWelcome);
+    setEmotion("greeting");
+    sessionStorage.removeItem(STORAGE_KEY);
   };
 
   const handleSendMessage = async (textToSend) => {
@@ -343,7 +352,11 @@ export default function LiteraAssistant() {
       setTimeout(() => setCartSuccessId(null), 2500);
     } catch (err) {
       console.error("Failed to add book to cart:", err);
-      alert(err.message || "Failed to add book to cart");
+      await customAlert({
+        title: language === "ru" ? "Ошибка добавления в корзину" : "Cart Error",
+        message: err.message || (language === "ru" ? "Не удалось добавить книгу в корзину" : "Failed to add book to cart"),
+        type: "danger",
+      });
     } finally {
       setCartAddingId(null);
     }

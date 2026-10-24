@@ -32,6 +32,7 @@ import {
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
+import { useConfirm, useAlert } from "../../context/ConfirmContext";
 import "./Privileged.css";
 
 function formatPrice(price, currency = "EUR", language = "ru") {
@@ -61,6 +62,8 @@ function formatDate(dateString, language = "ru") {
 
 export default function Privileged() {
   const { language, t } = useLanguage();
+  const confirm = useConfirm();
+  const customAlert = useAlert();
   const loggedIn = isLoggedIn();
   const cookieUser = getCookieUser();
 
@@ -603,7 +606,11 @@ export default function Privileged() {
       !applyToAllUsers &&
       selectedUserIds.length === 0
     ) {
-      alert(t("privileged.coupons.noUserSelectedAlert"));
+      await customAlert({
+        title: language === "ru" ? "Пользователи не выбраны" : "No Users Selected",
+        message: t("privileged.coupons.noUserSelectedAlert"),
+        type: "warning",
+      });
       return;
     }
 
@@ -727,7 +734,14 @@ export default function Privileged() {
 
   const handleDeleteCoupon = async (id, code) => {
     const confirmMsg = `${t("privileged.coupons.confirmDelete")} ${code}?`;
-    if (!window.confirm(confirmMsg)) return;
+    const ok = await confirm({
+      title: language === "ru" ? "Удаление купона" : "Delete Coupon",
+      message: confirmMsg,
+      confirmText: language === "ru" ? "Удалить купон" : "Delete Coupon",
+      type: "danger",
+    });
+    if (!ok) return;
+
     try {
       await deleteCoupon(id);
       setCoupons((prev) => prev.filter((c) => c.id !== id));
@@ -875,12 +889,16 @@ export default function Privileged() {
   };
 
   const handleDeleteAnnouncement = async (id) => {
-    const confirmed = window.confirm(
-      language === "ru"
-        ? "Вы уверены, что хотите удалить это объявление?"
-        : "Are you sure you want to delete this announcement?",
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: language === "ru" ? "Удаление объявления" : "Delete Announcement",
+      message:
+        language === "ru"
+          ? "Вы уверены, что хотите удалить это объявление? Оно сразу перестанет показываться на сайте."
+          : "Are you sure you want to delete this announcement? It will immediately stop showing on the website.",
+      confirmText: language === "ru" ? "Удалить объявление" : "Delete Announcement",
+      type: "danger",
+    });
+    if (!ok) return;
 
     try {
       await deleteAnnouncement(id);
