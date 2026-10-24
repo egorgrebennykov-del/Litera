@@ -466,6 +466,21 @@ export const translations = {
     "assistant.loginRequired": "Войдите, чтобы добавить книгу в корзину",
     "assistant.badge": "Привет! Я здесь 💜",
     "assistant.recommendationsTitle": "Найденные книги в каталоге Litera:",
+
+    // 404 Not Found
+    "notFound.code": "404",
+    "notFound.tag": "Страница не найдена",
+    "notFound.title": "Страница затерялась между строк",
+    "notFound.subtitle":
+      "Похоже, эта глава отсутствует в книге, адрес был введен неверно или запрашиваемая страница переехала на другую полку.",
+    "notFound.searchPlaceholder": "Поиск книги по названию или автору...",
+    "notFound.searchBtn": "Найти",
+    "notFound.goHome": "На главную страницу",
+    "notFound.catalog": "Книги со скидкой",
+    "notFound.featured": "Подборка книг",
+    "notFound.new": "Новинки",
+    "notFound.askAssistant": "Спросить ассистентку Литеру",
+    "notFound.quickNavTitle": "Или перейдите в популярные разделы:",
   },
 
   en: {
@@ -929,5 +944,20 @@ export const translations = {
     "assistant.loginRequired": "Sign in to add this book to your cart",
     "assistant.badge": "Hi! I'm here 💜",
     "assistant.recommendationsTitle": "Matched books in Litera catalogue:",
+
+    // 404 Not Found
+    "notFound.code": "404",
+    "notFound.tag": "Page Not Found",
+    "notFound.title": "Page Lost Between the Lines",
+    "notFound.subtitle":
+      "It seems this chapter is missing from the book, the URL was mistyped, or the page has moved to another shelf.",
+    "notFound.searchPlaceholder": "Search books by title or author...",
+    "notFound.searchBtn": "Search",
+    "notFound.goHome": "Back to Home",
+    "notFound.catalog": "Discounted Books",
+    "notFound.featured": "Book Picks",
+    "notFound.new": "New Arrivals",
+    "notFound.askAssistant": "Ask Litera Assistant",
+    "notFound.quickNavTitle": "Or explore popular sections:",
   },
 };

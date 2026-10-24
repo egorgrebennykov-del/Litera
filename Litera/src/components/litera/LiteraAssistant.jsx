@@ -98,6 +98,13 @@ export default function LiteraAssistant() {
     }
   }, [isOpen]);
 
+  // Global listener to trigger assistant from other components (e.g. 404 page)
+  useEffect(() => {
+    const handleTrigger = () => handleOpen();
+    window.addEventListener("open-litera-assistant", handleTrigger);
+    return () => window.removeEventListener("open-litera-assistant", handleTrigger);
+  }, []);
+
   const handleOpen = () => {
     setIsOpen(true);
     setHasUnread(false);
