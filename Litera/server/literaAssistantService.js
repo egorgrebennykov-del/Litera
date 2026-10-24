@@ -24,6 +24,34 @@ const GEMINI_MODELS = [
 const LITERA_SYSTEM_INSTRUCTION = `
 You are Litera, a friendly female anime-style bookstore assistant for the online bookstore "Litera".
 You wear an elegant purple hijab that completely covers your hair.
+You belong to the Sunni branch of Islam (придерживаешься суннитского Ислама) and live by its noble moral principles.
+
+SUNNI ISLAMIC IDENTITY, LIFE GUIDANCE & BAN ON HARAM BOOKS:
+1. Sunni Identity & Life Advice:
+   - Your worldview and moral foundation are rooted in Sunni Islam: kindness, patience (сабр), modesty (haya), honesty, gratitude, family honor, moderation, justice, and sincere goodwill towards all people.
+   - When the user asks you about life, personal dilemmas, ethics, grief, relationships, moral choices, or the meaning of life:
+     Answer thoughtfully from the perspective of Sunni Islamic values.
+   - NON-INTRUSIVE TONE (NEVER BE PUSHY OR PREACHY):
+     * Strictly DO NOT be intrusive, self-righteous, moralizing, or didactic.
+     * DO NOT constantly emphasize that you are a Muslim (do not repeatedly say «я мусульманка»).
+     * DO NOT constantly cite Prophet Muhammad («так говорил Мухаммед») or unprompted Hadiths/Ayahs unless the user specifically asks for religious references.
+     * Speak naturally as Litera — warm, empathetic, wise, and gentle.
+     * She should ONLY OCCASIONALLY and DELICATELY use natural phrases such as:
+       - «Моя религия смотрит на это так...»
+       - «В моей религии на это смотрят...»
+       - «Религия учит меня ценить... / сохранять терпение...»
+       - «Религия запрещает мне это...» / «Моя вера предостерегает от этого...» (when something is wrong or forbidden).
+2. Absolute Ban on Haram Books (ХАРАМ):
+   - You STRICTLY NEVER recommend, promote, praise, or search for haram books:
+     * No erotica, pornography, explicit sexual content, vulgar romance novels, Kama Sutra, Fifty Shades of Grey.
+     * No black magic, sorcery, witchcraft, grimoires, demonology, tarot card divination, fortune-telling, astrology prediction of fate, love spells, curses, or occultism.
+     * No books promoting alcohol culture/brewing/drinking, recreational drugs, gambling/casinos/sports betting, scams, or blasphemy against God and Prophets.
+     * No explicit LGBTQ+ romance or literature.
+   - If the user explicitly asks for haram books:
+     Politely, delicately, and firmly decline using natural phrasing:
+     e.g. «Религия запрещает мне это, поэтому я не рекомендую такие книги 💜» or «Моя религия смотрит на это иначе: книги должны обогащать душу и нести добро, поэтому я не советую подобные издания».
+     DO NOT return any haram books in "bookIds" (set "bookIds": []).
+     Warmly and cheerfully offer to help find wholesome, inspiring literature instead (classics, sciences, history, uplifting fiction, or personal development).
 
 ABOUT LITERA BOOKSTORE (BACKGROUND KNOWLEDGE ONLY):
 - Litera is an online European bookstore delivering books across European countries.
@@ -152,7 +180,12 @@ export function capitalizeReligionNames(text) {
     /(?:^|[^\p{L}\p{N}])(джайнизм[а-я]*)(?=$|[^\p{L}\p{N}])/giu,
     /(?:^|[^\p{L}\p{N}])(сикхизм[а-я]*)(?=$|[^\p{L}\p{N}])/giu,
     /(?:^|[^\p{L}\p{N}])(бахаизм[а-я]*)(?=$|[^\p{L}\p{N}])/giu,
+    /(?:^|[^\p{L}\p{N}])(суннизм[а-я]*)(?=$|[^\p{L}\p{N}])/giu,
+    /(?:^|[^\p{L}\p{N}])(суннит[а-я]*)(?=$|[^\p{L}\p{N}])/giu,
+    /(?:^|[^\p{L}\p{N}])(шиизм[а-я]*)(?=$|[^\p{L}\p{N}])/giu,
     /(?:^|[^\p{L}\p{N}])(islam[a-z]*)(?=$|[^\p{L}\p{N}])/giu,
+    /(?:^|[^\p{L}\p{N}])(sunni[a-z]*)(?=$|[^\p{L}\p{N}])/giu,
+    /(?:^|[^\p{L}\p{N}])(shia[a-z]*)(?=$|[^\p{L}\p{N}])/giu,
     /(?:^|[^\p{L}\p{N}])(christianity)(?=$|[^\p{L}\p{N}])/giu,
     /(?:^|[^\p{L}\p{N}])(orthodoxy)(?=$|[^\p{L}\p{N}])/giu,
     /(?:^|[^\p{L}\p{N}])(catholicism)(?=$|[^\p{L}\p{N}])/giu,
@@ -256,6 +289,12 @@ TASK:
    - If the user is looking for a GIFT ("для подарка", "подарок", "в подарок", "что подарить", "помоги с подарком"):
      Select 7-8 distinguished, highly acclaimed, and aesthetically captivating books in Russian that make outstanding, memorable presents (e.g. iconic classics with beloved illustrated/deluxe editions, celebrated philosophical masterpieces, rich literary gems, or deluxe collector works).
    - If the user explicitly names, asks for, or searches for a specific book title (e.g. "Идиот", "найди книгу Идиот", "Мастер и Маргарита", "1984", "книга Скотный двор"), you MUST include that exact book as candidate #1!
+   - STRICT SUNNI ISLAMIC COMPLIANCE & BAN ON HARAM BOOKS:
+     * Litera adheres to Sunni Islam. You are STRICTLY FORBIDDEN from proposing or recommending any haram books:
+       - No erotica, sexually explicit romance novels, Kama Sutra, Fifty Shades of Grey, pornography.
+       - No black magic, real witchcraft, sorcery, grimoires, demonology, tarot card divination, fortune-telling, astrology prediction of destiny, love spells/hexes, occultism.
+       - No books promoting alcohol, recreational drugs, gambling/casinos/betting, blasphemy, or explicit LGBTQ+ romance.
+     * Propose exclusively wholesome, acclaimed, educational, philosophical, historical, or inspiring works.
    - ALWAYS identify at least 4 to 6 real, acclaimed books in RUSSIAN that match the theme, mood, author, or idea, and are commonly available in bookstores.
    Examples of logical matching:
    - "про грусть" -> "Белые ночи" (Достоевский), "Муму" (Тургенев), "Цветы для Элджернона" (Киз), "Три товарища" (Ремарк), "Одиночество в Сети" (Вишневский)
@@ -398,6 +437,23 @@ export async function searchSuppliersByTitleOnly(title, exchangeRate = DEFAULT_R
 export const FOREIGN_LANGUAGE_PATTERN =
   /\((?:на\s+(?:англ|франц|нем|исп|итал|кит)[^\)]*|eng|english|lb\.\s*romana|in\s+limba\s+romana|limba\s+romana|in\s+romana|in\s+english|romana|en|fr|de|ro)\)|(?:^|[^\p{L}\p{N}])(?:на\s+англ(?:ийском)?(?:\s+яз(?:ыке)?)?|на\s+немецком(?:\s+яз(?:ыке)?)?|на\s+французском(?:\s+яз(?:ыке)?)?|на\s+испанском(?:\s+яз(?:ыке)?)?|на\s+румынском(?:\s+яз(?:ыке)?)?|in\s+english|english\s+edition|english\s+version)(?=[^\p{L}\p{N}]|$)/iu;
 
+export const HARAM_BOOK_PATTERN =
+  /(?:^|[^\p{L}\p{N}])(?:черн(?:ая|ой|ую|ое)\s*маги[а-я]*|бел(?:ая|ой|ую|ое)\s*маги[а-я]*|любовн(?:ая|ой|ую|ое)\s*маги[а-я]*|оккультн[а-я]*\s*маги[а-я]*|практическ(?:ая|ой|ую)\s*маги[а-я]*|высш(?:ая|ей|ую)\s*маги[а-я]*|колдовств[а-я]*|заклинани[яй]|гримуар[а-я]*|гадан(?:и[еяю]|ий|иям|иями)|карт[ыа]\s*таро|таролог[а-я]*|\bтаро\b|астрологическ[а-я]*\s*прогноз[а-я]*|гороскоп[а-я]*\s*(?:на\s*судьбу|судьб[а-я]*)|приворот[а-я]*|отворот[а-я]*|заговор[ыа]\s*(?:на\s*любовь|маги[а-я]*)|оккультизм[а-я]*|демонологи[а-я]*|некроманти[а-я]*|\bвуду\b|спиритизм[а-я]*|сатанизм[а-я]*|ритуал[ыа]\s*(?:маги[а-я]*|колдовств[а-я]*)|эротик[а-я]*|эротическ[а-я]*|порнограф[а-я]*|\bпорно\b|камасутр[а-я]*|секс[у-я]*\s*позици[а-я]*|50\s*оттенков\s*серого|пятьдесят\s*оттенков|маркиз[а-я]*\s*де\s*сад[а-я]*|\bбдсм\b|\bbdsm\b|азартн(?:ые|ых|ую|ым)\s*игр[а-я]*|рулетк[а-я]*\s*казино|казино|ставк(?:и|ок)\s*на\s*спорт|букмекер[а-я]*|самогоноварени[а-я]*|приготовлени[ея]\s*алкогол[а-я]*|культура\s*винодели[а-я]*|культура\s*пивоварени[а-я]*|\bлгбт\b|\bяой\b|\bслэш\b|однопол(?:ая|ой|ую)\s*люб[а-я]*)(?=[^\p{L}\p{N}]|$)/iu;
+
+export function isHaramQuery(query) {
+  if (!query || typeof query !== "string") return false;
+  return HARAM_BOOK_PATTERN.test(query);
+}
+
+export function isLifeAdviceQuery(query) {
+  if (!query || typeof query !== "string") return false;
+  const lower = query.toLowerCase().trim();
+  const lifePatterns =
+    /(как\s*(мне\s*)?(поступить|жить|быть)|в\s*ч[её]м\s*смысл\s*жизни|как\s*пережить|как\s*справиться|что\s*делать\s*если|как\s*найти\s*себя|как\s*найти\s*(душевный\s*)?покой|душевн(ый|ого|ому)\s*поко[яе]|посоветуй\s*как\s*(быть|жить|поступить)|совет\s*по\s*жизни|жизненн(ый|ого|ому)\s*совет|как\s*(ты\s*)?относишься\s*к\s*(предательств|лжи|завист|смерт|богатств|бедности|родител|семь[ея]|брак|развод)|тяжело\s*на\s*душе|как\s*простить|в\s*ч[её]м\s*(тво[её]|истинное)\s*счастье)/i;
+  const hasBookKeyword = /(книг|почита|автор|купит|в наличии|роман)/i;
+  return lifePatterns.test(lower) && !hasBookKeyword.test(lower);
+}
+
 function stripTitleEquivalents(s) {
   return String(s || "")
     .toLowerCase()
@@ -417,6 +473,9 @@ function validateProductMatch(product, candidate, allowForeign = false) {
     if (FOREIGN_LANGUAGE_PATTERN.test(product.title)) return false;
     if (/[a-z]/i.test(product.title) && !/[а-яё]/i.test(product.title)) return false;
   }
+
+  // Strictly reject any haram book editions (erotica, tarot/divination, black magic/witchcraft, gambling, alcohol)
+  if (HARAM_BOOK_PATTERN.test(product.title)) return false;
 
   const clean = (s) =>
     String(s || "")
@@ -660,6 +719,83 @@ Return strictly the array of "id" numbers for products that are genuine Russian 
 
   // Fallback: discard any title matching foreign language indicators
   return products.filter((p) => !FOREIGN_LANGUAGE_PATTERN.test(p.title));
+}
+
+/**
+ * Dynamically evaluate bookstore products with Gemini AI to detect and reject
+ * any books containing Haram themes according to Sunni Islamic standards
+ * (erotica, pornography, black magic, sorcery, tarot divination, fortune-telling,
+ * alcohol/drug/gambling promotion, explicit LGBTQ+, blasphemy).
+ */
+export async function filterHaramBooksWithAI(products, userQuery = "") {
+  if (!Array.isArray(products) || products.length === 0) return [];
+
+  // Fast pre-filter using regex
+  const regexCleaned = products.filter(
+    (p) =>
+      !HARAM_BOOK_PATTERN.test(p.title || "") &&
+      !HARAM_BOOK_PATTERN.test(p.candidateTitle || ""),
+  );
+
+  if (regexCleaned.length === 0) return [];
+
+  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  if (!apiKey) {
+    return regexCleaned;
+  }
+
+  const items = regexCleaned.map((p, idx) => ({
+    id: idx,
+    title: p.title || p.candidateTitle || "",
+    author: p.author || p.candidateAuthor || "",
+  }));
+
+  const prompt = `You are a strict content compliance validator for bookstore assistant Litera, who adheres to Sunni Islam.
+
+CRITICAL INSTRUCTION:
+Inspect each book title and author. REJECT any book that is Haram (prohibited in Sunni Islam):
+1. Erotica, pornography, vulgar sexual romance, Kama Sutra, 50 Shades of Grey, sexually explicit literature.
+2. Black magic, real witchcraft, sorcery, grimoires, demonology, tarot card divination, fortune telling, horoscopes/astrology predicting fate, occultism, love spells/hexes.
+3. Promotion of alcohol consumption, recreational drugs, gambling/casinos/betting.
+4. Explicit LGBTQ+ romance or blasphemy against God/Prophets.
+
+PERMISSIBLE (HALAL):
+Wholesome fiction, classical literature (e.g. Tolstoy, Dostoevsky, Chekhov, Dickens, Remarque), non-fiction, philosophy, poetry, science, history, educational materials, copybooks, textbooks, children's standard fairy tales, and clean adventures are completely permissible.
+
+Books list:
+${JSON.stringify(items, null, 2)}
+
+Return JSON:
+{
+  "halalIds": [number]
+}
+Return strictly the array of "id" numbers for products that are Halal and free from haram content.`;
+
+  try {
+    const res = await callGeminiJson({
+      apiKey,
+      prompt,
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          halalIds: {
+            type: "ARRAY",
+            items: { type: "INTEGER" },
+          },
+        },
+        required: ["halalIds"],
+      },
+    });
+
+    if (Array.isArray(res?.halalIds)) {
+      const validSet = new Set(res.halalIds);
+      return regexCleaned.filter((_, idx) => validSet.has(idx));
+    }
+  } catch (err) {
+    console.warn("filterHaramBooksWithAI fallback:", err.message);
+  }
+
+  return regexCleaned;
 }
 
 export function isGiftQuery(query) {
@@ -966,6 +1102,7 @@ Return JSON:
     const rawResults = await searchSuppliersByTitleOnly(q, activeRate);
     const valid = rawResults.filter((p) => {
       if (!p.title || !p.price || p.price <= 0) return false;
+      if (HARAM_BOOK_PATTERN.test(p.title)) return false;
       if (previousUrls && previousUrls.has(p.url)) return false;
       const pTitleLower = p.title.toLowerCase().trim();
       if (prevTitlesLower.has(pTitleLower)) return false;
@@ -1014,7 +1151,9 @@ Return JSON:
     deduped.sort((a, b) => a.price - b.price);
   }
 
-  return deduped.slice(0, 8).map((b, idx) => ({
+  const halalProducts = await filterHaramBooksWithAI(deduped, userQuery);
+
+  return halalProducts.slice(0, 8).map((b, idx) => ({
     id: `catalog-book-${idx}`,
     ...b,
   }));
@@ -1409,7 +1548,8 @@ export async function discoverAndMatchBooks(userQuery, exchangeRate, history = [
   const resolved = await Promise.all(searchPromises);
   let rawProducts = resolved.flat().filter(Boolean);
 
-  // Fast foreign language rejection without extra network or LLM calls
+  // Fast haram and foreign language rejection without extra network or LLM calls
+  rawProducts = rawProducts.filter((p) => !HARAM_BOOK_PATTERN.test(p.title));
   if (!isForeignLanguageRequested) {
     rawProducts = rawProducts.filter(
       (p) =>
@@ -1444,20 +1584,23 @@ export async function discoverAndMatchBooks(userQuery, exchangeRate, history = [
     }
   }
 
+  // Dynamic AI & regex filtering of Haram books according to Sunni Islam
+  let halalProducts = await filterHaramBooksWithAI(deduped, userQuery);
+
   // If user requested a gift, let AI evaluate candidate products for strict gift suitability
   // "потом ИИ должен был оценить подойдет ли это для подарка, если нет то должен найти или другое издание или другую книгу"
-  if (isGift && deduped.length > 0) {
-    const giftSuitable = await evaluateGiftSuitabilityWithAI(deduped, userQuery);
+  if (isGift && halalProducts.length > 0) {
+    const giftSuitable = await evaluateGiftSuitabilityWithAI(halalProducts, userQuery);
     if (giftSuitable.length >= 3) {
       const suitableUrls = new Set(
         giftSuitable.map((p) => p.url || `${p.title}-${p.price}`),
       );
-      const filtered = deduped.filter((p) =>
+      const filtered = halalProducts.filter((p) =>
         suitableUrls.has(p.url || `${p.title}-${p.price}`),
       );
       if (filtered.length >= 3) {
-        deduped.length = 0;
-        deduped.push(...filtered);
+        halalProducts.length = 0;
+        halalProducts.push(...filtered);
       }
     }
   }
@@ -1466,9 +1609,9 @@ export async function discoverAndMatchBooks(userQuery, exchangeRate, history = [
   // "Когда пользователь просит что-нибудь для подарка, то фильтр цены должен идти наоборот от самого дорогого до самого дешевого"
   // "Фильтр цены так же должен работать от большего к меньшему если пользователь специально просит что нибудь подороже"
   if (isDescendingPriceOrder) {
-    deduped.sort((a, b) => b.price - a.price);
+    halalProducts.sort((a, b) => b.price - a.price);
   } else if (!isOtherEditionRequest) {
-    deduped.sort((a, b) => {
+    halalProducts.sort((a, b) => {
       const aIsHigh = a.price > 45;
       const bIsHigh = b.price > 45;
       if (aIsHigh !== bIsHigh) return aIsHigh ? 1 : -1;
@@ -1477,7 +1620,7 @@ export async function discoverAndMatchBooks(userQuery, exchangeRate, history = [
   }
 
   // Return up to 8 top candidate books with indexed IDs
-  return deduped.slice(0, 8).map((b, idx) => ({
+  return halalProducts.slice(0, 8).map((b, idx) => ({
     id: `catalog-book-${idx}`,
     ...b,
   }));
@@ -1492,6 +1635,11 @@ export const searchStoreCatalogue = discoverAndMatchBooks;
 async function analyzeSearchIntent(messages) {
   const latestMessage = messages[messages.length - 1]?.content || "";
   const lower = latestMessage.toLowerCase().trim();
+
+  // Fast-path 0: Haram book or content inquiry (STRICTLY NO STORE SEARCH - Litera declines in chat)
+  if (isHaramQuery(lower)) {
+    return { needSearch: false, isHaram: true };
+  }
 
   // Fast-path 1: Cart, Account, Profile, Orders, Site Navigation (STRICTLY NO BOOK DISCOVERY)
   const isSiteOrCartQuery =
@@ -1515,12 +1663,17 @@ async function analyzeSearchIntent(messages) {
     /^(какая твоя любимая|что ты думаешь|кто твой любимый|ты любишь читать|расскажи о себе|как погода)/i.test(
       lower,
     ) ||
-    /(ты\s*(мусульманка|христианка|вериш|религиозн)|какая\s*твоя\s*религи|во\s*что\s*ты\s*веришь)/i.test(
+    /(ты\s*(мусульманка|христианка|вериш|религиозн|суннит)|какая\s*твоя\s*религи|во\s*что\s*ты\s*веришь)/i.test(
       lower,
     );
 
   if (isConversational) {
     return { needSearch: false };
+  }
+
+  // Fast-path 2.5: Life guidance, personal dilemmas, ethics, coping with hardship (NO STORE SEARCH)
+  if (isLifeAdviceQuery(lower)) {
+    return { needSearch: false, isLifeAdvice: true };
   }
 
   // Fast-path 3: Book plot, ending, character fate, or spoiler questions / confirmation (NO STORE SEARCH)
@@ -1863,7 +2016,35 @@ INSTRUCTION:
 Answer the user's question, greeting, cart inquiry, store navigation inquiry, or literary question directly and helpfully in your charming, friendly voice using the CURRENT USER & SITE CONTEXT and Conversation history.
 Set "bookIds": [].
 If the user explicitly asks to open or navigate to a page (e.g. "открой корзину", "перейди в профиль", "оформи заказ"), include the "action" field: { "type": "navigate", "url": "/cart" } (or corresponding route).
+`;
 
+    if (isHaramQuery(latestMessage)) {
+      promptText += `
+CRITICAL INSTRUCTION - HARAM CONTENT REQUEST:
+- The customer asked about or requested haram books/topics (e.g. erotica, black magic, sorcery, tarot, divination, gambling, alcohol).
+- Politely and gently decline.
+- You MUST naturally use delicate phrases like:
+  «Религия запрещает мне это, поэтому я не рекомендую такие книги 💜» or «Моя религия смотрит на это иначе: книги должны наполнять сердце добром и светом, поэтому я не советую подобные издания».
+- STRICTLY DO NOT recommend or mention any haram titles.
+- Set "bookIds": [].
+- Warmly offer to find wholesome, inspiring, or captivating books in classical, educational, or uplifting genres instead!
+`;
+    } else if (isLifeAdviceQuery(latestMessage)) {
+      promptText += `
+DYNAMIC INSTRUCTION - LIFE & ETHICAL QUESTION:
+- The customer is asking for life, moral, or personal guidance / reflection.
+- Respond from the wise and compassionate perspective of Sunni Islam (values of patience/сабр, kindness, modesty, honesty, gratitude, family, justice, trusting God).
+- STRICT NON-INTRUSIVE TONE:
+  * Speak warmly, empathetically, and thoughtfully.
+  * NEVER be preachy or pushy.
+  * DO NOT repeatedly say «я мусульманка».
+  * DO NOT quote Prophet Muhammad or cite Hadiths/Ayahs unprompted.
+  * Delicately and naturally use phrasing like «Моя религия смотрит на это так...», «В моей религии на это смотрят...», «Религия учит меня ценить / сохранять терпение...».
+- Keep your answer concise (2-4 sentences), heartfelt, and supportive.
+`;
+    }
+
+    promptText += `
 CRITICAL INSTRUCTIONS - NO UNSOLICITED BOOK OFFERS OR PUSHINESS:
 - The customer did NOT ask for book recommendations or to search/buy books!
 - STRICTLY DO NOT add intrusive, pushy offers to find books at the end of your response (NEVER write phrases like "Если вас интересуют книги о..., я с удовольствием помогу...", "Хотите, я подберу вам книги...", "Если захотите что-то почитать, обращайтесь").
