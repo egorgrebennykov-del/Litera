@@ -3209,14 +3209,19 @@ export default function Privileged() {
             {announcements.length === 0 ? (
               <div className="privileged__empty-state">
                 <i className="ri-megaphone-line privileged__empty-icon" />
+                <h3 className="privileged__empty-title">
+                  {language === "ru"
+                    ? "Объявлений пока нет"
+                    : "No announcements yet"}
+                </h3>
                 <p className="privileged__empty-text">
                   {language === "ru"
-                    ? "Объявлений пока нет. Создайте первое объявление!"
-                    : "No announcements yet. Create the first one!"}
+                    ? "Создайте небольшую текстовую вставку вверху страницы или большой плакат над рулеткой из книг."
+                    : "Create a small top banner or a large poster banner above the book roulette."}
                 </p>
                 <button
                   type="button"
-                  className="button privileged__create-btn"
+                  className="button privileged__empty-create-btn"
                   onClick={handleOpenCreateAnnouncement}
                 >
                   <i className="ri-add-line" />
@@ -3471,16 +3476,23 @@ export default function Privileged() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="privileged__modal-header">
-                    <h3 className="privileged__modal-title">
-                      <i className="ri-megaphone-line" />
-                      {editingAnnouncement
-                        ? language === "ru"
-                          ? "Редактировать объявление"
-                          : "Edit Announcement"
-                        : language === "ru"
-                        ? "Новое объявление"
-                        : "New Announcement"}
-                    </h3>
+                    <div>
+                      <h3 className="privileged__modal-title">
+                        <i className="ri-megaphone-line" />
+                        {editingAnnouncement
+                          ? language === "ru"
+                            ? "Редактировать объявление"
+                            : "Edit Announcement"
+                          : language === "ru"
+                          ? "Новое объявление"
+                          : "New Announcement"}
+                      </h3>
+                      <p className="privileged__modal-subtitle">
+                        {language === "ru"
+                          ? "Заполните параметры для размещения объявления на сайте"
+                          : "Configure announcement options for the homepage"}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       className="privileged__modal-close"
@@ -3492,21 +3504,28 @@ export default function Privileged() {
 
                   <form
                     onSubmit={handleSaveAnnouncement}
-                    className="privileged__modal-body"
+                    className="privileged__modal-form"
                   >
-                    {/* Choose Type */}
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru"
-                          ? "Тип объявления"
-                          : "Announcement Type"}
-                      </label>
+                    {/* Step 1: Type Selection */}
+                    <div className="privileged__form-section">
+                      <div className="privileged__form-section-title">
+                        <span className="privileged__step-num">1</span>
+                        <span>
+                          {language === "ru"
+                            ? "Формат объявления"
+                            : "Announcement Format"}
+                        </span>
+                      </div>
+
                       <div className="privileged__ann-type-selector">
                         <button
                           type="button"
                           className={`privileged__ann-type-card ${announcementType === "small" ? "privileged__ann-type-card--selected" : ""}`}
                           onClick={() => setAnnouncementType("small")}
                         >
+                          <div className="privileged__ann-card-radio">
+                            <span className="privileged__radio-circle" />
+                          </div>
                           <i className="ri-layout-top-line privileged__ann-card-icon" />
                           <div className="privileged__ann-card-text">
                             <strong>
@@ -3516,8 +3535,8 @@ export default function Privileged() {
                             </strong>
                             <span>
                               {language === "ru"
-                                ? "Появляется в самом верху главной страницы, закрывается крестиком"
-                                : "Appears at the very top of the home page, dismissible with X"}
+                                ? "Текстовая полоса в самом верху страницы над шапкой. Посетитель может закрыть её крестиком."
+                                : "Text banner at the very top of the page. Dismissible with an X."}
                             </span>
                           </div>
                         </button>
@@ -3527,6 +3546,9 @@ export default function Privileged() {
                           className={`privileged__ann-type-card ${announcementType === "large" ? "privileged__ann-type-card--selected" : ""}`}
                           onClick={() => setAnnouncementType("large")}
                         >
+                          <div className="privileged__ann-card-radio">
+                            <span className="privileged__radio-circle" />
+                          </div>
                           <i className="ri-image-2-line privileged__ann-card-icon" />
                           <div className="privileged__ann-card-text">
                             <strong>
@@ -3536,148 +3558,217 @@ export default function Privileged() {
                             </strong>
                             <span>
                               {language === "ru"
-                                ? "Баннер над рулеткой из книг (только ссылка на фото, создаёт рулетку если несколько)"
-                                : "Banner above book roulette (photo link only, interactive roulette if multiple)"}
+                                ? "Красочный баннер над рулеткой из книг (только фото). Если плакатов несколько, создается рулетка."
+                                : "Banner above the book carousel (photo only). Rotates as a roulette if multiple."}
                             </span>
                           </div>
                         </button>
                       </div>
                     </div>
 
-                    {/* Small announcement content */}
-                    {announcementType === "small" ? (
-                      <div className="privileged__form-group">
-                        <label className="privileged__form-label">
+                    {/* Step 2: Content */}
+                    <div className="privileged__form-section">
+                      <div className="privileged__form-section-title">
+                        <span className="privileged__step-num">2</span>
+                        <span>
+                          {announcementType === "small"
+                            ? language === "ru"
+                              ? "Содержимое текстовой вставки"
+                              : "Inset Content"
+                            : language === "ru"
+                            ? "Изображение большого плаката"
+                            : "Poster Image"}
+                        </span>
+                      </div>
+
+                      {announcementType === "small" ? (
+                        <div className="privileged__form-field">
+                          <label className="privileged__field-label">
+                            {language === "ru"
+                              ? "Текст объявления"
+                              : "Announcement Text"}
+                            <span className="privileged__required-mark">*</span>
+                          </label>
+                          <textarea
+                            className="privileged__field-textarea"
+                            rows={3}
+                            required
+                            value={announcementText}
+                            onChange={(e) =>
+                              setAnnouncementText(e.target.value)
+                            }
+                            placeholder={
+                              language === "ru"
+                                ? "Например: Внимание! 1-3 мая магазин работает в обычном режиме. При заказе от 50€ доставка бесплатно!"
+                                : "e.g. Attention! Holiday weekend special: Free shipping on orders over €50!"
+                            }
+                          />
+                          <span className="privileged__field-hint">
+                            {language === "ru"
+                              ? "Этот текст будет показан в верхней плашке на главной странице."
+                              : "This text will be displayed in the top bar of the main page."}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="privileged__form-field">
+                          <label className="privileged__field-label">
+                            {language === "ru"
+                              ? "Прямая ссылка на фото плаката (URL)"
+                              : "Direct Image URL"}
+                            <span className="privileged__required-mark">*</span>
+                          </label>
+                          <input
+                            type="url"
+                            className="privileged__field-input"
+                            required
+                            value={announcementImageUrl}
+                            onChange={(e) =>
+                              setAnnouncementImageUrl(e.target.value)
+                            }
+                            placeholder="https://images.unsplash.com/... или https://site.com/poster.jpg"
+                          />
+                          <span className="privileged__field-hint">
+                            {language === "ru"
+                              ? "Для плаката используется только ссылка на фото (рекомендуемый размер: 1200×450 px или пропорция 16:6)."
+                              : "Only an image link is needed for large posters (recommended ratio: 16:6 or 1200×450 px)."}
+                          </span>
+
+                          {/* Live preview */}
+                          {announcementImageUrl && (
+                            <div className="privileged__ann-live-preview-box">
+                              <span className="privileged__preview-tag">
+                                {language === "ru"
+                                  ? "Предпросмотр фото:"
+                                  : "Image Preview:"}
+                              </span>
+                              <div className="privileged__preview-img-wrap">
+                                <img
+                                  src={announcementImageUrl}
+                                  alt="Live Preview"
+                                  className="privileged__preview-img"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                    const errEl =
+                                      e.currentTarget.nextElementSibling;
+                                    if (errEl) errEl.style.display = "flex";
+                                  }}
+                                  onLoad={(e) => {
+                                    e.currentTarget.style.display = "block";
+                                    const errEl =
+                                      e.currentTarget.nextElementSibling;
+                                    if (errEl) errEl.style.display = "none";
+                                  }}
+                                />
+                                <div
+                                  className="privileged__preview-error"
+                                  style={{ display: "none" }}
+                                >
+                                  <i className="ri-error-warning-line" />
+                                  <span>
+                                    {language === "ru"
+                                      ? "Не удалось загрузить изображение по указанному URL"
+                                      : "Failed to load image from the provided URL"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Optional Target Link */}
+                      <div className="privileged__form-field">
+                        <label className="privileged__field-label">
                           {language === "ru"
-                            ? "Текст объявления *"
-                            : "Announcement Text *"}
+                            ? "Ссылка при клике (необязательно)"
+                            : "Click URL (optional)"}
                         </label>
-                        <textarea
-                          className="privileged__form-textarea"
-                          rows={3}
-                          required
-                          value={announcementText}
-                          onChange={(e) => setAnnouncementText(e.target.value)}
+                        <input
+                          type="text"
+                          className="privileged__field-input"
+                          value={announcementLinkUrl}
+                          onChange={(e) =>
+                            setAnnouncementLinkUrl(e.target.value)
+                          }
                           placeholder={
                             language === "ru"
-                              ? "Например: Внимание! 1-3 мая магазин работает в обычном режиме. При заказе от 50€ доставка бесплатно!"
-                              : "e.g. Attention! Holiday weekend special: Free shipping on orders over €50!"
+                              ? "Например: /books или https://example.com"
+                              : "e.g. /books or https://example.com"
                           }
                         />
-                      </div>
-                    ) : (
-                      /* Large announcement photo link */
-                      <div className="privileged__form-group">
-                        <label className="privileged__form-label">
+                        <span className="privileged__field-hint">
                           {language === "ru"
-                            ? "Ссылка на фото плаката (URL) *"
-                            : "Poster Image URL *"}
-                        </label>
-                        <input
-                          type="url"
-                          className="privileged__form-input"
-                          required
-                          value={announcementImageUrl}
-                          onChange={(e) =>
-                            setAnnouncementImageUrl(e.target.value)
-                          }
-                          placeholder="https://example.com/banner-promo.jpg"
-                        />
-                        <span className="privileged__form-hint">
-                          {language === "ru"
-                            ? "Для большого объявления используется только ссылка на фото. Рекомендуемые пропорции: 16:6 или 1200x450px"
-                            : "For large announcements, only a photo link is used. Recommended ratio: 16:6 or 1200x450px"}
+                            ? "Куда перейдет пользователь при нажатии на объявление (оставьте пустым, если ссылка не нужна)."
+                            : "Where the user will be redirected upon clicking (leave empty if not needed)."}
                         </span>
-
-                        {/* Live image preview */}
-                        {announcementImageUrl && (
-                          <div className="privileged__ann-modal-preview">
-                            <img
-                              src={announcementImageUrl}
-                              alt="Live Preview"
-                              className="privileged__ann-modal-preview-img"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                              onLoad={(e) => {
-                                e.currentTarget.style.display = "block";
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Optional link URL */}
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru"
-                          ? "Ссылка при нажатии (необязательно)"
-                          : "Target Link URL (optional)"}
-                      </label>
-                      <input
-                        type="url"
-                        className="privileged__form-input"
-                        value={announcementLinkUrl}
-                        onChange={(e) =>
-                          setAnnouncementLinkUrl(e.target.value)
-                        }
-                        placeholder="https://kazbook.com/promo или /books"
-                      />
-                      <span className="privileged__form-hint">
-                        {language === "ru"
-                          ? "Куда перейдет пользователь при клике на плакат или ссылку во вставке"
-                          : "Where the user will be directed upon clicking"}
-                      </span>
-                    </div>
-
-                    {/* Schedule dates: From & Until */}
-                    <div className="privileged__ann-dates-grid">
-                      <div className="privileged__form-group">
-                        <label className="privileged__form-label">
-                          {language === "ru"
-                            ? "Начало показа (по умолчанию сейчас)"
-                            : "Start Date (defaults to now)"}
-                        </label>
-                        <input
-                          type="datetime-local"
-                          className="privileged__form-input"
-                          value={announcementFrom}
-                          onChange={(e) =>
-                            setAnnouncementFrom(e.target.value)
-                          }
-                        />
-                      </div>
-
-                      <div className="privileged__form-group">
-                        <label className="privileged__form-label">
-                          {language === "ru"
-                            ? "Срок окончания показа (обязательно) *"
-                            : "End Date / Expiration (required) *"}
-                        </label>
-                        <input
-                          type="datetime-local"
-                          required
-                          className="privileged__form-input privileged__form-input--required"
-                          value={announcementUntil}
-                          onChange={(e) =>
-                            setAnnouncementUntil(e.target.value)
-                          }
-                        />
                       </div>
                     </div>
-                    <span className="privileged__form-hint">
-                      {language === "ru"
-                        ? "После наступления срока окончания объявление автоматически скроется с главной страницы."
-                        : "After the end date, the announcement will automatically stop showing on the main page."}
-                    </span>
+
+                    {/* Step 3: Dates */}
+                    <div className="privileged__form-section">
+                      <div className="privileged__form-section-title">
+                        <span className="privileged__step-num">3</span>
+                        <span>
+                          {language === "ru"
+                            ? "Сроки показа на сайте"
+                            : "Display Schedule"}
+                        </span>
+                      </div>
+
+                      <div className="privileged__dates-row">
+                        <div className="privileged__form-field">
+                          <label className="privileged__field-label">
+                            <i className="ri-calendar-line" />
+                            {language === "ru"
+                              ? "Начало показа"
+                              : "Start Date"}
+                          </label>
+                          <input
+                            type="datetime-local"
+                            className="privileged__field-input"
+                            value={announcementFrom}
+                            onChange={(e) =>
+                              setAnnouncementFrom(e.target.value)
+                            }
+                          />
+                          <span className="privileged__field-hint">
+                            {language === "ru"
+                              ? "По умолчанию — прямо сейчас"
+                              : "Defaults to right now"}
+                          </span>
+                        </div>
+
+                        <div className="privileged__form-field">
+                          <label className="privileged__field-label privileged__field-label--required">
+                            <i className="ri-calendar-check-line" />
+                            {language === "ru"
+                              ? "Срок окончания показа"
+                              : "Expiration Date"}
+                            <span className="privileged__required-mark">
+                              * (обязательно)
+                            </span>
+                          </label>
+                          <input
+                            type="datetime-local"
+                            required
+                            className="privileged__field-input privileged__field-input--highlight"
+                            value={announcementUntil}
+                            onChange={(e) =>
+                              setAnnouncementUntil(e.target.value)
+                            }
+                          />
+                          <span className="privileged__field-hint">
+                            {language === "ru"
+                              ? "После этой даты объявление автоматически исчезнет"
+                              : "After this date, the announcement will auto-hide"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Status toggle if editing */}
                     {editingAnnouncement && (
-                      <div
-                        className="privileged__form-group"
-                        style={{ marginTop: "1rem" }}
-                      >
+                      <div className="privileged__form-field">
                         <label className="privileged__checkbox-label">
                           <input
                             type="checkbox"
@@ -3688,8 +3779,8 @@ export default function Privileged() {
                           />
                           <span>
                             {language === "ru"
-                              ? "Активно (показывать на сайте)"
-                              : "Active (show on site)"}
+                              ? "Объявление активно (показывать на сайте)"
+                              : "Announcement active (show on site)"}
                           </span>
                         </label>
                       </div>
