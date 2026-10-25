@@ -23,6 +23,10 @@ let inflight = null;
 
 export const DEFAULT_RATE = 20.2;
 
+export function getCachedExchangeRate() {
+  return cachedRate;
+}
+
 export default async function getExchangeRate() {
   // Return from cache if still fresh.
   if (cachedRate !== null && Date.now() < cacheExpiry) return cachedRate;

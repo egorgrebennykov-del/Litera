@@ -106,47 +106,75 @@ export async function fetchAllAnnouncementsAdmin() {
   }
 }
 
+const ACTIVE_CACHE_TTL_MS = 2 * 60 * 1000;
+let cachedActiveAnnouncements = null;
+let activeCacheExpiry = 0;
+let activeInflight = null;
+
+export function getCachedActiveAnnouncements() {
+  return cachedActiveAnnouncements;
+}
+
+export function invalidateAnnouncementsCache() {
+  cachedActiveAnnouncements = null;
+  activeCacheExpiry = 0;
+}
+
 /**
  * Fetch currently active announcements for the frontend (Home page).
  * Filters strictly by dates: from <= now && until >= now.
  */
 export async function fetchActiveAnnouncements() {
-  try {
-    const res = await fetch(`${TABLE_URL}?select=*&order=created_at.desc`, { headers });
-    if (!res.ok) return [];
-    const list = await res.json();
-    if (!Array.isArray(list)) return [];
-
-    const now = new Date();
-
-    const normalized = list
-      .map(normalizeAnnouncement)
-      .filter((item) => {
-        if (!item || !item.active) return false;
-        // From date check
-        if (item.from) {
-          const fromDate = new Date(item.from);
-          if (fromDate > now) return false;
-        }
-        // Until date check (strictly required by requirements)
-        if (item.until) {
-          const untilDate = new Date(item.until);
-          if (untilDate < now) return false;
-        } else {
-          return false; // Until is mandatory
-        }
-        return true;
-      });
-
-    // Sort by order ascending
-    return normalized.sort((a, b) => {
-      if (a.order !== b.order) return a.order - b.order;
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
-  } catch (err) {
-    console.warn("Error fetching active announcements:", err);
-    return [];
+  if (cachedActiveAnnouncements !== null && Date.now() < activeCacheExpiry) {
+    return cachedActiveAnnouncements;
   }
+  if (activeInflight) return activeInflight;
+
+  activeInflight = (async () => {
+    try {
+      const res = await fetch(`${TABLE_URL}?select=*&order=created_at.desc`, { headers });
+      if (!res.ok) return cachedActiveAnnouncements || [];
+      const list = await res.json();
+      if (!Array.isArray(list)) return cachedActiveAnnouncements || [];
+
+      const now = new Date();
+
+      const normalized = list
+        .map(normalizeAnnouncement)
+        .filter((item) => {
+          if (!item || !item.active) return false;
+          // From date check
+          if (item.from) {
+            const fromDate = new Date(item.from);
+            if (fromDate > now) return false;
+          }
+          // Until date check (strictly required by requirements)
+          if (item.until) {
+            const untilDate = new Date(item.until);
+            if (untilDate < now) return false;
+          } else {
+            return false; // Until is mandatory
+          }
+          return true;
+        });
+
+      // Sort by order ascending
+      const sorted = normalized.sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      cachedActiveAnnouncements = sorted;
+      activeCacheExpiry = Date.now() + ACTIVE_CACHE_TTL_MS;
+      return sorted;
+    } catch (err) {
+      console.warn("Error fetching active announcements:", err);
+      return cachedActiveAnnouncements || [];
+    }
+  })().finally(() => {
+    activeInflight = null;
+  });
+
+  return activeInflight;
 }
 
 /**
@@ -239,6 +267,7 @@ export async function createAnnouncement({
   }
 
   const created = await res.json();
+  invalidateAnnouncementsCache();
   return normalizeAnnouncement(created?.[0]);
 }
 
@@ -331,6 +360,7 @@ export async function updateAnnouncement(id, {
   }
 
   const updated = await res.json();
+  invalidateAnnouncementsCache();
   return normalizeAnnouncement(updated?.[0]);
 }
 
@@ -348,6 +378,7 @@ export async function deleteAnnouncement(id) {
     const err = await res.json().catch(() => null);
     throw new Error(err?.message || "Не удалось удалить объявление");
   }
+  invalidateAnnouncementsCache();
 }
 
 /**
@@ -383,4 +414,5 @@ export async function reorderAnnouncements(orderedList) {
   });
 
   await Promise.all(promises);
+  invalidateAnnouncementsCache();
 }

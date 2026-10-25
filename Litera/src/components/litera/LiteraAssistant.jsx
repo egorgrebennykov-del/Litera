@@ -6,7 +6,6 @@ import { useLanguage } from "../../context/languageContext";
 import { useConfirm, useAlert } from "../../context/ConfirmContext";
 import { addToCart, getCart } from "../../../utils/cart";
 import { isLoggedIn, getCookieUser } from "../../../utils/auth";
-import { processLiteraChat } from "../../../server/literaAssistantService";
 import "./LiteraAssistant.css";
 
 const STORAGE_KEY = "litera_assistant_history_v2";
@@ -363,6 +362,9 @@ export default function LiteraAssistant() {
           throw new Error("Unexpected response content-type");
         }
       } catch {
+        const { processLiteraChat } = await import(
+          "../../../server/literaAssistantService"
+        );
         data = await processLiteraChat({
           ...payload,
           onStatus: (status) => {

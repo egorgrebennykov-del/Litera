@@ -2,7 +2,7 @@ function normalizeTitle(t) {
   return (t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
-export default async function dedupeBooks(books, query) {
+export function dedupeBooksFast(books) {
   if (!Array.isArray(books) || books.length < 2) return books;
 
   // 1. Fast pre-pass: match books across stores by identical normalized title or identical image URL
@@ -57,8 +57,12 @@ export default async function dedupeBooks(books, query) {
   for (const indices of titleGroups.values()) processGroup(indices);
   for (const indices of imageGroups.values()) processGroup(indices);
 
-  let filtered = books.filter((_, idx) => !removedIndices.has(idx));
-  if (filtered.length < 2) return filtered;
+  return books.filter((_, idx) => !removedIndices.has(idx));
+}
+
+export default async function dedupeBooks(books, query) {
+  let filtered = dedupeBooksFast(books);
+  if (!Array.isArray(filtered) || filtered.length < 2) return filtered;
 
   // 2. Visual cover similarity API for visual matches across stores
   try {

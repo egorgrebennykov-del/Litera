@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { addToCart, getCart, removeFromCart } from "../../../utils/cart";
 import { getCookieUser, isLoggedIn } from "../../../utils/auth";
-import getExchangeRate from "../../../utils/getExchangeRate";
-import getBookPicks from "../../../utils/getBookPicks";
+import getExchangeRate, { getCachedExchangeRate, DEFAULT_RATE } from "../../../utils/getExchangeRate";
+import getBookPicks, { getCachedBookPicks } from "../../../utils/getBookPicks";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
@@ -28,9 +28,12 @@ function formatEuroPrice(price) {
 export default function Featured() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [books, setBooks] = useState([]);
-  const [status, setStatus] = useState("loading");
-  const [rate, setRate] = useState(null);
+  const [books, setBooks] = useState(() => getCachedBookPicks() ?? []);
+  const [status, setStatus] = useState(() => {
+    const cached = getCachedBookPicks();
+    return cached ? (cached.length ? "ready" : "empty") : "loading";
+  });
+  const [rate, setRate] = useState(() => getCachedExchangeRate() ?? DEFAULT_RATE);
   const [cartItems, setCartItems] = useState(() => new Map());
   const [quantities, setQuantities] = useState(() => new Map());
   const [pendingUrls, setPendingUrls] = useState(() => new Set());
@@ -243,8 +246,9 @@ export default function Featured() {
                       className="results__img"
                       src={book.image}
                       alt={book.title}
-                      loading="eager"
-                      decoding="auto"
+                      loading={index < 6 ? "eager" : "lazy"}
+                      decoding={index < 6 ? "auto" : "async"}
+                      fetchPriority={index < 4 ? "high" : "auto"}
                     />
                     <h2 className="results__title">{decodeHtmlEntities(book.title)}</h2>
                     <span className="results__store">{book.store}</span>

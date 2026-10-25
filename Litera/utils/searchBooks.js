@@ -3,8 +3,8 @@ import getBooksFromCarturesti from "./getBooksFromCarturesti.js";
 import getBooksFromUlysses from "./getBooksFromUlysses.js";
 import getBooksFromCarteamea from "./getBooksFromCarteamea.js";
 import getBooksFromBiblion from "./getBooksFromBiblion.js";
-import getExchangeRate from "./getExchangeRate.js";
-import dedupeBooks from "./dedupeBooks.js";
+import getExchangeRate, { DEFAULT_RATE, getCachedExchangeRate } from "./getExchangeRate.js";
+import dedupeBooks, { dedupeBooksFast } from "./dedupeBooks.js";
 import enhancedImageUrl from "./enhancedImageUrl.js";
 import decodeHtmlEntities from "./decodeHtmlEntities.js";
 
@@ -168,7 +168,64 @@ function calculateRelevance(title, query, author = "") {
   return 0;
 }
 
-export default async function searchBooks(searchBook) {
+function rankAndSort(books, searchBook) {
+  return books
+    .map((b) => ({
+      ...b,
+      relevance: calculateRelevance(b.title, searchBook, b.author),
+    }))
+    .sort((a, b) => {
+      if (b.relevance !== a.relevance) return b.relevance - a.relevance;
+      return a.price - b.price;
+    });
+}
+
+export default async function searchBooks(searchBook, { onProgress } = {}) {
+  let activeRate = getCachedExchangeRate() || DEFAULT_RATE;
+  const ratePromise = getExchangeRate()
+    .then((r) => {
+      if (r) activeRate = r;
+      return r;
+    })
+    .catch(() => activeRate);
+
+  const partialByStore = new Map();
+
+  const emitProgress = () => {
+    if (typeof onProgress !== "function") return;
+    const current = [];
+    for (const [store, rawList] of partialByStore.entries()) {
+      for (const p of rawList) {
+        const item = normalize(p, store, activeRate);
+        if (
+          item.title &&
+          item.url &&
+          Number.isFinite(item.price) &&
+          item.price > 0 &&
+          Boolean(item.image)
+        ) {
+          current.push(item);
+        }
+      }
+    }
+    if (current.length > 0) {
+      onProgress(rankAndSort(dedupeBooksFast(current), searchBook));
+    }
+  };
+
+  const wrapStore = (store, promise) =>
+    promise
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        partialByStore.set(store, arr);
+        emitProgress();
+        return arr;
+      })
+      .catch((err) => {
+        console.warn(`${store} search failed:`, err.message);
+        return [];
+      });
+
   // Query all bookstores and the exchange rate concurrently in parallel
   const [
     librariusRaw,
@@ -178,43 +235,30 @@ export default async function searchBooks(searchBook) {
     biblionRaw,
     rate,
   ] = await Promise.all([
-    getBooksFromLibrarius(searchBook).catch((err) => {
-      console.warn("Librarius search failed:", err.message);
-      return [];
-    }),
-    getBooksFromCarturesti(searchBook).catch((err) => {
-      console.warn("Carturesti search failed:", err.message);
-      return [];
-    }),
-    getBooksFromUlysses(searchBook).catch((err) => {
-      console.warn("Ulysses search failed:", err.message);
-      return [];
-    }),
-    getBooksFromCarteamea(searchBook).catch((err) => {
-      console.warn("Carteamea search failed:", err.message);
-      return [];
-    }),
-    getBooksFromBiblion(searchBook).catch((err) => {
-      console.warn("Biblion search failed:", err.message);
-      return [];
-    }),
-    getExchangeRate().catch(() => null),
+    wrapStore("librarius.md", getBooksFromLibrarius(searchBook)),
+    wrapStore("carturesti.md", getBooksFromCarturesti(searchBook)),
+    wrapStore("ulysses.md", getBooksFromUlysses(searchBook)),
+    wrapStore("carteamea.md", getBooksFromCarteamea(searchBook)),
+    wrapStore("biblion.md", getBooksFromBiblion(searchBook)),
+    ratePromise,
   ]);
 
+  const finalRate = rate || activeRate;
+
   const librariusBooks = (librariusRaw ?? []).map((p) =>
-    normalize(p, "librarius.md", rate),
+    normalize(p, "librarius.md", finalRate),
   );
   const carturestiBooks = (carturestiRaw ?? []).map((p) =>
-    normalize(p, "carturesti.md", rate),
+    normalize(p, "carturesti.md", finalRate),
   );
   const ulyssesBooks = (ulyssesRaw ?? []).map((p) =>
-    normalize(p, "ulysses.md", rate),
+    normalize(p, "ulysses.md", finalRate),
   );
   const carteameaBooks = (carteameaRaw ?? []).map((p) =>
-    normalize(p, "carteamea.md", rate),
+    normalize(p, "carteamea.md", finalRate),
   );
   const biblionBooks = (biblionRaw ?? []).map((p) =>
-    normalize(p, "biblion.md", rate),
+    normalize(p, "biblion.md", finalRate),
   );
 
   const combined = [
@@ -236,18 +280,7 @@ export default async function searchBooks(searchBook) {
   // and keep all copies/editions from the cheaper site
   const deduped = await dedupeBooks(combined, searchBook);
 
-  // Compute relevance for sorting
-  const withRelevance = deduped.map((b) => ({
-    ...b,
-    relevance: calculateRelevance(b.title, searchBook, b.author),
-  }));
-
-  // Primary criteria: Relevance (descending)
-  // Secondary criteria: Price (ascending - cheaper first)
-  return withRelevance.sort((a, b) => {
-    if (b.relevance !== a.relevance) return b.relevance - a.relevance;
-    return a.price - b.price;
-  });
+  return rankAndSort(deduped, searchBook);
 }
 
 export { calculateRelevance, isCoreWorkMatch };

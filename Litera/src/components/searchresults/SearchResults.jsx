@@ -87,18 +87,33 @@ export default function SearchResults() {
 
   const cached = cache.get(query);
   const books = cached ?? (result.query === query ? result.books : []);
-  const loading = Boolean(query) && !cached && result.query !== query;
+  const [searching, setSearching] = useState(false);
+  const loading =
+    Boolean(query) &&
+    !cached &&
+    (result.query !== query || (searching && books.length === 0));
 
   useEffect(() => {
-    if (!query || cache.get(query)) return;
+    if (!query || cache.get(query)) {
+      setSearching(false);
+      return;
+    }
 
     let cancelled = false;
-    searchBooks(query)
+    setSearching(true);
+    searchBooks(query, {
+      onProgress: (partialBooks) => {
+        if (!cancelled && partialBooks.length > 0) {
+          setResult({ query, books: partialBooks });
+        }
+      },
+    })
       .then((found) => {
         cache.set(query, found);
         if (!cancelled) setResult({ query, books: found });
       })
-      .catch(() => !cancelled && setResult({ query, books: [] }));
+      .catch(() => !cancelled && setResult({ query, books: [] }))
+      .finally(() => !cancelled && setSearching(false));
 
     return () => {
       cancelled = true;
@@ -259,9 +274,9 @@ export default function SearchResults() {
                     className="results__img"
                     src={book.image}
                     alt={book.title}
-                    loading="eager"
-                    decoding="auto"
-                    fetchPriority={i < 8 ? "high" : "auto"}
+                    loading={i < 6 ? "eager" : "lazy"}
+                    decoding={i < 6 ? "auto" : "async"}
+                    fetchPriority={i < 4 ? "high" : "auto"}
                     onLoad={() =>
                       setImageStatuses((current) =>
                         new Map(current).set(book.url, "loaded"),

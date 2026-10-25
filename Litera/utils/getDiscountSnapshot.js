@@ -1,20 +1,45 @@
-const TABLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/discounts`;
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ??
+  "https://qgxiisgzwcsevzyaoxvl.supabase.co";
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const TABLE_URL = `${SUPABASE_URL}/rest/v1/discounts`;
+
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedSnapshot = null;
+let cacheExpiry = 0;
+let inflight = null;
+
+export function getCachedDiscountSnapshot() {
+  return cachedSnapshot;
+}
 
 export default async function getDiscountSnapshot() {
-  const response = await fetch(`${TABLE_URL}?select=books&limit=1`, {
-    headers: {
-      apikey: KEY,
-      Authorization: `Bearer ${KEY}`,
-    },
-    cache: "no-store",
+  if (cachedSnapshot !== null && Date.now() < cacheExpiry) {
+    return cachedSnapshot;
+  }
+  if (inflight) return inflight;
+
+  inflight = (async () => {
+    const response = await fetch(`${TABLE_URL}?select=books&limit=1`, {
+      headers: {
+        apikey: KEY,
+        Authorization: `Bearer ${KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.message ?? "Could not load discount books");
+    }
+
+    const rows = await response.json();
+    const result = rows[0]?.books ?? { updatedAt: null, products: [] };
+    cachedSnapshot = result;
+    cacheExpiry = Date.now() + CACHE_TTL_MS;
+    return result;
+  })().finally(() => {
+    inflight = null;
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(error?.message ?? "Could not load discount books");
-  }
-
-  const rows = await response.json();
-  return rows[0]?.books ?? { updatedAt: null, products: [] };
+  return inflight;
 }

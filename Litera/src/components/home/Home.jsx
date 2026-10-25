@@ -1,22 +1,27 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import CarouselControls from "../carouselcontrols/CarouselControls";
-import getHomepageBooks from "../../../utils/getHomepageBooks";
+import getHomepageBooks, { getCachedHomepageBooks } from "../../../utils/getHomepageBooks";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
 import SmallAnnouncements from "../announcements/SmallAnnouncements";
 import LargeAnnouncementRoulette from "../announcements/LargeAnnouncementRoulette";
-import { fetchActiveAnnouncements } from "../../../utils/announcements";
+import {
+  fetchActiveAnnouncements,
+  getCachedActiveAnnouncements,
+} from "../../../utils/announcements";
 import "./Home.css";
 
 export default function Home() {
   const { t } = useLanguage();
   const location = useLocation();
-  const [books, setBooks] = useState([]);
+  const [books, setBooks] = useState(() => getCachedHomepageBooks() ?? []);
   const [booksError, setBooksError] = useState(false);
-  const [booksReady, setBooksReady] = useState(false);
-  const [announcements, setAnnouncements] = useState([]);
+  const [booksReady, setBooksReady] = useState(() => Boolean(getCachedHomepageBooks()));
+  const [announcements, setAnnouncements] = useState(
+    () => getCachedActiveAnnouncements() ?? [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -128,8 +133,9 @@ export default function Home() {
                         src={book.image}
                         alt={book.title}
                         className="home__img"
-                        loading="eager"
-                        fetchPriority={index === 0 ? "high" : "auto"}
+                        loading={index < 4 ? "eager" : "lazy"}
+                        decoding={index < 4 ? "auto" : "async"}
+                        fetchPriority={index < 2 ? "high" : "auto"}
                       />
                       <span className="home__book-title">
                         {decodeHtmlEntities(book.title)}

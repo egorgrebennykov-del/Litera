@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { addToCart, getCart, removeFromCart } from "../../../utils/cart";
 import { getCookieUser, isLoggedIn } from "../../../utils/auth";
-import getExchangeRate from "../../../utils/getExchangeRate";
-import getDiscountSnapshot from "../../../utils/getDiscountSnapshot";
+import getExchangeRate, { getCachedExchangeRate, DEFAULT_RATE } from "../../../utils/getExchangeRate";
+import getDiscountSnapshot, { getCachedDiscountSnapshot } from "../../../utils/getDiscountSnapshot";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
@@ -67,8 +67,11 @@ export default function Discount() {
   const navigate = useNavigate();
   const userId = getCookieUser()?.id;
   const needsCartCheck = isLoggedIn() && Boolean(userId);
-  const [snapshot, setSnapshot] = useState(null);
-  const [rate, setRate] = useState(null);
+  const [snapshot, setSnapshot] = useState(() => {
+    const cached = getCachedDiscountSnapshot();
+    return cached ? normalizeSnapshot(cached) : null;
+  });
+  const [rate, setRate] = useState(() => getCachedExchangeRate() ?? DEFAULT_RATE);
   const [error, setError] = useState("");
   const [cartItems, setCartItems] = useState(() => new Map());
   const [quantities, setQuantities] = useState(() => new Map());
@@ -261,7 +264,7 @@ export default function Discount() {
         </div>
       ) : (
         <div className="deals__grid">
-          {products.map((book) => {
+          {products.map((book, index) => {
             const activeRate = rate || 20.2;
             const currency = "EUR";
             const price = Math.round((book.price / activeRate) * 100) / 100;
@@ -305,8 +308,9 @@ export default function Discount() {
                       className="results__img deals__image"
                       src={book.image}
                       alt={book.title}
-                      loading="eager"
-                      decoding="auto"
+                      loading={index < 6 ? "eager" : "lazy"}
+                      decoding={index < 6 ? "auto" : "async"}
+                      fetchPriority={index < 4 ? "high" : "auto"}
                     />
                     <span className="deals__badge">
                       -{book.discountPercent}%
