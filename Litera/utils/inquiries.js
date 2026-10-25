@@ -5,7 +5,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const EMAILJS_SERVICE_ID =
-  import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_zzl5x89";
+  import.meta.env.VITE_EMAILJS_SERVICE_ID || "default_service";
 const EMAILJS_TEMPLATE_ID =
   import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_tco32u6";
 const EMAILJS_PUBLIC_KEY =
@@ -67,27 +67,32 @@ async function dispatchGuestEmailViaEmailJs({
 
   // 1. Primary: send directly from browser via @emailjs/browser
   if (typeof window !== "undefined") {
-    try {
-      const response = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        templateParams,
-        { publicKey: EMAILJS_PUBLIC_KEY },
-      );
-      return {
-        success: true,
-        result: {
+    const candidateServices = Array.from(
+      new Set([EMAILJS_SERVICE_ID, "default_service", "service_zzl5x89"]),
+    );
+    for (const serviceId of candidateServices) {
+      try {
+        const response = await emailjs.send(
+          serviceId,
+          EMAILJS_TEMPLATE_ID,
+          templateParams,
+          { publicKey: EMAILJS_PUBLIC_KEY },
+        );
+        return {
           success: true,
-          provider: "emailjs",
-          status: response?.status || 200,
-          recipient: templateParams.to_email,
-        },
-      };
-    } catch (browserErr) {
-      console.warn(
-        "[EmailJS Browser] Falling back to server endpoint:",
-        browserErr?.text || browserErr?.message || browserErr,
-      );
+          result: {
+            success: true,
+            provider: "emailjs",
+            status: response?.status || 200,
+            recipient: templateParams.to_email,
+          },
+        };
+      } catch (browserErr) {
+        console.warn(
+          `[EmailJS Browser] Service ${serviceId} attempt failed:`,
+          browserErr?.text || browserErr?.message || browserErr,
+        );
+      }
     }
   }
 

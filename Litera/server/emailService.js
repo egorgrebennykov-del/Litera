@@ -5,7 +5,7 @@
  */
 
 const EMAILJS_API_URL = "https://api.emailjs.com/api/v1.0/email/send";
-const DEFAULT_EMAILJS_SERVICE_ID = "service_zzl5x89";
+const DEFAULT_EMAILJS_SERVICE_ID = "default_service";
 const DEFAULT_EMAILJS_TEMPLATE_ID = "template_tco32u6";
 const DEFAULT_EMAILJS_PUBLIC_KEY = "mq7sRq7QGzp9XQUTh";
 const DEFAULT_EMAILJS_PRIVATE_KEY = "q20TuIwHcTj_gHXePCXIG";
@@ -48,61 +48,80 @@ export async function sendGuestInquiryEmail({
     process.env.EMAILJS_PRIVATE_KEY || DEFAULT_EMAILJS_PRIVATE_KEY;
 
   if (emailJsServiceId && emailJsTemplateId && emailJsPublicKey) {
-    try {
-      const timeStr = new Date().toLocaleString("ru-RU");
-      const emailJsPayload = {
-        service_id: emailJsServiceId,
-        template_id: emailJsTemplateId,
-        user_id: emailJsPublicKey,
-        accessToken: emailJsPrivateKey,
-        template_params: {
-          to_email: cleanTo,
-          email: cleanTo,
-          user_email: cleanTo,
-          recipient: cleanTo,
-          to: cleanTo,
-          to_name: cleanUser,
-          user_name: cleanUser,
-          name: senderName,
-          from_name: senderName,
-          admin_name: senderName,
-          sender_name: senderName,
-          subject: mailSubject,
-          title: mailSubject,
-          message: cleanText,
-          text: cleanText,
-          reply: cleanText,
-          content: cleanText,
-          time: timeStr,
-          reply_to: supportEmail,
-        },
-      };
+    const timeStr = new Date().toLocaleString("ru-RU");
+    const templateParams = {
+      to_email: cleanTo,
+      email: cleanTo,
+      user_email: cleanTo,
+      recipient: cleanTo,
+      to: cleanTo,
+      to_name: cleanUser,
+      user_name: cleanUser,
+      name: senderName,
+      from_name: senderName,
+      admin_name: senderName,
+      sender_name: senderName,
+      subject: mailSubject,
+      title: mailSubject,
+      message: cleanText,
+      text: cleanText,
+      reply: cleanText,
+      content: cleanText,
+      time: timeStr,
+      reply_to: supportEmail,
+    };
 
-      const emailJsRes = await fetch(EMAILJS_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Origin: "https://litera.egor-grebennykov.workers.dev",
-        },
-        body: JSON.stringify(emailJsPayload),
-      });
+    const candidateServices = Array.from(
+      new Set([emailJsServiceId, "default_service", "service_zzl5x89"]),
+    );
 
-      if (emailJsRes.ok) {
-        console.log(
-          `[EmailJS Success] Email dispatched directly to ${cleanTo} via EmailJS.`,
-        );
-        return {
-          success: true,
-          provider: "emailjs",
-          recipient: cleanTo,
+    let lastEmailJsError = "";
+    for (const serviceId of candidateServices) {
+      try {
+        const emailJsPayload = {
+          lib_version: "5.0.3",
+          service_id: serviceId,
+          template_id: emailJsTemplateId,
+          user_id: emailJsPublicKey,
+          template_params: templateParams,
         };
+
+        const emailJsRes = await fetch(EMAILJS_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: "https://litera.egor-grebennykov.workers.dev",
+            Referer: "https://litera.egor-grebennykov.workers.dev/",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
+          body: JSON.stringify(emailJsPayload),
+        });
+
+        if (emailJsRes.ok) {
+          console.log(
+            `[EmailJS Success] Email dispatched directly to ${cleanTo} via EmailJS (${serviceId}).`,
+          );
+          return {
+            success: true,
+            provider: "emailjs",
+            recipient: cleanTo,
+          };
+        }
+        lastEmailJsError = await emailJsRes.text().catch(() => "");
+        console.warn(
+          `[EmailJS Server Warning] (${serviceId}) Status ${emailJsRes.status}: ${lastEmailJsError}`,
+        );
+      } catch (emailJsErr) {
+        lastEmailJsError = emailJsErr.message;
+        console.warn("[EmailJS Server Error]:", emailJsErr.message);
       }
-      const errBody = await emailJsRes.text().catch(() => "");
-      console.warn(
-        `[EmailJS Server Warning] Status ${emailJsRes.status}: ${errBody}`,
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error(
+        lastEmailJsError || "Failed to deliver email via EmailJS",
       );
-    } catch (emailJsErr) {
-      console.warn("[EmailJS Server Error]:", emailJsErr.message);
     }
   }
 
