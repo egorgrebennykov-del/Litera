@@ -23,6 +23,21 @@ function formatMsgTime(isoStr) {
   }
 }
 
+function formatTransferTime(isoStr, lang = "ru") {
+  if (!isoStr) return "";
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleDateString(lang === "ru" ? "ru-RU" : "en-US", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return isoStr;
+  }
+}
+
 export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
   const { language } = useLanguage();
   const loggedIn = isLoggedIn();
@@ -43,6 +58,10 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
   const inquiryRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const [isInputTooLarge, setIsInputTooLarge] = useState(false);
+  const [showTransferHistoryModal, setShowTransferHistoryModal] = useState(false);
+  const inputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [isEditingGuest, setIsEditingGuest] = useState(false);
@@ -60,6 +79,31 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
 
   const messagesEndRef = useRef(null);
   const pollTimerRef = useRef(null);
+
+  // Auto-resize input textarea and detect when content exceeds normal height
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    // Reset height temporarily to accurately measure scrollHeight
+    textarea.style.height = "auto";
+    const scrollHeight = textarea.scrollHeight;
+
+    // Expand button appears as soon as content wraps past 1 line (~38px+), or length > 40, or has newline
+    const isLarge = scrollHeight > 38 || inputText.length > 40 || inputText.includes("\n");
+    setIsInputTooLarge(isLarge);
+
+    if (isInputExpanded) {
+      // Substantial expansion mode
+      textarea.style.height = "160px";
+    } else if (isLarge) {
+      // Multi-line auto-expand: grows smoothly line-by-line up to 110px (~5 lines)
+      textarea.style.height = `${Math.min(Math.max(scrollHeight, 40), 110)}px`;
+    } else {
+      // Default single-line height
+      textarea.style.height = "40px";
+    }
+  }, [inputText, isInputExpanded]);
 
   const isIdentified = loggedIn || (Boolean(guestEmail) && !isEditingGuest);
 
@@ -369,14 +413,34 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            className="litera-messenger-close-btn"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <i className="ri-close-line" />
-          </button>
+          <div className="litera-messenger-header-actions">
+            {Array.isArray(inquiry?.interlocutors_info?.transferHistory) &&
+              inquiry.interlocutors_info.transferHistory.length > 0 && (
+                <button
+                  type="button"
+                  className="litera-messenger-history-btn"
+                  onClick={() => setShowTransferHistoryModal(true)}
+                  title={
+                    language === "ru"
+                      ? "История передачи обращения"
+                      : "Support transfer history"
+                  }
+                >
+                  <i className="ri-history-line" />
+                  <span>
+                    {language === "ru" ? "Передачи" : "Transfers"} ({inquiry.interlocutors_info.transferHistory.length})
+                  </span>
+                </button>
+              )}
+            <button
+              type="button"
+              className="litera-messenger-close-btn"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <i className="ri-close-line" />
+            </button>
+          </div>
         </div>
 
         {/* Guest Identification Form */}
@@ -651,10 +715,14 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
             )}
 
             {/* Input Footer */}
-            <form className="litera-messenger-footer" onSubmit={handleSend}>
+            <form
+              className={`litera-messenger-footer ${isInputExpanded ? "litera-messenger-footer--expanded" : ""}`}
+              onSubmit={handleSend}
+            >
               <textarea
+                ref={inputRef}
                 rows={1}
-                className="litera-messenger-input"
+                className={`litera-messenger-input ${isInputExpanded ? "expanded" : ""}`}
                 placeholder={
                   language === "ru"
                     ? "Напишите сообщение..."
@@ -668,20 +736,143 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
                 onKeyDown={handleKeyDown}
                 disabled={sending}
               />
-              <button
-                type="submit"
-                className="litera-messenger-send-btn"
-                disabled={!inputText.trim() || sending}
-                title={language === "ru" ? "Отправить (Enter)" : "Send (Enter)"}
-                aria-label="Send message"
-              >
-                {sending ? (
-                  <i className="ri-loader-4-line ri-spin" />
-                ) : (
-                  <i className="ri-send-plane-2-fill" />
+              <div className="litera-messenger-input-actions">
+                {(isInputTooLarge || isInputExpanded) && (
+                  <button
+                    type="button"
+                    className={`litera-messenger-expand-btn ${isInputExpanded ? "active" : ""}`}
+                    onClick={() => setIsInputExpanded((prev) => !prev)}
+                    title={
+                      language === "ru"
+                        ? isInputExpanded
+                          ? "Свернуть поле ввода"
+                          : "Расширить поле ввода существенно"
+                        : isInputExpanded
+                          ? "Collapse input"
+                          : "Expand input"
+                    }
+                    aria-label={
+                      language === "ru"
+                        ? isInputExpanded
+                          ? "Свернуть поле ввода"
+                          : "Расширить поле ввода существенно"
+                        : isInputExpanded
+                          ? "Collapse input"
+                          : "Expand input"
+                    }
+                  >
+                    <i
+                      className={
+                        isInputExpanded
+                          ? "ri-fullscreen-exit-line"
+                          : "ri-fullscreen-line"
+                      }
+                    />
+                  </button>
                 )}
-              </button>
+                <button
+                  type="submit"
+                  className="litera-messenger-send-btn"
+                  disabled={!inputText.trim() || sending}
+                  title={language === "ru" ? "Отправить (Enter)" : "Send (Enter)"}
+                  aria-label="Send message"
+                >
+                  {sending ? (
+                    <i className="ri-loader-4-line ri-spin" />
+                  ) : (
+                    <i className="ri-send-plane-2-fill" />
+                  )}
+                </button>
+              </div>
             </form>
+          </div>
+        )}
+
+        {/* User / Guest Support Transfer History Modal */}
+        {showTransferHistoryModal && inquiry && (
+          <div
+            className="litera-messenger-transfer-modal-backdrop"
+            onClick={() => setShowTransferHistoryModal(false)}
+          >
+            <div
+              className="litera-messenger-transfer-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="litera-messenger-transfer-modal-header">
+                <div className="litera-messenger-transfer-icon">
+                  <i className="ri-history-line" />
+                </div>
+                <div className="litera-messenger-transfer-title-group">
+                  <h4>
+                    {language === "ru"
+                      ? "История передачи обращения"
+                      : "Support Transfer History"}
+                  </h4>
+                  <p>
+                    {language === "ru"
+                      ? `Текущий специалист: ${adminName}`
+                      : `Current specialist: ${adminName}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="litera-messenger-transfer-close"
+                  onClick={() => setShowTransferHistoryModal(false)}
+                  aria-label="Close"
+                >
+                  <i className="ri-close-line" />
+                </button>
+              </div>
+
+              <div className="litera-messenger-transfer-modal-body">
+                {Array.isArray(inquiry.interlocutors_info?.transferHistory) &&
+                inquiry.interlocutors_info.transferHistory.length > 0 ? (
+                  <div className="litera-messenger-transfer-timeline">
+                    {inquiry.interlocutors_info.transferHistory.map((tr, idx) => (
+                      <div key={tr.id || idx} className="litera-messenger-transfer-item">
+                        <div className="litera-messenger-transfer-marker">
+                          <span className="litera-messenger-transfer-num">{idx + 1}</span>
+                          {idx < inquiry.interlocutors_info.transferHistory.length - 1 && (
+                            <span className="litera-messenger-transfer-line" />
+                          )}
+                        </div>
+                        <div className="litera-messenger-transfer-info">
+                          <div className="litera-messenger-transfer-route">
+                            <span className="litera-messenger-transfer-admin-from">{tr.fromAdminName}</span>
+                            <i className="ri-arrow-right-line" />
+                            <span className="litera-messenger-transfer-admin-to">{tr.toAdminName}</span>
+                          </div>
+                          <time className="litera-messenger-transfer-time">
+                            {formatTransferTime(tr.timestamp, language)}
+                          </time>
+                          {tr.reason && (
+                            <div className="litera-messenger-transfer-reason">
+                              <span>«{tr.reason}»</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="litera-messenger-transfer-empty">
+                    {language === "ru"
+                      ? "Диалог закреплен за администратором и не передавался."
+                      : "The inquiry is assigned to the administrator and has not been transferred."}
+                  </p>
+                )}
+              </div>
+
+              <div className="litera-messenger-transfer-modal-footer">
+                <button
+                  type="button"
+                  className="litera-messenger-transfer-close-btn"
+                  onClick={() => setShowTransferHistoryModal(false)}
+                >
+                  {language === "ru" ? "Понятно" : "Got it"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

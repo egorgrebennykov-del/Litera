@@ -474,6 +474,8 @@ export async function transferInquiryAdmin({
         interlocutors_info: updatedInfo,
         chat: updatedChat,
         notifications_admin: (inquiry.notifications_admin || 0) + 1,
+        notifications_user: (inquiry.notifications_user || 0) + 1,
+        updated_at: transferTimestamp,
       }),
     }
   );
@@ -481,6 +483,27 @@ export async function transferInquiryAdmin({
   if (!patchRes.ok) {
     const err = await patchRes.json().catch(() => null);
     throw new Error(err?.message || "Не удалось сохранить передачу диалога");
+  }
+
+  // Notify guest user via email if guest has provided email address
+  if (info.isGuest && info.userEmail) {
+    try {
+      fetch("/api/inquiries/send-reply-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: info.userEmail,
+          userName: info.userName || "Уважаемый гость",
+          adminName: toAdminName || "Администратор",
+          adminEmail: toAdminEmail || "",
+          messageText: `Ваше обращение в службу поддержки передано специалисту: ${toAdminName}.${cleanReason ? ` Причина: ${cleanReason}` : ""}`,
+          inquiryId,
+          timestamp: transferTimestamp,
+        }),
+      }).catch((mErr) => console.warn("Failed to notify guest about transfer via email:", mErr));
+    } catch {
+      // Non-blocking
+    }
   }
 
   if (typeof window !== "undefined") {

@@ -3061,45 +3061,52 @@ export default function Privileged() {
                             ).toUpperCase()
                           )}
                         </div>
-                        <div>
+                        <div className="privileged__chat-user-details">
                           <div className="privileged__chat-name-row">
-                            <h3>
+                            <h3 className="privileged__chat-client-name">
                               {activeInquiry.interlocutors_info?.userName ||
                                 "Пользователь"}
                             </h3>
                             {activeInquiry.interlocutors_info?.isGuest ? (
                               <span className="privileged__inquiry-tag privileged__inquiry-tag--guest">
-                                <i className="ri-mail-line" />{" "}
-                                {language === "ru"
-                                  ? "Не зарегистрирован (Гость)"
-                                  : "Unregistered (Guest)"}
+                                <i className="ri-mail-line" />
+                                <span>
+                                  {language === "ru"
+                                    ? "Гость (не зарегистрирован)"
+                                    : "Guest (unregistered)"}
+                                </span>
                               </span>
                             ) : (
                               <span className="privileged__inquiry-tag privileged__inquiry-tag--reg">
-                                <i className="ri-check-line" />{" "}
-                                {language === "ru"
-                                  ? "Зарегистрирован"
-                                  : "Registered"}
+                                <i className="ri-check-line" />
+                                <span>
+                                  {language === "ru"
+                                    ? "Клиент"
+                                    : "Registered"}
+                                </span>
                               </span>
                             )}
                           </div>
-                          <div className="privileged__chat-email-row">
-                            <i className="ri-mail-line" />
+                          <div className="privileged__chat-meta-row">
                             <a
                               href={`mailto:${activeInquiry.interlocutors_info?.userEmail}`}
-                              className="privileged__link"
+                              className="privileged__client-email-link"
+                              title={activeInquiry.interlocutors_info?.userEmail}
                             >
-                              {activeInquiry.interlocutors_info?.userEmail}
+                              <i className="ri-mail-line" />
+                              <span>{activeInquiry.interlocutors_info?.userEmail}</span>
                             </a>
                             {activeInquiry.interlocutors_info?.adminName && (
-                              <span className="privileged__muted">
-                                •{" "}
-                                {language === "ru"
-                                  ? "Ответственный админ: "
-                                  : "Assigned admin: "}
-                                <strong>
-                                  {activeInquiry.interlocutors_info?.adminName}
-                                </strong>
+                              <span className="privileged__assigned-chip">
+                                <i className="ri-shield-user-line" />
+                                <span>
+                                  {language === "ru"
+                                    ? "Ответственный: "
+                                    : "Assigned: "}
+                                  <strong>
+                                    {activeInquiry.interlocutors_info?.adminName}
+                                  </strong>
+                                </span>
                               </span>
                             )}
                           </div>
@@ -3109,25 +3116,23 @@ export default function Privileged() {
                       <div className="privileged__chat-header-actions">
                         <button
                           type="button"
-                          className="button button--outline privileged__chat-action-btn"
+                          className="privileged__chat-action-btn privileged__chat-action-btn--history"
                           onClick={() => setHistoryModalOpen(true)}
                           title={language === "ru" ? "История передач этого клиента" : "Transfer history"}
                         >
                           <i className="ri-history-line" />
-                          <span>
-                            {language === "ru" ? "История передач" : "History"}
-                            {Array.isArray(activeInquiry.interlocutors_info?.transferHistory) &&
-                              activeInquiry.interlocutors_info.transferHistory.length > 0 && (
-                                <span className="privileged__history-count-badge">
-                                  {activeInquiry.interlocutors_info.transferHistory.length}
-                                </span>
-                              )}
-                          </span>
+                          <span>{language === "ru" ? "История передач" : "History"}</span>
+                          {Array.isArray(activeInquiry.interlocutors_info?.transferHistory) &&
+                            activeInquiry.interlocutors_info.transferHistory.length > 0 && (
+                              <span className="privileged__history-count-badge">
+                                {activeInquiry.interlocutors_info.transferHistory.length}
+                              </span>
+                            )}
                         </button>
 
                         <button
                           type="button"
-                          className="button button--primary privileged__chat-action-btn"
+                          className="privileged__chat-action-btn privileged__chat-action-btn--transfer"
                           onClick={() => handleOpenTransferModal(activeInquiry)}
                           title={language === "ru" ? "Передать клиента другому администратору" : "Transfer client"}
                         >
@@ -4275,6 +4280,11 @@ export default function Privileged() {
                   {language === "ru"
                     ? `Клиент: ${activeInquiry.interlocutors_info?.userName || "Пользователь"} (${activeInquiry.interlocutors_info?.userEmail})`
                     : `Client: ${activeInquiry.interlocutors_info?.userName || "User"} (${activeInquiry.interlocutors_info?.userEmail})`}
+                  {activeInquiry.interlocutors_info?.isGuest && (
+                    <span className="privileged__inquiry-tag privileged__inquiry-tag--guest" style={{ marginLeft: "8px", verticalAlign: "middle" }}>
+                      <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+                    </span>
+                  )}
                 </p>
               </div>
               <button
@@ -4431,6 +4441,11 @@ export default function Privileged() {
                   {activeInquiry.interlocutors_info?.userName ||
                     "Пользователь"}{" "}
                   • {activeInquiry.interlocutors_info?.userEmail}
+                  {activeInquiry.interlocutors_info?.isGuest && (
+                    <span className="privileged__inquiry-tag privileged__inquiry-tag--guest" style={{ marginLeft: "8px", verticalAlign: "middle" }}>
+                      <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+                    </span>
+                  )}
                 </p>
               </div>
               <button
