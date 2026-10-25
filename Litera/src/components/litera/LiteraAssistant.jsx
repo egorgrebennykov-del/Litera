@@ -110,20 +110,16 @@ export default function LiteraAssistant() {
     textarea.style.height = "auto";
     const scrollHeight = textarea.scrollHeight;
 
-    // Detect if content is large enough to show the expand/collapse button
-    const isLarge =
-      scrollHeight > 88 ||
-      input.length > 110 ||
-      (input.match(/\n/g) || []).length >= 2;
+    // Expand button appears as soon as content wraps past 1 line (~38px+), or length > 40, or has newline
+    const isLarge = scrollHeight > 38 || input.length > 40 || input.includes("\n");
     setIsTooLarge(isLarge);
 
     if (isExpanded) {
-      // Expanded mode: substantially taller (min 180px, up to 260px)
-      const targetHeight = Math.min(Math.max(scrollHeight, 180), 260);
-      textarea.style.height = `${targetHeight}px`;
+      // Substantial expansion mode
+      textarea.style.height = "220px";
     } else {
-      // Normal auto-expand with limit (min 24px, max 100px)
-      const targetHeight = Math.min(Math.max(scrollHeight, 24), 100);
+      // Normal auto-expand: grows smoothly line-by-line up to 110px (~5 lines)
+      const targetHeight = Math.min(Math.max(scrollHeight, 28), 110);
       textarea.style.height = `${targetHeight}px`;
     }
   }, [input, isExpanded]);
@@ -562,8 +558,9 @@ export default function LiteraAssistant() {
                 const isLongMsg =
                   isUser &&
                   msg.content &&
-                  (msg.content.length > 130 ||
-                    (msg.content.match(/\n/g) || []).length >= 3);
+                  (msg.content.length > 55 ||
+                    (msg.content.match(/\n/g) || []).length >= 2 ||
+                    (!msg.content.includes(" ") && msg.content.length > 32));
                 const isMsgExpanded = expandedMsgIds.has(msg.id);
 
                 return (
@@ -588,6 +585,16 @@ export default function LiteraAssistant() {
                               : "litera-msg-bubble--collapsed"
                             : ""
                         }`}
+                        onClick={
+                          isLongMsg && !isMsgExpanded
+                            ? () => toggleMsgExpand(msg.id)
+                            : undefined
+                        }
+                        style={
+                          isLongMsg && !isMsgExpanded
+                            ? { cursor: "pointer" }
+                            : undefined
+                        }
                       >
                         <p className="litera-msg-text">{msg.content}</p>
 
@@ -595,7 +602,10 @@ export default function LiteraAssistant() {
                           <button
                             type="button"
                             className="litera-msg-dots-btn"
-                            onClick={() => toggleMsgExpand(msg.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleMsgExpand(msg.id);
+                            }}
                             title={
                               language === "ru"
                                 ? isMsgExpanded
