@@ -81,6 +81,10 @@ function GuestOnly({ children }) {
   return isLoggedIn() ? <Navigate to="/" replace /> : children;
 }
 
+function PrivateRoute({ children, redirectTo = "/login" }) {
+  return isLoggedIn() ? children : <Navigate to={redirectTo} replace />;
+}
+
 function App() {
   const [lightTheme, setLightTheme] = useState(getInitialTheme);
   const [showSearch, setShowSearch] = useState(false);
@@ -158,19 +162,41 @@ function App() {
             }
           />
           <Route path="/join" element={<Join />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute redirectTo="/login?redirect=%2Fprofile">
+                <Profile />
+              </PrivateRoute>
+            }
+          />
           <Route path="/orders" element={<Orders defaultTab="current" key="orders-current" />} />
-          <Route path="/orders/current" element={<Orders defaultTab="current" key="orders-current" />} />
-          <Route path="/orders/completed" element={<Orders defaultTab="completed" key="orders-completed" />} />
-          <Route path="/privileged" element={<Privileged />} />
-          <Route path="/admin" element={<Privileged />} />
+          <Route path="/orders/:tab" element={<Orders />} />
+          <Route
+            path="/privileged"
+            element={
+              <PrivateRoute redirectTo="/login">
+                <Privileged />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute redirectTo="/login">
+                <Privileged />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/cart"
             element={<Cart onSearch={() => setShowSearch(true)} />}
           />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/search" element={<SearchResults />} />
+          <Route path="/search/:query" element={<SearchResults />} />
           <Route path="/book" element={<BookDetails />} />
+          <Route path="/book/:bookId" element={<BookDetails />} />
           <Route path="/featured" element={<Featured />} />
           <Route path="/discount" element={<Discount />} />
           <Route path="/new" element={<NewBooks />} />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import getBookDetails from "../../../utils/getBookDetails";
 import getExchangeRate from "../../../utils/getExchangeRate";
 import { addToCart, getCartItem, removeFromCart } from "../../../utils/cart";
@@ -135,7 +135,8 @@ const formatPrice = (value, currency, language) =>
 export default function BookDetails() {
   const { language, t } = useLanguage();
   const [params] = useSearchParams();
-  const url = params.get("url") ?? "";
+  const { bookId } = useParams();
+  const url = params.get("url") ?? (bookId ? decodeURIComponent(bookId) : "");
   const { state } = useLocation();
   const navigate = useNavigate();
   const preview = state?.book;

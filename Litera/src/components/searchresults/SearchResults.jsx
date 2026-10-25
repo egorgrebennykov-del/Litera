@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import searchBooks from "../../../utils/searchBooks";
 import { useSearchCache } from "../../context/searchCache";
 import { addToCart, getCart, removeFromCart } from "../../../utils/cart";
@@ -69,8 +69,9 @@ function LoadingMessage({ language }) {
 export default function SearchResults() {
   const { language, t } = useLanguage();
   const [params] = useSearchParams();
+  const { query: routeQuery } = useParams();
   const navigate = useNavigate();
-  const query = params.get("q") ?? "";
+  const query = params.get("q") ?? (routeQuery ? decodeURIComponent(routeQuery) : "");
   const cache = useSearchCache();
   const [result, setResult] = useState({ query: "", books: [] });
   const [imageStatuses, setImageStatuses] = useState(() => new Map());

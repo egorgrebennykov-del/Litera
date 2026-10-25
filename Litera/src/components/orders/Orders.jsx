@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { getCookieUser, isLoggedIn } from "../../../utils/auth";
 import { getCurrentOrders, getCompletedOrders } from "../../../utils/orders";
 import BookImage from "../common/BookImage";
@@ -36,11 +36,14 @@ export default function Orders({ defaultTab = "current" }) {
   const { language, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const { tab } = useParams();
   const loggedIn = isLoggedIn();
   const user = getCookieUser();
 
   const isCompletedTab =
-    location.pathname.includes("/completed") || defaultTab === "completed";
+    tab === "completed" ||
+    location.pathname.includes("/completed") ||
+    defaultTab === "completed";
   const activeTab = isCompletedTab ? "completed" : "current";
 
   const [orders, setOrders] = useState([]);
