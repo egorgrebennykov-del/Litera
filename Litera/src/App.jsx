@@ -16,6 +16,15 @@ import getBookPicks from "../utils/getBookPicks";
 import getDiscountSnapshot from "../utils/getDiscountSnapshot";
 import getNewBooks from "../utils/getNewBooks";
 import getExchangeRate from "../utils/getExchangeRate";
+import getHomepageBooks from "../utils/getHomepageBooks";
+import { fetchActiveAnnouncements } from "../utils/announcements";
+
+// Immediately warm critical homepage data as soon as the bundle loads
+if (typeof window !== "undefined") {
+  getHomepageBooks().catch(() => {});
+  fetchActiveAnnouncements().catch(() => {});
+  getExchangeRate().catch(() => {});
+}
 
 const loadFeatured = () => import("./components/featured/Featured");
 const loadDiscount = () => import("./components/discount/Discount");
@@ -86,8 +95,11 @@ function App() {
   useEffect(() => {
     fetch("/api/warmup", { method: "POST" }).catch(() => {});
 
-    // Prefetch primary navigation pages and catalogue snapshots during browser idle time
+    // Prefetch primary navigation pages and catalogue snapshots immediately after initial paint
     const timer = setTimeout(() => {
+      getBookPicks().catch(() => {});
+      getDiscountSnapshot().catch(() => {});
+      getNewBooks().catch(() => {});
       loadFeatured();
       loadDiscount();
       loadNewBooks();
@@ -95,11 +107,7 @@ function App() {
       loadContacts();
       loadBookDetails();
       loadSearchResults();
-      getExchangeRate().catch(() => {});
-      getBookPicks().catch(() => {});
-      getDiscountSnapshot().catch(() => {});
-      getNewBooks().catch(() => {});
-    }, 900);
+    }, 150);
 
     return () => clearTimeout(timer);
   }, []);

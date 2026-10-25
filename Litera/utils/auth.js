@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import emailjs from "@emailjs/browser";
 
 const TABLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user`;
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -8,13 +9,24 @@ const headers = {
   "Content-Type": "application/json",
 };
 
+const EMAILJS_SERVICE_ID =
+  import.meta.env.VITE_EMAILJS_SERVICE_ID || "default_service";
+const EMAILJS_TEMPLATE_ID =
+  import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_tco32u6";
+const EMAILJS_PUBLIC_KEY =
+  import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "mq7sRq7QGzp9XQUTh";
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-const checkEmail = (email) => {
-  const normalized = email.trim().toLowerCase();
+export const checkEmail = (email) => {
+  const normalized = (email || "").trim().toLowerCase();
   if (!EMAIL_RE.test(normalized)) throw new Error("Enter a valid email");
   return normalized;
 };
+
+export function generateVerificationCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 export const isLoggedIn = () =>
   document.cookie.split("; ").some((c) => c.startsWith("user="));
@@ -122,6 +134,154 @@ async function findByEmail(email) {
   );
   if (!response.ok) throw new Error("Server error, try again later");
   return (await response.json())[0] ?? null;
+}
+
+export async function checkEmailAvailable(email) {
+  const normalized = checkEmail(email);
+  if (await findByEmail(normalized)) {
+    throw new Error("This email is already registered");
+  }
+  return normalized;
+}
+
+export async function checkUserExistsForReset(email) {
+  const normalized = checkEmail(email);
+  const user = await findByEmail(normalized);
+  if (!user) {
+    throw new Error("No account found with this email");
+  }
+  return {
+    id: user.id,
+    email: user.email || normalized,
+    firstName: user.firstName || "",
+  };
+}
+
+export async function sendVerificationCodeEmail({
+  email,
+  code,
+  purpose = "signup",
+  firstName = "",
+  language = "ru",
+}) {
+  const cleanEmail = checkEmail(email);
+  const cleanCode = String(code || "").trim();
+  const isRu = language !== "en";
+  const cleanName = (firstName || "").trim() || (isRu ? "Читатель" : "Reader");
+
+  const subject =
+    purpose === "reset"
+      ? isRu
+        ? `Код для смены пароля Litera: ${cleanCode}`
+        : `Litera Password Reset Code: ${cleanCode}`
+      : isRu
+        ? `Код подтверждения регистрации Litera: ${cleanCode}`
+        : `Litera Registration Verification Code: ${cleanCode}`;
+
+  const text =
+    purpose === "reset"
+      ? isRu
+        ? `Здравствуйте, ${cleanName}!\n\nВаш 6-значный код для восстановления и смены пароля в книжном магазине Litera:\n\n${cleanCode}\n\nВведите этот код в окне смены пароля на сайте и укажите новый пароль.\nЕсли вы не запрашивали смену пароля, просто проигнорируйте это письмо.`
+        : `Hello, ${cleanName}!\n\nYour 6-digit verification code to reset your password on Litera bookstore is:\n\n${cleanCode}\n\nEnter this code in the password reset window on the website.\nIf you did not request a password reset, please ignore this email.`
+      : isRu
+        ? `Здравствуйте, ${cleanName}!\n\nВаш 6-значный код для подтверждения электронной почты при регистрации в книжном магазине Litera:\n\n${cleanCode}\n\nВведите этот код в окне подтверждения на сайте, чтобы завершить создание аккаунта.`
+        : `Hello, ${cleanName}!\n\nYour 6-digit verification code to confirm your email on Litera bookstore is:\n\n${cleanCode}\n\nEnter this code in the verification window on the website to complete your registration.`;
+
+  const timeStr = new Date().toLocaleString(isRu ? "ru-RU" : "en-US");
+  const templateParams = {
+    to_email: cleanEmail,
+    email: cleanEmail,
+    user_email: cleanEmail,
+    recipient: cleanEmail,
+    to: cleanEmail,
+    to_name: cleanName,
+    user_name: cleanName,
+    name: "Litera Bookstore",
+    from_name: "Litera Bookstore",
+    admin_name: "Litera Bookstore",
+    sender_name: "Litera Bookstore",
+    subject,
+    title: subject,
+    message: text,
+    text,
+    reply: text,
+    content: text,
+    code: cleanCode,
+    verification_code: cleanCode,
+    otp: cleanCode,
+    time: timeStr,
+    reply_to: "litera.eu@gmail.com",
+  };
+
+  if (typeof window !== "undefined") {
+    const candidateServices = Array.from(
+      new Set([EMAILJS_SERVICE_ID, "default_service", "service_zzl5x89"]),
+    );
+    for (const serviceId of candidateServices) {
+      try {
+        await emailjs.send(serviceId, EMAILJS_TEMPLATE_ID, templateParams, {
+          publicKey: EMAILJS_PUBLIC_KEY,
+        });
+        return { success: true };
+      } catch (err) {
+        console.warn(
+          `[EmailJS Verification] Service ${serviceId} attempt failed:`,
+          err?.text || err?.message || err,
+        );
+      }
+    }
+  }
+
+  const res = await fetch("/api/send-inquiry-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      to: cleanEmail,
+      userName: cleanName,
+      adminName: "Litera Bookstore",
+      subject,
+      text,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      data?.message ||
+        data?.error ||
+        (isRu
+          ? "Не удалось отправить код подтверждения на email"
+          : "Could not send verification code to email"),
+    );
+  }
+  return { success: true };
+}
+
+export async function resetPasswordByEmail(email, newPassword) {
+  const normalized = checkEmail(email);
+  if (!newPassword || newPassword.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+  const user = await findByEmail(normalized);
+  if (!user) {
+    throw new Error("No account found with this email");
+  }
+
+  const password_hash = await bcrypt.hash(newPassword, 10);
+  const response = await fetch(
+    `${TABLE_URL}?id=eq.${encodeURIComponent(user.id)}`,
+    {
+      method: "PATCH",
+      headers: { ...headers, Prefer: "return=representation" },
+      body: JSON.stringify({ password_hash }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error("Could not update password");
+  }
+  const rows = await response.json().catch(() => []);
+  const updatedUser = rows[0] || user;
+  setUserCookie(updatedUser);
+  return updatedUser;
 }
 
 export function parseUserPhones(rawPhone) {

@@ -25,6 +25,7 @@ export default function LargeAnnouncementRoulette({ items = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef(null);
+  const touchStartXRef = useRef(null);
 
   const count = posters.length;
 
@@ -64,6 +65,19 @@ export default function LargeAnnouncementRoulette({ items = [] }) {
       className="litera-poster-roulette-container"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={(e) => {
+        touchStartXRef.current = e.touches?.[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(e) => {
+        if (count <= 1 || touchStartXRef.current === null) return;
+        const endX = e.changedTouches?.[0]?.clientX ?? touchStartXRef.current;
+        const diff = endX - touchStartXRef.current;
+        touchStartXRef.current = null;
+        if (Math.abs(diff) > 40) {
+          if (diff < 0) handleNext();
+          else handlePrev();
+        }
+      }}
     >
       <div className="litera-poster-slide-wrapper">
         {hasLink ? (

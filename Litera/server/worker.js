@@ -182,8 +182,9 @@ export default {
 
     if (method === "GET" && pathname === "/api/search-librarius") {
       const q = urlObj.searchParams.get("q") ?? "";
+      const fast = urlObj.searchParams.get("fast") === "1";
       try {
-        const products = await searchLibrarius(q);
+        const products = await searchLibrarius(q, fast ? 1 : 10);
         return jsonResponse({ products });
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);
@@ -192,8 +193,9 @@ export default {
 
     if (method === "GET" && pathname === "/api/search-carturesti") {
       const q = urlObj.searchParams.get("q") ?? "";
+      const fast = urlObj.searchParams.get("fast") === "1";
       try {
-        const products = await searchCarturesti(q);
+        const products = await searchCarturesti(q, fast ? 1 : 10);
         return jsonResponse({ products });
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);
@@ -202,8 +204,9 @@ export default {
 
     if (method === "GET" && pathname === "/api/search-ulysses") {
       const q = urlObj.searchParams.get("q") ?? "";
+      const fast = urlObj.searchParams.get("fast") === "1";
       try {
-        const products = await searchUlysses(q);
+        const products = await searchUlysses(q, fast ? 1 : 6);
         return jsonResponse({ products });
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);
@@ -212,8 +215,9 @@ export default {
 
     if (method === "GET" && pathname === "/api/search-carteamea") {
       const q = urlObj.searchParams.get("q") ?? "";
+      const fast = urlObj.searchParams.get("fast") === "1";
       try {
-        const products = await searchCarteamea(q);
+        const products = await searchCarteamea(q, fast ? 1 : 10);
         return jsonResponse({ products });
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);
@@ -222,8 +226,9 @@ export default {
 
     if (method === "GET" && pathname === "/api/search-biblion") {
       const q = urlObj.searchParams.get("q") ?? "";
+      const fast = urlObj.searchParams.get("fast") === "1";
       try {
-        const products = await searchBiblion(q);
+        const products = await searchBiblion(q, fast ? 1 : 10);
         return jsonResponse({ products });
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);

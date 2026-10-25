@@ -134,11 +134,18 @@ export function parseCarteameaHtml(html) {
   return products;
 }
 
-export async function searchCarteamea(query) {
-  const cacheKey = query.trim().toLowerCase();
+const page1Inflight = new Map();
+
+export async function searchCarteamea(query, maxFetchPages = 10) {
+  const normQuery = query.trim().toLowerCase();
+  const cacheKey = `${normQuery}::${maxFetchPages}`;
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.data;
+  }
+  const fullCached = searchCache.get(`${normQuery}::10`);
+  if (fullCached && Date.now() < fullCached.expiresAt) {
+    return fullCached.data;
   }
 
   const encodedQuery = encodeURIComponent(query);
@@ -160,7 +167,15 @@ export async function searchCarteamea(query) {
   };
 
   try {
-    const page1Html = await fetchPage(1);
+    let p1Entry = page1Inflight.get(normQuery);
+    if (!p1Entry || Date.now() >= p1Entry.expiresAt) {
+      p1Entry = {
+        promise: fetchPage(1),
+        expiresAt: Date.now() + 30000,
+      };
+      page1Inflight.set(normQuery, p1Entry);
+    }
+    const page1Html = await p1Entry.promise;
     if (!page1Html) return [];
 
     const page1Products = parseCarteameaHtml(page1Html);
@@ -172,7 +187,7 @@ export async function searchCarteamea(query) {
     ].map((m) => Number(m[1]));
 
     const maxPage = pageNumbers.length
-      ? Math.min(Math.max(...pageNumbers), 10)
+      ? Math.min(Math.max(...pageNumbers), maxFetchPages)
       : 1;
 
     let allProducts = [...page1Products];

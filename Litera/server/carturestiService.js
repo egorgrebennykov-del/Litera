@@ -11,11 +11,16 @@ const BASE_HEADERS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 };
 
-export async function searchCarturesti(query) {
-  const cacheKey = query.trim().toLowerCase();
+export async function searchCarturesti(query, maxFetchPages = 10) {
+  const normQuery = query.trim().toLowerCase();
+  const cacheKey = `${normQuery}::${maxFetchPages}`;
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.data;
+  }
+  const fullCached = searchCache.get(`${normQuery}::10`);
+  if (fullCached && Date.now() < fullCached.expiresAt) {
+    return fullCached.data;
   }
 
   const encodedQuery = encodeURIComponent(query);
@@ -93,7 +98,7 @@ export async function searchCarturesti(query) {
     ].map((m) => Number(m[1]) + 1);
     const allPageNums = [...pageNumbers, ...dataPages];
     const maxPage = allPageNums.length
-      ? Math.min(Math.max(...allPageNums), 10)
+      ? Math.min(Math.max(...allPageNums), maxFetchPages)
       : 1;
 
     let rawProducts = [...(page1Data.products || [])];

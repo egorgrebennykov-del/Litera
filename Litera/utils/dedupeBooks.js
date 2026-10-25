@@ -2,6 +2,20 @@ function normalizeTitle(t) {
   return (t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
+function normalizeImageUrl(img) {
+  if (!img || typeof img !== "string") return "";
+  let target = img;
+  if (target.startsWith("/api/enhance-image?url=")) {
+    try {
+      target =
+        new URL(target, "http://localhost").searchParams.get("url") || target;
+    } catch {
+      // ignore
+    }
+  }
+  return target.split("?")[0].trim().toLowerCase();
+}
+
 export function dedupeBooksFast(books) {
   if (!Array.isArray(books) || books.length < 2) return books;
 
@@ -15,7 +29,7 @@ export function dedupeBooksFast(books) {
       if (!titleGroups.has(norm)) titleGroups.set(norm, []);
       titleGroups.get(norm).push(i);
     }
-    const img = books[i].image;
+    const img = normalizeImageUrl(books[i].image);
     if (img) {
       if (!imageGroups.has(img)) imageGroups.set(img, []);
       imageGroups.get(img).push(i);
@@ -60,27 +74,6 @@ export function dedupeBooksFast(books) {
   return books.filter((_, idx) => !removedIndices.has(idx));
 }
 
-export default async function dedupeBooks(books, query) {
-  let filtered = dedupeBooksFast(books);
-  if (!Array.isArray(filtered) || filtered.length < 2) return filtered;
-
-  // 2. Visual cover similarity API for visual matches across stores
-  try {
-    const response = await fetch("/api/dedupe-books", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ books: filtered, query }),
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      if (Array.isArray(result.books)) {
-        filtered = result.books;
-      }
-    }
-  } catch {
-    // Fall back to filtered results from step 1
-  }
-
-  return filtered;
+export default async function dedupeBooks(books) {
+  return dedupeBooksFast(books);
 }

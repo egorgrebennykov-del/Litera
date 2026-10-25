@@ -62,11 +62,18 @@ export function parseLibrariusHtml(html) {
   return products;
 }
 
+const page1Inflight = new Map();
+
 export async function searchLibrarius(query, maxFetchPages = 10) {
-  const cacheKey = `${query.trim().toLowerCase()}::${maxFetchPages}`;
+  const normQuery = query.trim().toLowerCase();
+  const cacheKey = `${normQuery}::${maxFetchPages}`;
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.data;
+  }
+  const fullCached = searchCache.get(`${normQuery}::10`);
+  if (fullCached && Date.now() < fullCached.expiresAt) {
+    return fullCached.data;
   }
 
   const encodedQuery = encodeURIComponent(query).replace(/%20/g, "+");
@@ -88,7 +95,16 @@ export async function searchLibrarius(query, maxFetchPages = 10) {
     }
   };
 
-  const page1Html = await fetchPage(1);
+  let p1Entry = page1Inflight.get(normQuery);
+  if (!p1Entry || Date.now() >= p1Entry.expiresAt) {
+    p1Entry = {
+      promise: fetchPage(1),
+      expiresAt: Date.now() + 30000,
+    };
+    page1Inflight.set(normQuery, p1Entry);
+  }
+
+  const page1Html = await p1Entry.promise;
   if (!page1Html) return [];
 
   const page1Products = parseLibrariusHtml(page1Html);

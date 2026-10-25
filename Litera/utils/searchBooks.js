@@ -190,6 +190,7 @@ export default async function searchBooks(searchBook, { onProgress } = {}) {
     .catch(() => activeRate);
 
   const partialByStore = new Map();
+  const fullCompletedStores = new Set();
 
   const emitProgress = () => {
     if (typeof onProgress !== "function") return;
@@ -213,10 +214,38 @@ export default async function searchBooks(searchBook, { onProgress } = {}) {
     }
   };
 
+  // Fire an ultra-fast Page-1 wave so the first batch of books renders within ~300-500ms,
+  // while the full multi-page searches complete in parallel without dropping any data
+  if (typeof onProgress === "function" && typeof window !== "undefined") {
+    const encodedQ = encodeURIComponent(searchBook);
+    const fastEndpoints = [
+      ["librarius.md", `/api/search-librarius?q=${encodedQ.replace(/%20/g, "+")}&fast=1`],
+      ["biblion.md", `/api/search-biblion?q=${encodedQ}&fast=1`],
+      ["carteamea.md", `/api/search-carteamea?q=${encodedQ}&fast=1`],
+      ["ulysses.md", `/api/search-ulysses?q=${encodedQ}&fast=1`],
+    ];
+    for (const [store, url] of fastEndpoints) {
+      fetch(url)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (
+            !fullCompletedStores.has(store) &&
+            Array.isArray(data?.products) &&
+            data.products.length > 0
+          ) {
+            partialByStore.set(store, data.products);
+            emitProgress();
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
   const wrapStore = (store, promise) =>
     promise
       .then((list) => {
         const arr = Array.isArray(list) ? list : [];
+        fullCompletedStores.add(store);
         partialByStore.set(store, arr);
         emitProgress();
         return arr;

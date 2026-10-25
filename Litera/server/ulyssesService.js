@@ -48,6 +48,12 @@ export function parseUlyssesHtml(html) {
         imgUrl = imgMatch[1].startsWith("http")
           ? imgMatch[1]
           : `https://www.ulysses.md${imgMatch[1]}`;
+        if (imgUrl.includes("/resize_cache/iblock/")) {
+          imgUrl = imgUrl.replace(
+            /\/resize_cache\/iblock\/([^/]+)\/[^/]+\/([^/]+)$/,
+            "/iblock/$1/$2",
+          );
+        }
       }
 
       if (imgUrl) {
@@ -105,11 +111,18 @@ export async function resolveHighResImage(productUrl, fallbackImg) {
   }
 }
 
-export async function searchUlysses(query) {
-  const cacheKey = query.trim().toLowerCase();
+const page1Inflight = new Map();
+
+export async function searchUlysses(query, maxFetchPages = 6) {
+  const normQuery = query.trim().toLowerCase();
+  const cacheKey = `${normQuery}::${maxFetchPages}`;
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.data;
+  }
+  const fullCached = searchCache.get(`${normQuery}::6`);
+  if (fullCached && Date.now() < fullCached.expiresAt) {
+    return fullCached.data;
   }
 
   const encodedQuery = encodeURIComponent(query);
@@ -129,8 +142,21 @@ export async function searchUlysses(query) {
     }
   };
 
+  const getPage1Html = () => {
+    const existing = page1Inflight.get(normQuery);
+    if (existing && Date.now() < existing.expiresAt) {
+      return existing.promise;
+    }
+    const promise = fetchPage(1);
+    page1Inflight.set(normQuery, {
+      promise,
+      expiresAt: Date.now() + 30000,
+    });
+    return promise;
+  };
+
   try {
-    const page1Html = await fetchPage(1);
+    const page1Html = await getPage1Html();
     if (!page1Html) return [];
 
     const page1Products = parseUlyssesHtml(page1Html);
@@ -138,7 +164,7 @@ export async function searchUlysses(query) {
       ...page1Html.matchAll(/[?&;]PAGEN_2=(\d+)/g),
     ].map((m) => Number(m[1]));
     const maxPage = pageNumbers.length
-      ? Math.min(Math.max(...pageNumbers), 6)
+      ? Math.min(Math.max(...pageNumbers), maxFetchPages)
       : 1;
 
     let allProducts = [...page1Products];
@@ -163,8 +189,7 @@ export async function searchUlysses(query) {
       return true;
     });
 
-    // Sort uniqueProducts by query relevance first so that the top search matches
-    // get resolved to 1000px high-resolution covers first
+    // Sort uniqueProducts by query relevance first
     const queryTokens = query.toLowerCase().split(/\s+/).filter(Boolean);
     const scoreProduct = (p) => {
       const name = (p.name || "").toLowerCase();
@@ -178,27 +203,19 @@ export async function searchUlysses(query) {
     };
     uniqueProducts.sort((a, b) => scoreProduct(b) - scoreProduct(a));
 
-    // Resolve full 1000px high-resolution images for top 36 products in 2 fast batches
-    const toResolve = uniqueProducts.slice(0, 36);
-    const BATCH_SIZE = 18;
-    for (let i = 0; i < toResolve.length; i += BATCH_SIZE) {
-      const batch = toResolve.slice(i, i + BATCH_SIZE);
-      await Promise.all(
-        batch.map(async (p) => {
-          const highRes = await resolveHighResImage(p.url, p.mainImage?.url);
-          if (highRes) {
-            p.mainImage = { url: highRes };
-            p.images = [{ url: highRes }];
-          }
-        }),
-      );
+    // Apply any already-cached high-res overrides synchronously, and warm the rest in the background
+    for (const p of uniqueProducts) {
+      const cachedHighRes = highResCache.get(p.url);
+      if (cachedHighRes) {
+        p.mainImage = { url: cachedHighRes };
+        p.images = [{ url: cachedHighRes }];
+      }
     }
 
-    // Background resolve for products 36..72 without delaying the response
-    const remaining = uniqueProducts.slice(36, 72);
-    if (remaining.length > 0) {
+    if (maxFetchPages > 1) {
+      const toWarm = uniqueProducts.slice(0, 24);
       Promise.all(
-        remaining.map(async (p) => {
+        toWarm.map(async (p) => {
           const highRes = await resolveHighResImage(p.url, p.mainImage?.url);
           if (highRes) {
             p.mainImage = { url: highRes };

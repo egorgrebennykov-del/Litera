@@ -47,6 +47,7 @@
 
 .litera-small-announcement-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -54,10 +55,17 @@
   font-size: 0.88rem;
   line-height: 1.45;
   color: var(--title-color, #1e293b);
+  overflow: visible;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .litera-small-announcement-text {
   font-weight: 500;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  overflow: visible;
 }
 
 .litera-small-announcement-link {
@@ -107,4 +115,51 @@
 
 .dark-theme .litera-small-announcement-link:hover {
   color: #c7d2fe;
+}
+
+@media screen and (max-width: 767px) {
+  .litera-small-announcements-stack {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.25rem;
+    margin-bottom: 16px;
+  }
+
+  .litera-small-announcement-banner {
+    align-items: flex-start;
+    padding: 12px 14px;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .litera-small-announcement-icon {
+    margin-top: 2px;
+  }
+
+  .litera-small-announcement-content {
+    display: block;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .litera-small-announcement-text {
+    display: inline;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
+
+  .litera-small-announcement-link {
+    display: inline-flex;
+    margin-left: 6px;
+  }
 }

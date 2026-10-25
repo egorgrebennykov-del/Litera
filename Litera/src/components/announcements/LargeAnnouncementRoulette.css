@@ -114,4 +114,8 @@
     aspect-ratio: 16 / 9;
     max-height: 220px;
   }
+
+  .litera-poster-btn {
+    display: none !important;
+  }
 }

@@ -287,9 +287,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (req.method === "GET" && req.url?.startsWith("/api/search-librarius?")) {
-    const q = new URL(req.url, "http://localhost").searchParams.get("q") ?? "";
+    const sp = new URL(req.url, "http://localhost").searchParams;
+    const q = sp.get("q") ?? "";
+    const fast = sp.get("fast") === "1";
     try {
-      const products = await searchLibrarius(q);
+      const products = await searchLibrarius(q, fast ? 1 : 10);
       respond(res, 200, { products });
     } catch (error) {
       console.warn("Direct Librarius search error:", error.message);
@@ -298,9 +300,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (req.method === "GET" && req.url?.startsWith("/api/search-carturesti?")) {
-    const q = new URL(req.url, "http://localhost").searchParams.get("q") ?? "";
+    const sp = new URL(req.url, "http://localhost").searchParams;
+    const q = sp.get("q") ?? "";
+    const fast = sp.get("fast") === "1";
     try {
-      const products = await searchCarturesti(q);
+      const products = await searchCarturesti(q, fast ? 1 : 10);
       respond(res, 200, { products });
     } catch (error) {
       console.warn("Direct Carturesti search error:", error.message);
@@ -309,9 +313,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (req.method === "GET" && req.url?.startsWith("/api/search-ulysses?")) {
-    const q = new URL(req.url, "http://localhost").searchParams.get("q") ?? "";
+    const sp = new URL(req.url, "http://localhost").searchParams;
+    const q = sp.get("q") ?? "";
+    const fast = sp.get("fast") === "1";
     try {
-      const products = await searchUlysses(q);
+      const products = await searchUlysses(q, fast ? 1 : 6);
       respond(res, 200, { products });
     } catch (error) {
       console.warn("Direct Ulysses search error:", error.message);
@@ -320,9 +326,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (req.method === "GET" && req.url?.startsWith("/api/search-carteamea?")) {
-    const q = new URL(req.url, "http://localhost").searchParams.get("q") ?? "";
+    const sp = new URL(req.url, "http://localhost").searchParams;
+    const q = sp.get("q") ?? "";
+    const fast = sp.get("fast") === "1";
     try {
-      const products = await searchCarteamea(q);
+      const products = await searchCarteamea(q, fast ? 1 : 10);
       respond(res, 200, { products });
     } catch (error) {
       console.warn("Direct Carteamea search error:", error.message);
@@ -331,9 +339,11 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (req.method === "GET" && req.url?.startsWith("/api/search-biblion?")) {
-    const q = new URL(req.url, "http://localhost").searchParams.get("q") ?? "";
+    const sp = new URL(req.url, "http://localhost").searchParams;
+    const q = sp.get("q") ?? "";
+    const fast = sp.get("fast") === "1";
     try {
-      const products = await searchBiblion(q);
+      const products = await searchBiblion(q, fast ? 1 : 10);
       respond(res, 200, { products });
     } catch (error) {
       console.warn("Direct Biblion search error:", error.message);

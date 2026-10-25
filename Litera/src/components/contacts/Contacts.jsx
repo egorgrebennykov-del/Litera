@@ -20,9 +20,9 @@ export default function Contacts() {
   const email = "egor.grebennykov@gmail.com";
   const addressText =
     language === "ru"
-      ? "Болгария, Несебр, улица Парва 8240"
-      : "Parva St, 8240 Nesebar, Bulgaria";
-  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent("Nesebar Parva street 8240 Bulgaria")}`;
+      ? "ул. „Первая“, 8240 Несебр, Болгария"
+      : "1st Street, 8240 Nessebar, Bulgaria";
+  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent("1st Street, 8240 Nessebar, Bulgaria")}`;
 
   return (
     <section className="contacts section container" id="contacts">
