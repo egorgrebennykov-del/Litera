@@ -564,13 +564,14 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/api/send-inquiry-email") {
     try {
       const body = await readJson(req);
-      const { to, subject, text, adminName } = body || {};
+      const { to, userName, subject, text, adminName } = body || {};
       if (!to || !text) {
         respond(res, 400, { error: "Missing required fields: to, text" });
         return;
       }
       const result = await sendGuestInquiryEmail({
         to,
+        userName,
         subject,
         text,
         adminName,

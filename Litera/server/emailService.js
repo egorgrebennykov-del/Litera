@@ -1,7 +1,14 @@
 /**
  * Email dispatch service for Litera customer support.
- * Uses Resend API to deliver administrator replies to unregistered guest users.
+ * Uses EmailJS API as primary delivery to send administrator replies directly to unregistered guest users,
+ * with Resend API as fallback.
  */
+
+const EMAILJS_API_URL = "https://api.emailjs.com/api/v1.0/email/send";
+const DEFAULT_EMAILJS_SERVICE_ID = "service_zzl5x89";
+const DEFAULT_EMAILJS_TEMPLATE_ID = "template_tco32u6";
+const DEFAULT_EMAILJS_PUBLIC_KEY = "mq7sRq7QGzp9XQUTh";
+const DEFAULT_EMAILJS_PRIVATE_KEY = "q20TuIwHcTj_gHXePCXIG";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 const DEFAULT_SUPPORT_EMAIL = "litera.eu@gmail.com";
@@ -9,6 +16,7 @@ const DEFAULT_FROM = "Litera Support <onboarding@resend.dev>";
 
 export async function sendGuestInquiryEmail({
   to,
+  userName,
   subject,
   text,
   adminName,
@@ -18,18 +26,91 @@ export async function sendGuestInquiryEmail({
   }
 
   const cleanTo = String(to).trim().toLowerCase();
+  const cleanUser = String(userName || "Читатель").trim();
   const cleanText = String(text).trim();
-  const senderName = adminName ? String(adminName).trim() : "Служба поддержки Litera";
+  const senderName = adminName
+    ? String(adminName).trim()
+    : "Служба поддержки Litera";
   const mailSubject = subject || "Ответ от службы поддержки Litera";
+  const supportEmail =
+    process.env.SUPPORT_EMAIL ||
+    process.env.RESEND_REPLY_TO ||
+    DEFAULT_SUPPORT_EMAIL;
+
+  // 1. Primary: send directly to guest via EmailJS REST API
+  const emailJsServiceId =
+    process.env.VITE_EMAILJS_SERVICE_ID || DEFAULT_EMAILJS_SERVICE_ID;
+  const emailJsTemplateId =
+    process.env.VITE_EMAILJS_TEMPLATE_ID || DEFAULT_EMAILJS_TEMPLATE_ID;
+  const emailJsPublicKey =
+    process.env.VITE_EMAILJS_PUBLIC_KEY || DEFAULT_EMAILJS_PUBLIC_KEY;
+  const emailJsPrivateKey =
+    process.env.EMAILJS_PRIVATE_KEY || DEFAULT_EMAILJS_PRIVATE_KEY;
+
+  if (emailJsServiceId && emailJsTemplateId && emailJsPublicKey) {
+    try {
+      const timeStr = new Date().toLocaleString("ru-RU");
+      const emailJsPayload = {
+        service_id: emailJsServiceId,
+        template_id: emailJsTemplateId,
+        user_id: emailJsPublicKey,
+        accessToken: emailJsPrivateKey,
+        template_params: {
+          to_email: cleanTo,
+          email: cleanTo,
+          user_email: cleanTo,
+          recipient: cleanTo,
+          to: cleanTo,
+          to_name: cleanUser,
+          user_name: cleanUser,
+          name: senderName,
+          from_name: senderName,
+          admin_name: senderName,
+          sender_name: senderName,
+          subject: mailSubject,
+          title: mailSubject,
+          message: cleanText,
+          text: cleanText,
+          reply: cleanText,
+          content: cleanText,
+          time: timeStr,
+          reply_to: supportEmail,
+        },
+      };
+
+      const emailJsRes = await fetch(EMAILJS_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "https://litera.egor-grebennykov.workers.dev",
+        },
+        body: JSON.stringify(emailJsPayload),
+      });
+
+      if (emailJsRes.ok) {
+        console.log(
+          `[EmailJS Success] Email dispatched directly to ${cleanTo} via EmailJS.`,
+        );
+        return {
+          success: true,
+          provider: "emailjs",
+          recipient: cleanTo,
+        };
+      }
+      const errBody = await emailJsRes.text().catch(() => "");
+      console.warn(
+        `[EmailJS Server Warning] Status ${emailJsRes.status}: ${errBody}`,
+      );
+    } catch (emailJsErr) {
+      console.warn("[EmailJS Server Error]:", emailJsErr.message);
+    }
+  }
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    throw new Error("RESEND_API_KEY environment variable is not configured");
+    throw new Error("Email delivery failed and RESEND_API_KEY is not configured");
   }
-  const supportEmail =
-    process.env.SUPPORT_EMAIL || process.env.RESEND_REPLY_TO || DEFAULT_SUPPORT_EMAIL;
-  const fromAddress =
-    process.env.RESEND_FROM || DEFAULT_FROM;
+  const fromAddress = process.env.RESEND_FROM || DEFAULT_FROM;
 
   const buildHtml = (targetRecipient, isSandboxNotice = false) => `
     <!DOCTYPE html>

@@ -1,7 +1,116 @@
+import emailjs from "@emailjs/browser";
 import { getAllUsers, resolveUserRoles, isPrivileged } from "./auth.js";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const EMAILJS_SERVICE_ID =
+  import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_zzl5x89";
+const EMAILJS_TEMPLATE_ID =
+  import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_tco32u6";
+const EMAILJS_PUBLIC_KEY =
+  import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "mq7sRq7QGzp9XQUTh";
+
+function buildEmailJsParams({
+  to,
+  userName = "Читатель",
+  adminName = "Администратор Litera",
+  subject = "Ответ от службы поддержки Litera",
+  text = "",
+}) {
+  const cleanTo = String(to || "").trim().toLowerCase();
+  const cleanUser = String(userName || "Читатель").trim();
+  const cleanAdmin = String(adminName || "Администратор Litera").trim();
+  const cleanSubject = String(
+    subject || "Ответ от службы поддержки Litera",
+  ).trim();
+  const cleanText = String(text || "").trim();
+  const timeStr = new Date().toLocaleString("ru-RU");
+
+  return {
+    to_email: cleanTo,
+    email: cleanTo,
+    user_email: cleanTo,
+    recipient: cleanTo,
+    to: cleanTo,
+    to_name: cleanUser,
+    user_name: cleanUser,
+    name: cleanAdmin,
+    from_name: cleanAdmin,
+    admin_name: cleanAdmin,
+    sender_name: cleanAdmin,
+    subject: cleanSubject,
+    title: cleanSubject,
+    message: cleanText,
+    text: cleanText,
+    reply: cleanText,
+    content: cleanText,
+    time: timeStr,
+    reply_to: "litera.eu@gmail.com",
+  };
+}
+
+async function dispatchGuestEmailViaEmailJs({
+  to,
+  userName,
+  adminName,
+  subject,
+  text,
+}) {
+  const templateParams = buildEmailJsParams({
+    to,
+    userName,
+    adminName,
+    subject,
+    text,
+  });
+
+  // 1. Primary: send directly from browser via @emailjs/browser
+  if (typeof window !== "undefined") {
+    try {
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        { publicKey: EMAILJS_PUBLIC_KEY },
+      );
+      return {
+        success: true,
+        result: {
+          success: true,
+          provider: "emailjs",
+          status: response?.status || 200,
+          recipient: templateParams.to_email,
+        },
+      };
+    } catch (browserErr) {
+      console.warn(
+        "[EmailJS Browser] Falling back to server endpoint:",
+        browserErr?.text || browserErr?.message || browserErr,
+      );
+    }
+  }
+
+  // 2. Fallback: send via server endpoint (/api/send-inquiry-email)
+  const mailRes = await fetch("/api/send-inquiry-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      to,
+      userName,
+      subject,
+      text,
+      adminName,
+    }),
+  });
+  if (mailRes.ok) {
+    return await mailRes.json();
+  }
+  const errJson = await mailRes.json().catch(() => ({}));
+  return {
+    error: errJson.message || errJson.error || "Email delivery failed",
+  };
+}
 
 const TABLE_URL = `${SUPABASE_URL}/rest/v1/inquiries`;
 const headers = {
@@ -355,28 +464,17 @@ export async function sendInquiryMessage({
     throw new Error(errData?.message || "Не удалось отправить сообщение на сервер");
   }
 
-  // If sender is admin and user is guest, automatically send an email
+  // If sender is admin and user is guest, automatically send an email via EmailJS
   let emailDeliveryResult = null;
   if (sender === "admin" && isGuest && info.userEmail) {
     try {
-      const mailRes = await fetch("/api/send-inquiry-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: info.userEmail,
-          subject: "Ответ от службы поддержки Litera",
-          text: cleanText,
-          adminName: senderName,
-        }),
+      emailDeliveryResult = await dispatchGuestEmailViaEmailJs({
+        to: info.userEmail,
+        userName: info.userName || "Уважаемый гость",
+        adminName: senderName,
+        subject: "Ответ от службы поддержки Litera",
+        text: cleanText,
       });
-      if (mailRes.ok) {
-        emailDeliveryResult = await mailRes.json();
-      } else {
-        const errJson = await mailRes.json().catch(() => ({}));
-        emailDeliveryResult = {
-          error: errJson.message || errJson.error || "Email delivery failed",
-        };
-      }
     } catch (mailErr) {
       console.warn("Failed to dispatch email to guest:", mailErr);
       emailDeliveryResult = { error: mailErr.message };
@@ -488,19 +586,15 @@ export async function transferInquiryAdmin({
   // Notify guest user via email if guest has provided email address
   if (info.isGuest && info.userEmail) {
     try {
-      fetch("/api/inquiries/send-reply-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: info.userEmail,
-          userName: info.userName || "Уважаемый гость",
-          adminName: toAdminName || "Администратор",
-          adminEmail: toAdminEmail || "",
-          messageText: `Ваше обращение в службу поддержки передано специалисту: ${toAdminName}.${cleanReason ? ` Причина: ${cleanReason}` : ""}`,
-          inquiryId,
-          timestamp: transferTimestamp,
-        }),
-      }).catch((mErr) => console.warn("Failed to notify guest about transfer via email:", mErr));
+      dispatchGuestEmailViaEmailJs({
+        to: info.userEmail,
+        userName: info.userName || "Уважаемый гость",
+        adminName: toAdminName || "Администратор",
+        subject: "Ответ от службы поддержки Litera",
+        text: `Ваше обращение в службу поддержки передано специалисту: ${toAdminName}.${cleanReason ? ` Причина: ${cleanReason}` : ""}`,
+      }).catch((mErr) =>
+        console.warn("Failed to notify guest about transfer via email:", mErr),
+      );
     } catch {
       // Non-blocking
     }

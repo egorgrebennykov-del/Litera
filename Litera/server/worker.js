@@ -376,7 +376,7 @@ export default {
     if (method === "POST" && pathname === "/api/send-inquiry-email") {
       try {
         const body = await request.json().catch(() => ({}));
-        const { to, subject, text, adminName } = body || {};
+        const { to, userName, subject, text, adminName } = body || {};
         if (!to || !text) {
           return jsonResponse(
             { error: "Missing required fields: to, text" },
@@ -385,6 +385,7 @@ export default {
         }
         const result = await sendGuestInquiryEmail({
           to,
+          userName,
           subject,
           text,
           adminName,
