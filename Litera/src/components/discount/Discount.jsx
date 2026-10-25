@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { addToCart, getCart, removeFromCart } from "../../../utils/cart";
-import { getCookieUser, isLoggedIn } from "../../../utils/auth";
+import { getCookieUser, isLoggedIn, isPrivileged } from "../../../utils/auth";
 import getExchangeRate, { getCachedExchangeRate, DEFAULT_RATE } from "../../../utils/getExchangeRate";
 import getDiscountSnapshot, { getCachedDiscountSnapshot } from "../../../utils/getDiscountSnapshot";
 import BookImage from "../common/BookImage";
@@ -309,7 +309,7 @@ export default function Discount() {
                       src={book.image}
                       alt={book.title}
                       loading={index < 6 ? "eager" : "lazy"}
-                      decoding={index < 6 ? "auto" : "async"}
+                      decoding="async"
                       fetchPriority={index < 4 ? "high" : "auto"}
                     />
                     <span className="deals__badge">
@@ -319,9 +319,11 @@ export default function Discount() {
                   <h3 className="results__title deals__book-title">
                     {book.title}
                   </h3>
-                  <span className="results__store deals__store">
-                    {book.store}
-                  </span>
+                  {isPrivileged() && book.store && (
+                    <span className="results__store deals__store">
+                      {book.store}
+                    </span>
+                  )}
                   <div className="deals__prices">
                     <strong className="results__price deals__price">
                       {formatPrice(price, currency, language)}

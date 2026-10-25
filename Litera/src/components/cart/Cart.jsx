@@ -5,7 +5,7 @@ import {
   removeFromCart,
   updateCartQuantity,
 } from "../../../utils/cart";
-import { getCookieUser, isLoggedIn } from "../../../utils/auth";
+import { getCookieUser, isLoggedIn, isPrivileged } from "../../../utils/auth";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
@@ -208,7 +208,7 @@ export default function Cart({ onSearch }) {
                   />
                   <span className="cart__book-info">
                     <strong>{decodeHtmlEntities(book.title)}</strong>
-                    <small>{book.shop}</small>
+                    {isPrivileged(user) && book.shop && <small>{book.shop}</small>}
                   </span>
                 </Link>
                 <div className="cart__quantity" aria-label="Quantity">

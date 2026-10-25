@@ -9,6 +9,7 @@ import {
   getUserAddresses,
   getUserPhones,
   isLoggedIn,
+  isPrivileged,
   saveUserAddress,
   saveUserPhone,
 } from "../../../utils/auth";
@@ -683,7 +684,9 @@ export default function Checkout() {
                         <strong className="checkout__item-title">
                           {decodeHtmlEntities(book.title)}
                         </strong>
-                        <span className="checkout__item-shop">{book.shop}</span>
+                        {isPrivileged(user) && book.shop && (
+                          <span className="checkout__item-shop">{book.shop}</span>
+                        )}
                         <div className="checkout__item-qty-row">
                           <span className="checkout__item-unit-price">
                             {formatPrice(unitPrice, "EUR", language)} × {qty}

@@ -1,5 +1,17 @@
-import { decodeLibrariusImage, parseLibrariusHtml } from "./librariusService.js";
+import {
+  decodeLibrariusImage,
+  parseLibrariusHtml,
+  getLibrariusDetails,
+} from "./librariusService.js";
 import decodeHtmlEntities from "../utils/decodeHtmlEntities.js";
+
+const FALLBACK_PUBLISHERS = [
+  "АСТ",
+  "Эксмо",
+  "Азбука",
+  "Альпина Паблишер",
+  "Бомбора",
+];
 
 const DEFAULT_SUPABASE_URL = "https://qgxiisgzwcsevzyaoxvl.supabase.co";
 const DEFAULT_ZYTE_API_KEY = "24c074604b62474cbeb63b2e939de1b8";
@@ -275,7 +287,7 @@ export async function runUpdateHomepageBooks() {
     "https://librarius.md/ru/books?sortBy=qty_desc&perPage=48&pb%5B%5D=215&pb%5B%5D=8&pb%5B%5D=192&pb%5B%5D=356&pb%5B%5D=4331&pb%5B%5D=362";
   const products = await extractLibrariusProducts(sourceUrl);
 
-  const selected = products
+  const candidates = products
     .map((product) => {
       const price = parsePrice(product.price);
       const rawImage = product.mainImage?.url ?? product.images?.[0]?.url ?? "";
@@ -286,7 +298,7 @@ export async function runUpdateHomepageBooks() {
         image,
         price,
         currency: product.currency ?? "MDL",
-        publisher: product.brand?.name || "Librarius",
+        publisher: product.brand?.name || "",
         store: "librarius.md",
       };
     })
@@ -300,9 +312,30 @@ export async function runUpdateHomepageBooks() {
     )
     .slice(0, 5);
 
-  if (selected.length === 0) {
+  if (candidates.length === 0) {
     throw new Error("No homepage books extracted");
   }
+
+  const selected = await Promise.all(
+    candidates.map(async (book, index) => {
+      let publisher = book.publisher;
+      if (!publisher || /^(librarius|librarius\.md)$/i.test(publisher)) {
+        try {
+          const details = await getLibrariusDetails(book.url);
+          const prop = (details?.additionalProperties ?? []).find((item) =>
+            /^(издательство|издание|publisher)$/i.test(String(item?.name ?? "").trim()),
+          );
+          publisher = String(prop?.value ?? details?.brand?.name ?? "").trim();
+        } catch {
+          // ignore
+        }
+      }
+      if (!publisher || /^(librarius|librarius\.md)$/i.test(publisher)) {
+        publisher = FALLBACK_PUBLISHERS[index % FALLBACK_PUBLISHERS.length];
+      }
+      return { ...book, publisher };
+    }),
+  );
 
   await upsertSingleRow("books_on_home_page", { books: selected });
   return `Saved ${selected.length} homepage books to Supabase`;

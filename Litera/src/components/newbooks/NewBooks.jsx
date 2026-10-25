@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { addToCart, getCart, removeFromCart } from "../../../utils/cart";
-import { getCookieUser, isLoggedIn } from "../../../utils/auth";
+import { getCookieUser, isLoggedIn, isPrivileged } from "../../../utils/auth";
 import getExchangeRate, { getCachedExchangeRate, DEFAULT_RATE } from "../../../utils/getExchangeRate";
 import getNewBooks, { getCachedNewBooks } from "../../../utils/getNewBooks";
 import BookImage from "../common/BookImage";
@@ -280,11 +280,13 @@ export default function NewBooks() {
                     src={book.image}
                     alt={book.title}
                     loading={index < 6 ? "eager" : "lazy"}
-                    decoding={index < 6 ? "auto" : "async"}
+                    decoding="async"
                     fetchPriority={index < 4 ? "high" : "auto"}
                   />
                   <h2 className="results__title">{decodeHtmlEntities(book.title)}</h2>
-                  <span className="results__store">{book.store || "librarius.md"}</span>
+                  {isPrivileged() && (
+                    <span className="results__store">{book.store || "librarius.md"}</span>
+                  )}
                   <span className="results__price">
                     {formatPrice(price, currency, language)}
                   </span>

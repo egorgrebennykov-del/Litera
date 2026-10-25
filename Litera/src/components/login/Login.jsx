@@ -24,7 +24,7 @@ export default function Login({ onSignUp, onClose }) {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Password reset / change flow ("login" | "resetRequest" | "resetVerify")
+  // Password reset / change flow ("login" | "resetRequest" | "resetVerify" | "resetSuccess")
   const [mode, setMode] = useState("login");
   const [resetEmail, setResetEmail] = useState("");
   const [resetUserName, setResetUserName] = useState("");
@@ -302,12 +302,8 @@ export default function Login({ onSignUp, onClose }) {
     try {
       await resetPasswordByEmail(resetEmail, newPassword);
       hideValidationTooltip();
-      const destination = params.get("redirect");
-      navigate(
-        destination?.startsWith("/") && !destination.startsWith("//")
-          ? destination
-          : "/",
-      );
+      setError("");
+      setMode("resetSuccess");
     } catch (err) {
       const msg = translateResetError(err.message);
       setError(msg);
@@ -730,11 +726,72 @@ export default function Login({ onSignUp, onClose }) {
                   ? "Сохранение пароля..."
                   : "Saving password..."
                 : isRu
-                  ? "Сменить пароль и войти"
-                  : "Change Password & Sign In"}
+                  ? "Сменить пароль"
+                  : "Change Password"}
             </button>
           </div>
         </form>
+      )}
+
+      {mode === "resetSuccess" && (
+        <div
+          className="login__form grid"
+          style={{ textAlign: "center", gap: "1.25rem" }}
+        >
+          <button
+            type="button"
+            className="auth-close"
+            id="login-close"
+            aria-label="Close"
+            onClick={() => {
+              hideValidationTooltip();
+              navigate("/");
+            }}
+          >
+            ×
+          </button>
+          <div
+            style={{
+              width: "4rem",
+              height: "4rem",
+              borderRadius: "50%",
+              backgroundColor: "hsla(145, 65%, 42%, 0.14)",
+              color: "hsl(145, 65%, 38%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0.25rem auto 0",
+              fontSize: "2.25rem",
+            }}
+          >
+            <i className="ri-checkbox-circle-fill" />
+          </div>
+          <h3 className="login__title" style={{ marginBottom: 0 }}>
+            {isRu ? "Пароль успешно изменён!" : "Password Changed Successfully!"}
+          </h3>
+          <p
+            style={{
+              fontSize: "var(--small-font-size)",
+              color: "var(--text-color)",
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            {isRu
+              ? "Смена пароля прошла успешно, и вы автоматически вошли в свой аккаунт. Теперь вы можете перейти на главную страницу."
+              : "Your password has been changed successfully and you are now signed in. Would you like to go to the home page?"}
+          </p>
+          <button
+            type="button"
+            className="login__button button"
+            onClick={() => {
+              hideValidationTooltip();
+              navigate("/");
+            }}
+          >
+            {isRu ? "Перейти на главную" : "Go to Home Page"}
+          </button>
+        </div>
       )}
     </div>
   );

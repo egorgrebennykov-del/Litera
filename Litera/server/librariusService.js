@@ -9,8 +9,8 @@ const DETAILS_TTL_MS = 15 * 60 * 1000; // 15 minutes
 export function decodeLibrariusImage(url) {
   if (!url) return "";
   let target = url;
-  if (target.includes("/img/catalog/")) {
-    target = target.replace("/img/catalog/", "/img/original/");
+  if (target.includes("/img/original/")) {
+    target = target.replace("/img/original/", "/img/catalog/");
   }
   try {
     const match = target.match(/\/img\/\d+\/\d+\/(?:x)?([A-Za-z0-9_-]+)/);
@@ -24,7 +24,7 @@ export function decodeLibrariusImage(url) {
       if (decoded.startsWith("http")) {
         return decoded
           .replace(/^http:/i, "https:")
-          .replace("/img/catalog/", "/img/original/");
+          .replace("/img/original/", "/img/catalog/");
       }
     }
   } catch {

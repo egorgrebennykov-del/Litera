@@ -464,15 +464,15 @@ export const translations = {
     "privileged.gitActions.noLogs": "Логи отсутствуют",
     "privileged.gitActions.repoLabel": "Репозиторий проекта на GitHub: ",
     "privileged.gitActions.wfBookPicksDesc":
-      "Сбор и обновление кураторской подборки книг из магазинов Молдовы с обогащением обложек и цен.",
+      "Сбор и обновление кураторской подборки книг из магазинов Молдовы (раз в неделю по понедельникам в 03:00).",
     "privileged.gitActions.wfHomeBooksDesc":
-      "Актуализация книг для витрины главной страницы сайта с синхронизацией в Supabase.",
+      "Актуализация книг для витрины главной страницы сайта (раз в месяц 1-го числа в 03:00).",
     "privileged.gitActions.wfNewBooksDesc":
-      "Сканирование книжных новинок ведущих молдавских книжных сетей и обновление каталога новинок.",
+      "Сканирование книжных новинок и обновление каталога новинок (раз в неделю по понедельникам в 03:00).",
     "privileged.gitActions.wfExchangeRateDesc":
-      "Синхронизация официальных курсов валют (MDL/EUR) для корректного пересчёта цен с доставкой в Европу.",
+      "Синхронизация официальных курсов валют MDL/EUR (раз в день в 03:00).",
     "privileged.gitActions.wfDiscountsDesc":
-      "Сбор и актуализация акционных книг со скидками и спецпредложениями для витрины скидок в Supabase.",
+      "Сбор и актуализация акционных книг со скидками в Supabase (раз в день в 03:00).",
 
     // Litera AI Assistant
     "assistant.name": "Литера",
@@ -997,15 +997,15 @@ export const translations = {
     "privileged.gitActions.noLogs": "No logs available",
     "privileged.gitActions.repoLabel": "Project repository on GitHub: ",
     "privileged.gitActions.wfBookPicksDesc":
-      "Collecting and updating curated book picks from Moldovan bookstores with enriched covers and pricing.",
+      "Collecting and updating curated book picks from Moldovan bookstores (weekly on Mondays at 03:00).",
     "privileged.gitActions.wfHomeBooksDesc":
-      "Updating books for the homepage showcase with Supabase synchronization.",
+      "Updating books for the homepage showcase with Supabase synchronization (monthly on the 1st at 03:00).",
     "privileged.gitActions.wfNewBooksDesc":
-      "Scanning new book arrivals from leading Moldovan book chains and updating the new books catalog.",
+      "Scanning new book arrivals and updating the new books catalog (weekly on Mondays at 03:00).",
     "privileged.gitActions.wfExchangeRateDesc":
-      "Synchronizing official currency exchange rates (MDL/EUR) for accurate price conversion with European delivery.",
+      "Synchronizing official currency exchange rates MDL/EUR (daily at 03:00).",
     "privileged.gitActions.wfDiscountsDesc":
-      "Collecting and updating discounted books and special offers for the discounts showcase in Supabase.",
+      "Collecting and updating discounted books for the discounts showcase in Supabase (daily at 03:00).",
 
     // Litera AI Assistant
     "assistant.name": "Litera",

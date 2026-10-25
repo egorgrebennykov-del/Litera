@@ -1,8 +1,8 @@
 export function decodeLibrariusImage(url) {
   if (!url || typeof url !== "string") return "";
   let target = url;
-  if (target.includes("/img/catalog/")) {
-    target = target.replace("/img/catalog/", "/img/original/");
+  if (target.includes("/img/original/")) {
+    target = target.replace("/img/original/", "/img/catalog/");
   }
   try {
     const match = target.match(/\/img\/\d+\/\d+\/(?:x)?([A-Za-z0-9_-]+)/);
@@ -18,13 +18,13 @@ export function decodeLibrariusImage(url) {
         if (decoded.startsWith("http")) {
           return decoded
             .replace(/^http:/i, "https:")
-            .replace("/img/catalog/", "/img/original/");
+            .replace("/img/original/", "/img/catalog/");
         }
       } catch {
         if (raw.startsWith("http")) {
           return raw
             .replace(/^http:/i, "https:")
-            .replace("/img/catalog/", "/img/original/");
+            .replace("/img/original/", "/img/catalog/");
         }
       }
     }
@@ -85,14 +85,8 @@ export default function enhancedImageUrl(sourceUrl) {
     resolved = decodeCarturestiImage(resolved);
   } else if (resolved.includes("ulysses.md")) {
     resolved = decodeUlyssesImage(resolved);
-    if (/^https?:\/\//i.test(resolved)) {
-      return `/api/enhance-image?url=${encodeURIComponent(resolved)}`;
-    }
   } else if (resolved.includes("carteamea.md")) {
     resolved = decodeCarteameaImage(resolved);
-    if (/^https?:\/\//i.test(resolved)) {
-      return `/api/enhance-image?url=${encodeURIComponent(resolved)}`;
-    }
   } else if (resolved.includes("biblion.md")) {
     resolved = decodeBiblionImage(resolved);
   }

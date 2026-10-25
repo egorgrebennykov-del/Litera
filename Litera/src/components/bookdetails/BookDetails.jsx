@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import getBookDetails from "../../../utils/getBookDetails";
 import getExchangeRate from "../../../utils/getExchangeRate";
 import { addToCart, getCartItem, removeFromCart } from "../../../utils/cart";
-import { getCookieUser, isLoggedIn } from "../../../utils/auth";
+import { getCookieUser, isLoggedIn, isPrivileged } from "../../../utils/auth";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import extractBookMetadata from "../../../utils/extractBookMetadata";
@@ -472,7 +472,7 @@ export default function BookDetails() {
 
           <div className="book__info">
             <div className="book__badges">
-              {preview?.store && (
+              {isPrivileged() && preview?.store && (
                 <span className="book__badge">{preview.store}</span>
               )}
               {product?.availability && (

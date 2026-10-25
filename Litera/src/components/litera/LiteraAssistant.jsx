@@ -5,7 +5,7 @@ import BookImage from "../common/BookImage";
 import { useLanguage } from "../../context/languageContext";
 import { useConfirm, useAlert } from "../../context/ConfirmContext";
 import { addToCart, getCart } from "../../../utils/cart";
-import { isLoggedIn, getCookieUser } from "../../../utils/auth";
+import { isLoggedIn, getCookieUser, isPrivileged } from "../../../utils/auth";
 import "./LiteraAssistant.css";
 
 const STORAGE_KEY = "litera_assistant_history_v2";
@@ -801,12 +801,14 @@ export default function LiteraAssistant() {
                                       alt={book.title}
                                       className="litera-book-card__cover"
                                       loading="eager"
-                                      decoding="auto"
+                                      decoding="async"
                                       fetchPriority="high"
                                     />
-                                    <span className="litera-book-card__store-badge">
-                                      {storeLabel}
-                                    </span>
+                                    {isPrivileged() && storeLabel && (
+                                      <span className="litera-book-card__store-badge">
+                                        {storeLabel}
+                                      </span>
+                                    )}
                                   </div>
 
                                   <div className="litera-book-card__details">

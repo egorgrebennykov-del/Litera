@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import searchBooks from "../../../utils/searchBooks";
 import { useSearchCache } from "../../context/searchCache";
 import { addToCart, getCart, removeFromCart } from "../../../utils/cart";
-import { getCookieUser, isLoggedIn } from "../../../utils/auth";
+import { getCookieUser, isLoggedIn, isPrivileged } from "../../../utils/auth";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
@@ -264,10 +264,11 @@ export default function SearchResults() {
             );
             const isBusy = addingUrls.has(book.url) || !cartReady;
             const isPending = pendingUrls.has(book.url);
+            const canSeeStore = isPrivileged();
             return (
               <article
                 className={`results__card ${coverLoaded ? "results__card--cover-loaded" : ""}`}
-                key={`${book.title}-${i}`}
+                key={book.url}
               >
                 <Link
                   className="results__open"
@@ -279,7 +280,7 @@ export default function SearchResults() {
                     src={book.image}
                     alt={book.title}
                     loading={i < 6 ? "eager" : "lazy"}
-                    decoding={i < 6 ? "auto" : "async"}
+                    decoding="async"
                     fetchPriority={i < 4 ? "high" : "auto"}
                     onLoad={() =>
                       setImageStatuses((current) =>
@@ -293,7 +294,9 @@ export default function SearchResults() {
                     }
                   />
                   <h3 className="results__title">{decodeHtmlEntities(book.title)}</h3>
-                  <span className="results__store">{book.store}</span>
+                  {canSeeStore && book.store && (
+                    <span className="results__store">{book.store}</span>
+                  )}
                   <span className="results__price">
                     {Number.isNaN(book.price)
                       ? "—"

@@ -698,10 +698,4 @@ async function runAutoCatalogActions() {
 
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Book cover comparison API listening on ${PORT}`);
-  setTimeout(() => {
-    runAutoCatalogActions().catch(() => {});
-  }, 3000);
-  setInterval(() => {
-    runAutoCatalogActions().catch(() => {});
-  }, 6 * 60 * 60 * 1000);
 });

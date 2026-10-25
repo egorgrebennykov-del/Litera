@@ -137,18 +137,26 @@ async function triggerSingleAction(actionId) {
   }
 }
 
-async function runAllCatalogActionsSequential() {
+async function runScheduledCatalogActions() {
   if (autoRunInFlight) return;
   autoRunInFlight = true;
   lastAutoRunAt = Date.now();
   try {
-    const order = [
-      "update-exchange-rate",
-      "update-discounts",
-      "update-new-books",
-      "update-book-picks",
-      "update-home-books",
-    ];
+    const now = new Date();
+    const isMonday = now.getUTCDay() === 1;
+    const isFirstOfMonth = now.getUTCDate() === 1;
+
+    // Daily at 03:00: Exchange Rate & Discounts
+    const order = ["update-exchange-rate", "update-discounts"];
+    // Weekly on Monday at 03:00: New Books & Book Picks
+    if (isMonday) {
+      order.push("update-new-books", "update-book-picks");
+    }
+    // Monthly on the 1st at 03:00: Homepage Books
+    if (isFirstOfMonth) {
+      order.push("update-home-books");
+    }
+
     for (const id of order) {
       try {
         await triggerSingleAction(id);
@@ -253,7 +261,7 @@ async function handleEnhanceImage(urlObj) {
 export default {
   async scheduled(event, env, ctx) {
     syncProcessEnv(env);
-    const task = runAllCatalogActionsSequential();
+    const task = runScheduledCatalogActions();
     if (ctx?.waitUntil) {
       ctx.waitUntil(task);
     } else {
@@ -273,12 +281,6 @@ export default {
     }
 
     if (method === "POST" && pathname === "/api/warmup") {
-      if (Date.now() - lastAutoRunAt > AUTO_RUN_INTERVAL_MS && !autoRunInFlight) {
-        const bgPromise = runAllCatalogActionsSequential().catch(() => {});
-        if (ctx?.waitUntil) {
-          ctx.waitUntil(bgPromise);
-        }
-      }
       return jsonResponse({ ready: true });
     }
 

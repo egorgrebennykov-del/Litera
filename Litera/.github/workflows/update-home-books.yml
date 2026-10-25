@@ -2,7 +2,7 @@ name: Update homepage books
 
 on:
   schedule:
-    - cron: "45 */6 * * *"
+    - cron: "0 3 1 * *"
   push:
     branches: [main]
     paths:
