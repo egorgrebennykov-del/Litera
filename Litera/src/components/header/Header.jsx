@@ -33,6 +33,29 @@ export default function Header({ theme, isLight, onSearch }) {
   const [isMessengerOpen, setIsMessengerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [adminUnreadCount, setAdminUnreadCount] = useState(0);
+  const [adminAttention, setAdminAttention] = useState(false);
+
+  useEffect(() => {
+    const onRefer = () => setAdminAttention(true);
+    const onOpen = () => {
+      setIsMessengerOpen(true);
+      setAdminAttention(false);
+    };
+
+    window.addEventListener("litera-refer-to-admin", onRefer);
+    window.addEventListener("litera-open-messenger", onOpen);
+
+    return () => {
+      window.removeEventListener("litera-refer-to-admin", onRefer);
+      window.removeEventListener("litera-open-messenger", onOpen);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMessengerOpen) {
+      setAdminAttention(false);
+    }
+  }, [isMessengerOpen]);
 
   const isAdminOrDev =
     userRoles.includes("admin") || userRoles.includes("developer");
@@ -205,8 +228,11 @@ export default function Header({ theme, isLight, onSearch }) {
           {!isAdminOrDev && (
             <button
               type="button"
-              className="nav__messenger-btn"
-              onClick={() => setIsMessengerOpen((prev) => !prev)}
+              className={`nav__messenger-btn ${adminAttention ? "nav__messenger-btn--attention" : ""}`}
+              onClick={() => {
+                setIsMessengerOpen((prev) => !prev);
+                setAdminAttention(false);
+              }}
               title={t("nav.messenger")}
               aria-label={t("nav.messenger")}
             >

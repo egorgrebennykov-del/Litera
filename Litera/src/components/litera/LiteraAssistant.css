@@ -1038,6 +1038,41 @@
   }
 }
 
+/* Contact Administrator Action inside Litera message */
+.litera-msg-admin-action {
+  margin-top: 10px;
+  display: flex;
+}
+
+.litera-msg-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(168, 85, 247, 0.22));
+  color: var(--title-color, #2b1f3d);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.12);
+}
+
+.litera-msg-admin-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(168, 85, 247, 0.38));
+  border-color: rgba(139, 92, 246, 0.75);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.22);
+  color: var(--first-color, #7c3aed);
+}
+
+.litera-msg-admin-btn i {
+  font-size: 1.05rem;
+  color: #8b5cf6;
+}
+
 /* Keyframe Animations */
 @keyframes literaFloat {
   0%, 100% { transform: translateY(0); }

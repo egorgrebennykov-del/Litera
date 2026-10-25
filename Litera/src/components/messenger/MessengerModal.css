@@ -736,6 +736,124 @@
   color: var(--first-color);
 }
 
+/* Nav Messenger Button Attention Animation (Triggered by Litera referral) */
+.nav__messenger-btn--attention {
+  color: #8b5cf6 !important;
+  position: relative;
+  z-index: 2;
+}
+
+.nav__messenger-btn--attention::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  margin-top: -16px;
+  margin-left: -16px;
+  border-radius: 50%;
+  border: 2px solid #8b5cf6;
+  background: rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.6);
+  animation: messengerPulseRing 1.8s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+  pointer-events: none;
+}
+
+.nav__messenger-btn--attention:not(:has(.nav__badge-count))::after {
+  content: "";
+  position: absolute;
+  top: 0px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #a855f7;
+  border: 2px solid var(--body-color, #ffffff);
+  box-shadow: 0 0 8px #a855f7;
+  animation: messengerBeaconBlink 0.9s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.nav__messenger-btn--attention i {
+  display: inline-block;
+  animation: messengerAttentionWobble 2s ease-in-out infinite;
+  transform-origin: 50% 20%;
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.7));
+}
+
+.nav__messenger-btn--attention .nav__badge-count {
+  animation: messengerBadgePulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes messengerAttentionWobble {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  6% {
+    transform: rotate(-18deg) scale(1.18);
+  }
+  12% {
+    transform: rotate(18deg) scale(1.22);
+  }
+  18% {
+    transform: rotate(-14deg) scale(1.2);
+  }
+  24% {
+    transform: rotate(14deg) scale(1.16);
+  }
+  30% {
+    transform: rotate(-8deg) scale(1.1);
+  }
+  36% {
+    transform: rotate(8deg) scale(1.06);
+  }
+  42% {
+    transform: rotate(0deg) scale(1.02);
+  }
+  50%, 90% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes messengerPulseRing {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.95;
+  }
+  60% {
+    transform: scale(1.7);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+@keyframes messengerBeaconBlink {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 1;
+    box-shadow: 0 0 12px #c084fc, 0 0 6px #a855f7;
+  }
+}
+
+@keyframes messengerBadgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+  }
+  100% {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
+  }
+}
+
 .nav__badge-count {
   position: absolute;
   top: -2px;

@@ -362,6 +362,10 @@ export default function LiteraAssistant() {
         navigate(data.action.url);
       }
 
+      if (data?.referToAdmin) {
+        window.dispatchEvent(new CustomEvent("litera-refer-to-admin"));
+      }
+
       const assistantEmotion = data?.emotion || "happy";
       setEmotion(assistantEmotion);
 
@@ -371,6 +375,7 @@ export default function LiteraAssistant() {
         content: data?.message || "",
         emotion: assistantEmotion,
         books: Array.isArray(data?.books) ? data.books : [],
+        referToAdmin: Boolean(data?.referToAdmin),
         timestamp: getNowIso(),
       };
 
@@ -695,6 +700,28 @@ export default function LiteraAssistant() {
                               }
                             />
                           </button>
+                        )}
+
+                        {msg.referToAdmin && (
+                          <div className="litera-msg-admin-action">
+                            <button
+                              type="button"
+                              className="litera-msg-admin-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.dispatchEvent(
+                                  new CustomEvent("litera-open-messenger"),
+                                );
+                              }}
+                            >
+                              <i className="ri-customer-service-2-line" />
+                              <span>
+                                {language === "ru"
+                                  ? "Связаться с администратором"
+                                  : "Contact administrator"}
+                              </span>
+                            </button>
+                          </div>
                         )}
 
                       {/* Recommended Real Book Cards */}

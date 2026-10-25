@@ -108,6 +108,22 @@ CRITICAL RULES ON RECOMMENDATIONS VS STORE/CART/SITE QUESTIONS:
    - You MUST ALWAYS write the names of all religions with a capital (uppercase) first letter in all your messages!
    - Examples: «Ислам», «Христианство», «Православие», «Католицизм», «Католичество», «Протестантизм», «Иудаизм», «Буддизм», «Индуизм», «Даосизм», «Конфуцианство», «Синтоизм», «Зороастризм», «Джайнизм», «Сикхизм», etc.
    - NEVER write the name of any religion with a lowercase letter (e.g. do not write "ислам", "христианство", "буддизм" — write "Ислам", "Христианство", "Буддизм").
+7. QUESTIONS REQUIRING LIVE ADMINISTRATOR (BUSINESS, PARTNERSHIPS, ORDER EDITS/CLARIFICATIONS, CUSTOM REQUESTS):
+   - You are Litera, a bookstore assistant. You do NOT have administrative access to customer order records, database changes, business agreements, wholesale contracts, or store management.
+   - When a customer asks about matters that concern the store, site, or business, but which you cannot answer or resolve yourself — such as:
+     * Business cooperation, partnerships, publishing proposals, advertising, wholesale purchases ("сотрудничество", "партнерство", "коммерческое предложение", "хотим сотрудничать", "поставки")
+     * Clarifications, specific edits, modifications, cancellations, or address changes for already placed orders ("уточнения по заказу", "изменить адрес", "отменить заказ", "специфические правки по заказу", "добавить товар в заказ")
+     * Payment disputes, refund processing, technical account privileges, or any administrative issue outside automated store assistance
+   - YOUR MANDATORY BEHAVIOR:
+     1. Politely and warmly apologize to the customer in your own words (e.g. expressing sincere regret that as an automated bookstore assistant you don't possess access to order management or business operations).
+     2. Clearly state that you cannot answer or handle this inquiry yourself.
+     3. Suggest that the customer reach out directly to our live human administrator (живой администратор) via the administrator chat icon on the site.
+     4. Mention that you have highlighted or drawn attention to the live administrator contact button for them.
+     5. DYNAMIC GENERATION PRINCIPLE (STRICT): Compose your response dynamically, naturally, and warmly in the user's language, maintaining your delightful Litera persona. NEVER use hardcoded or repetitive canned boilerplate!
+     6. In your output JSON, set:
+        "referToAdmin": true,
+        "emotion": "concerned" or "speaking",
+        "bookIds": []
 
 YOUR PERSONALITY & TONE:
 - Friendly, warm, intelligent, polite, and approachable.
@@ -138,6 +154,7 @@ Return a single JSON object strictly matching this schema:
   "message": "Your conversational answer in the customer's language",
   "emotion": "greeting | happy | laughing | curious | surprised | confused | concerned | sad | speaking | neutral",
   "bookIds": ["id1", "id2"],
+  "referToAdmin": true | false,
   "action": { "type": "navigate", "url": "/cart" }
 }
 Do NOT include Markdown code fences.
@@ -1637,9 +1654,9 @@ async function analyzeSearchIntent(messages) {
     return { needSearch: false, isHaram: true };
   }
 
-  // Fast-path 1: Cart, Account, Profile, Orders, Site Navigation (STRICTLY NO BOOK DISCOVERY)
+  // Fast-path 1: Cart, Account, Profile, Orders, Site Navigation, Business & Admin inquiries (STRICTLY NO BOOK DISCOVERY)
   const isSiteOrCartQuery =
-    /(корзин|в корзине|из корзины|очист(и|ить) корзину|содержимое корзины|товары в корзине|заказ|оформить заказ|оформление|мои заказы|профиль|аккаунт|войти|логин|регистрац|где найти раздел|куда нажать|как оплатить|доставка|валют|в евро|где вы находитесь)/i.test(
+    /(корзин|в корзине|из корзины|очист(и|ить) корзину|содержимое корзины|товары в корзине|заказ|оформить заказ|оформление|мои заказы|профиль|аккаунт|войти|логин|регистрац|где найти раздел|куда нажать|как оплатить|доставка|валют|в евро|где вы находитесь|сотрудничеств|партнерств|коммерческ|поставщ|поставк|опт|оптов|изменить.*заказ|отменить.*заказ|уточнен.*заказ|правк.*заказ|редактирова.*заказ|живой админ|связаться с админ)/i.test(
       lower,
     ) &&
     !/(книга про корзину|книги про корзину|книга корзина)/i.test(lower);
@@ -1771,6 +1788,8 @@ CRITICAL RULES:
   * Their shopping cart ("что в корзине", "проверь корзину", "сколько книг в заказе")
   * Their account, login, or orders ("мои заказы", "где профиль")
   * Store FAQ (shipping, payment, currency, locations, languages)
+  * Business, partnership, collaboration, wholesale, or publisher inquiries ("сотрудничество", "партнерство", "коммерческое предложение", "поставки")
+  * Existing order edits, amendments, clarifications, cancellations, or address changes ("уточнения по заказу", "изменить заказ")
   * Casual conversation ("привет", "как дела", "спасибо") without prior book search
   * Personal opinion or literary thoughts without asking to buy or find books ("скажи свое мнение", "что ты думаешь о Достоевском", "твое мнение о книге")
   * Book plots, endings, or spoilers ("выжил ли герой", "кто убийца")
@@ -2019,7 +2038,24 @@ If the user explicitly asks to open or navigate to a page (e.g. "открой к
         latestMessage,
       );
 
-    if (isHaramQuery(latestMessage)) {
+    const isBusinessOrAdminQuery =
+      /(сотрудничеств|партнерств|коммерческ|поставщ|поставк|опт|оптов|изменить.*заказ|отменить.*заказ|уточнен.*заказ|правк.*заказ|редактирова.*заказ|связаться.*админ|живой админ|вопрос к руководств|директор)/i.test(
+        latestMessage,
+      );
+
+    if (isBusinessOrAdminQuery) {
+      promptText += `
+CONDITIONS FOR BUSINESS / ORDER AMENDMENT / ADMIN INQUIRY:
+- The customer is asking a business, cooperation, wholesale, specific order modification/clarification, or administrative inquiry that is outside your knowledge or automated capabilities.
+- APOLOGIZE POLITELY and warmly in your own words.
+- EXPLAIN clearly that as an automated bookstore assistant you do not have administrative authority or access to business agreements or order management records.
+- SUGGEST reaching out to our live human administrator (живой администратор) using the administrator chat icon on the site (mention that you have drawn attention to the icon for them).
+- DYNAMICALLY compose this response in your own words in the customer's language.
+- Set "referToAdmin": true.
+- Set "emotion": "concerned" or "speaking".
+- Set "bookIds": [].
+`;
+    } else if (isHaramQuery(latestMessage)) {
       promptText += `
 CONDITIONS FOR FORBIDDEN / HARAM CONTENT:
 - The customer is inquiring about forbidden/haram content (e.g. erotica, black magic, sorcery, tarot, divination, gambling, alcohol).
@@ -2102,6 +2138,11 @@ CRITICAL SPOILER POLICY & INSTRUCTIONS:
             type: "ARRAY",
             items: { type: "STRING" },
           },
+          referToAdmin: {
+            type: "BOOLEAN",
+            description:
+              "Set to true when the inquiry concerns business, cooperation, wholesale, order amendments/clarifications, or administrative matters that Litera cannot answer and refers to a live administrator",
+          },
           action: {
             type: "OBJECT",
             properties: {
@@ -2127,11 +2168,24 @@ CRITICAL SPOILER POLICY & INSTRUCTIONS:
       formattedMessage = cleanUnsolicitedPitches(formattedMessage);
     }
 
+    const referToAdmin =
+      Boolean(aiResponse.referToAdmin) ||
+      Boolean(
+        !needSearch &&
+          /(администратор|живому\s*администратор|связаться\s*с\s*администратор|поддержк|менеджер)/i.test(
+            aiResponse.message || "",
+          ) &&
+          /(не\s*(могу|знаю|в\s*силах|компетентна)|простите|к\s*сожалению|извините)/i.test(
+            aiResponse.message || "",
+          ),
+      );
+
     return {
       message: formattedMessage,
       emotion: aiResponse.emotion || "happy",
       books: verifiedBooks,
       action: aiResponse.action || null,
+      referToAdmin,
       wasSearching: needSearch,
     };
   } catch (err) {
@@ -2143,6 +2197,7 @@ CRITICAL SPOILER POLICY & INSTRUCTIONS:
           : "Oops, it seems there was a minor connection glitch! 💜 Please try asking again.",
       emotion: "concerned",
       books: [],
+      referToAdmin: false,
     };
   }
 }
