@@ -320,3 +320,26 @@
   color: var(--text-color);
   border: 1px solid var(--border-color);
 }
+
+/* Ensure all page navigation titles stay strictly on one line */
+.nav__list {
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(0.75rem, 1.8vw, 2.5rem) !important;
+}
+
+.nav__link,
+.nav__link span {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+
+@media screen and (min-width: 1150px) {
+  .nav {
+    column-gap: 2rem !important;
+  }
+
+  .nav__list {
+    column-gap: clamp(1rem, 2vw, 2.5rem) !important;
+  }
+}

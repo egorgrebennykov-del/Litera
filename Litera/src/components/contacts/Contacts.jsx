@@ -16,8 +16,13 @@ export default function Contacts() {
     });
   };
 
-  const handleOpenLiveChat = () => {
-    window.dispatchEvent(new CustomEvent("litera-open-messenger"));
+  const handleSendEmail = (e) => {
+    try {
+      window.location.href = `mailto:${email}`;
+    } catch {
+      // fallback
+    }
+    handleCopy("email-btn", email);
   };
 
   const phone = "+359879485078";
@@ -116,20 +121,16 @@ export default function Contacts() {
 
               <a
                 href={`mailto:${email}`}
+                onClick={handleSendEmail}
                 className="button button--ghost contacts__action-btn"
               >
-                <i className="ri-mail-send-line" />
-                <span>{language === "ru" ? "Отправить Email" : "Send Email"}</span>
+                <i className={copiedKey === "email-btn" ? "ri-check-line" : "ri-mail-send-line"} />
+                <span>
+                  {copiedKey === "email-btn"
+                    ? (language === "ru" ? "Email скопирован!" : "Email copied!")
+                    : (language === "ru" ? "Написать на Email" : "Send Email")}
+                </span>
               </a>
-
-              <button
-                type="button"
-                className="button button--ghost contacts__action-btn"
-                onClick={handleOpenLiveChat}
-              >
-                <i className="ri-chat-smile-2-line" />
-                <span>{t("contacts.openChat")}</span>
-              </button>
             </div>
           </div>
         </div>
