@@ -484,6 +484,265 @@
   color: var(--title-color);
 }
 
+/* Free Shipping in delivery row */
+.checkout__shipping-free-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkout__shipping-strikethrough {
+  text-decoration: line-through;
+  opacity: 0.6;
+  font-size: var(--small-font-size);
+}
+
+.checkout__shipping-free-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.35rem;
+  background: hsla(145, 63%, 42%, 0.15);
+  color: hsl(145, 63%, 38%);
+  font-size: var(--smaller-font-size);
+  font-weight: var(--font-semi-bold);
+}
+
+/* Coupon discount summary row */
+.checkout__summary-row--discount {
+  color: hsl(145, 63%, 40%);
+  font-weight: var(--font-medium);
+}
+
+.checkout__discount-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.checkout__discount-val {
+  font-weight: var(--font-semi-bold);
+  color: hsl(145, 63%, 40%);
+}
+
+/* Coupon Box (Directly above "Итого к оплате") */
+.checkout__coupon-box {
+  margin: 0.75rem 0 0.5rem 0;
+  padding: 0.9rem;
+  border-radius: 0.75rem;
+  background-color: var(--body-color);
+  border: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.checkout__coupon-box:focus-within {
+  border-color: var(--first-color);
+  border-style: solid;
+}
+
+.checkout__coupon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--small-font-size);
+  font-weight: var(--font-semi-bold);
+  color: var(--title-color);
+  user-select: none;
+}
+
+.checkout__coupon-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.checkout__coupon-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--container-color);
+  color: var(--title-color);
+  font-size: var(--normal-font-size);
+  font-weight: var(--font-semi-bold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.checkout__coupon-input::placeholder {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: var(--font-regular);
+  opacity: 0.6;
+}
+
+.checkout__coupon-input:focus {
+  outline: none;
+  border-color: var(--first-color);
+  box-shadow: 0 0 0 2px hsla(230, 62%, 56%, 0.2);
+}
+
+.checkout__coupon-apply-btn {
+  padding: 0.6rem 1.15rem;
+  font-size: var(--small-font-size);
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  font-weight: var(--font-semi-bold);
+  cursor: pointer;
+}
+
+/* Active applied coupon badge */
+.checkout__coupon-active-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.5rem;
+  background: hsla(230, 62%, 56%, 0.1);
+  border: 1px solid hsla(230, 62%, 56%, 0.3);
+}
+
+.checkout__coupon-active-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.checkout__coupon-code-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.35rem;
+  background-color: var(--first-color);
+  color: #fff;
+  font-family: monospace, sans-serif;
+  font-size: var(--small-font-size);
+  font-weight: var(--font-semi-bold);
+  letter-spacing: 0.04em;
+}
+
+.checkout__coupon-name-text {
+  font-size: var(--smaller-font-size);
+  color: var(--title-color);
+  font-weight: var(--font-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkout__coupon-remove-btn {
+  background: transparent;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.35rem;
+  color: hsl(0, 70%, 55%);
+  cursor: pointer;
+  font-size: var(--smaller-font-size);
+  font-weight: var(--font-medium);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.checkout__coupon-remove-btn:hover {
+  background-color: hsla(0, 70%, 55%, 0.12);
+  color: hsl(0, 75%, 45%);
+}
+
+/* Deduction message right underneath the coupon input */
+.checkout__coupon-deduction-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  background-color: hsla(145, 63%, 42%, 0.12);
+  border: 1px solid hsla(145, 63%, 42%, 0.25);
+  color: hsl(145, 63%, 35%);
+  font-size: var(--small-font-size);
+  line-height: 1.4;
+  animation: fadeInCouponMsg 0.25s ease;
+}
+
+.dark-theme .checkout__coupon-deduction-msg {
+  background-color: hsla(145, 63%, 42%, 0.18);
+  border-color: hsla(145, 63%, 42%, 0.4);
+  color: hsl(145, 65%, 65%);
+}
+
+.checkout__coupon-deduction-msg i {
+  font-size: 1.15rem;
+  color: hsl(145, 63%, 42%);
+  flex-shrink: 0;
+}
+
+.checkout__coupon-deduction-content {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.checkout__coupon-deduction-label {
+  font-size: var(--smaller-font-size);
+  color: var(--title-color);
+  font-weight: var(--font-medium);
+}
+
+.checkout__coupon-deduction-amount {
+  font-size: var(--normal-font-size);
+  color: hsl(145, 63%, 38%);
+  font-weight: var(--font-bold);
+}
+
+.dark-theme .checkout__coupon-deduction-amount {
+  color: hsl(145, 68%, 62%);
+}
+
+.checkout__coupon-error {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.4rem;
+  background-color: hsla(0, 75%, 55%, 0.1);
+  border: 1px solid hsla(0, 75%, 55%, 0.25);
+  color: hsl(0, 75%, 50%);
+  font-size: var(--smaller-font-size);
+  margin: 0;
+  animation: fadeInCouponMsg 0.2s ease;
+}
+
+.checkout__order-coupon-used {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: var(--font-semi-bold);
+  color: hsl(145, 63%, 40%);
+}
+
+@keyframes fadeInCouponMsg {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .checkout__shipping-hint {
   display: flex;
   align-items: center;

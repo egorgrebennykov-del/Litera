@@ -13,6 +13,11 @@ import {
   saveUserPhone,
 } from "../../../utils/auth";
 import { createOrderInProgress } from "../../../utils/orders";
+import {
+  getCouponByCode,
+  redeemCoupon,
+  validateCouponForCart,
+} from "../../../utils/coupons";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
@@ -85,6 +90,12 @@ export default function Checkout() {
   const [primaryPhone, setPrimaryPhone] = useState("");
   const [usePrimaryPhone, setUsePrimaryPhone] = useState(false);
   const [savedPhones, setSavedPhones] = useState([]);
+
+  // Coupon state
+  const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState("");
+  const [couponValidating, setCouponValidating] = useState(false);
 
   const selectedCountry = useMemo(
     () => countries.find((c) => c.iso2 === selectedCountryIso) || countries[0],
@@ -282,13 +293,81 @@ export default function Checkout() {
   const currentAddress = selectedSavedAddress || addressForm;
 
   // Shipping cost calculation based on address
-  const shippingCost = calculateShipping(currentAddress);
+  const baseShippingCost = calculateShipping(currentAddress);
   const hasValidAddress = Boolean(
     (currentAddress.city && currentAddress.city.trim().length > 0) &&
       (currentAddress.street && currentAddress.street.trim().length > 0),
   );
 
-  const finalTotal = itemsSubtotal + shippingCost;
+  // Validate coupon against current cart & address state
+  const couponValidation = useMemo(() => {
+    if (!appliedCoupon) return null;
+    return validateCouponForCart({
+      coupon: appliedCoupon,
+      itemsSubtotal,
+      shippingCost: baseShippingCost,
+      user,
+      language,
+    });
+  }, [appliedCoupon, itemsSubtotal, baseShippingCost, user, language]);
+
+  const isFreeShipping = Boolean(
+    couponValidation?.valid && couponValidation?.isFreeShipping,
+  );
+  const effectiveShipping = isFreeShipping ? 0 : baseShippingCost;
+  const couponDeduction = couponValidation?.valid
+    ? couponValidation.deduction || 0
+    : 0;
+
+  // The actual final total:
+  // If free shipping, base shipping is waived (effectiveShipping = 0).
+  // If percent/fixed, couponDeduction is subtracted from items total.
+  const finalTotal = Math.max(
+    0,
+    itemsSubtotal + effectiveShipping - (isFreeShipping ? 0 : couponDeduction),
+  );
+
+  const handleApplyCoupon = async (e) => {
+    if (e) e.preventDefault();
+    const code = couponCodeInput.trim().toUpperCase();
+    if (!code) return;
+
+    setCouponError("");
+    setCouponValidating(true);
+    try {
+      const coupon = await getCouponByCode(code);
+      if (!coupon) {
+        setCouponError(t("checkout.couponErrorNotFound"));
+        setAppliedCoupon(null);
+        return;
+      }
+      const val = validateCouponForCart({
+        coupon,
+        itemsSubtotal,
+        shippingCost: baseShippingCost,
+        user,
+        language,
+      });
+      if (!val.valid) {
+        setCouponError(val.error || t("checkout.couponErrorNotFound"));
+        setAppliedCoupon(null);
+        return;
+      }
+      setAppliedCoupon(coupon);
+      setCouponError("");
+    } catch (err) {
+      setCouponError(err.message || t("checkout.couponErrorNotFound"));
+      setAppliedCoupon(null);
+    } finally {
+      setCouponValidating(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCodeInput("");
+    setCouponError("");
+  };
 
   // Handle continuing from books list to address step
   const handleContinueToAddress = () => {
@@ -389,9 +468,27 @@ export default function Checkout() {
         items,
         address: finalOrderAddress,
         itemsSubtotal,
-        shippingCost,
+        shippingCost: effectiveShipping,
         finalTotal,
+        coupon: appliedCoupon
+          ? {
+              id: appliedCoupon.id,
+              code: appliedCoupon.code,
+              name: appliedCoupon.name || "",
+              deduction: isFreeShipping ? baseShippingCost : couponDeduction,
+              type: appliedCoupon.action?.type,
+            }
+          : null,
       });
+
+      // Increment coupon usage count if coupon applied
+      if (appliedCoupon?.id) {
+        try {
+          await redeemCoupon(appliedCoupon.id, user.id);
+        } catch (couponErr) {
+          console.warn("Could not redeem coupon:", couponErr);
+        }
+      }
 
       // Clear the cart
       await clearCart(user.id);
@@ -402,8 +499,15 @@ export default function Checkout() {
         items: [...items],
         address: finalOrderAddress,
         itemsSubtotal,
-        shippingCost,
+        shippingCost: effectiveShipping,
         finalTotal,
+        coupon: appliedCoupon
+          ? {
+              code: appliedCoupon.code,
+              deduction: isFreeShipping ? baseShippingCost : couponDeduction,
+              isFreeShipping,
+            }
+          : null,
         date: new Date(),
       });
       setItems([]);
@@ -447,6 +551,17 @@ export default function Checkout() {
                 {formatPrice(orderComplete.finalTotal, "EUR", language)}
               </strong>
             </div>
+            {orderComplete.coupon && (
+              <div className="checkout__order-info-item">
+                <span className="checkout__meta-label">{t("checkout.couponDiscount")}:</span>
+                <span className="checkout__order-coupon-used">
+                  <i className="ri-coupon-3-line" /> {orderComplete.coupon.code}
+                  {orderComplete.coupon.isFreeShipping
+                    ? ` (${t("checkout.couponFreeShipping")})`
+                    : ` (-${formatPrice(orderComplete.coupon.deduction, "EUR", language)})`}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="checkout__success-items">
@@ -837,11 +952,36 @@ export default function Checkout() {
                       {t("checkout.shipping")}
                     </span>
                     <span className="checkout__shipping-val">
-                      {hasValidAddress
-                        ? formatPrice(shippingCost, "EUR", language)
-                        : `—`}
+                      {hasValidAddress ? (
+                        isFreeShipping ? (
+                          <span className="checkout__shipping-free-container">
+                            <span className="checkout__shipping-strikethrough">
+                              {formatPrice(baseShippingCost, "EUR", language)}
+                            </span>
+                            <span className="checkout__shipping-free-tag">
+                              <i className="ri-gift-line" />
+                              {language === "ru" ? "Бесплатно" : "Free"}
+                            </span>
+                          </span>
+                        ) : (
+                          formatPrice(baseShippingCost, "EUR", language)
+                        )
+                      ) : (
+                        `—`
+                      )}
                     </span>
                   </div>
+
+                  {couponValidation?.valid && !isFreeShipping && couponDeduction > 0 && (
+                    <div className="checkout__summary-row checkout__summary-row--discount">
+                      <span className="checkout__discount-label">
+                        <i className="ri-coupon-3-line" /> {t("checkout.couponDiscount")} ({appliedCoupon.code})
+                      </span>
+                      <span className="checkout__discount-val">
+                        -{formatPrice(couponDeduction, "EUR", language)}
+                      </span>
+                    </div>
+                  )}
 
                   {!hasValidAddress && (
                     <p className="checkout__shipping-hint">
@@ -850,11 +990,100 @@ export default function Checkout() {
                     </p>
                   )}
 
+                  {/* Coupon section: Directly above "Итого к оплате" */}
+                  <div className="checkout__coupon-box">
+                    <label htmlFor="checkoutCouponInput" className="checkout__coupon-label">
+                      <i className="ri-coupon-2-line" />
+                      {t("checkout.couponTitle")}
+                    </label>
+
+                    {!appliedCoupon ? (
+                      <div className="checkout__coupon-form">
+                        <input
+                          id="checkoutCouponInput"
+                          type="text"
+                          className="checkout__coupon-input"
+                          placeholder={t("checkout.couponPlaceholder")}
+                          value={couponCodeInput}
+                          onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleApplyCoupon(e);
+                            }
+                          }}
+                          disabled={couponValidating}
+                          autoComplete="off"
+                          spellCheck="false"
+                        />
+                        <button
+                          type="button"
+                          className="button checkout__coupon-apply-btn"
+                          onClick={handleApplyCoupon}
+                          disabled={!couponCodeInput.trim() || couponValidating}
+                        >
+                          {couponValidating ? "..." : t("checkout.couponApply")}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="checkout__coupon-active-badge">
+                        <div className="checkout__coupon-active-left">
+                          <span className="checkout__coupon-code-pill">
+                            <i className="ri-coupon-3-fill" /> {appliedCoupon.code}
+                          </span>
+                          {appliedCoupon.name && (
+                            <span className="checkout__coupon-name-text">
+                              {appliedCoupon.name}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="checkout__coupon-remove-btn"
+                          onClick={handleRemoveCoupon}
+                          title={t("checkout.couponRemove")}
+                        >
+                          <i className="ri-close-line" />
+                          <span>{t("checkout.couponRemove")}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Deduction notice: Underneath the input / active coupon */}
+                    {appliedCoupon && couponValidation?.valid && (
+                      <div className="checkout__coupon-deduction-msg">
+                        <i className="ri-discount-percent-fill" />
+                        <div className="checkout__coupon-deduction-content">
+                          <span className="checkout__coupon-deduction-label">
+                            {t("checkout.couponDeduction")}
+                          </span>
+                          <strong className="checkout__coupon-deduction-amount">
+                            {isFreeShipping
+                              ? `-${formatPrice(hasValidAddress ? baseShippingCost : 5.0, "EUR", language)} (${t("checkout.couponFreeShipping")})`
+                              : `-${formatPrice(couponDeduction, "EUR", language)}`}
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {couponError && (
+                      <div className="checkout__coupon-error" role="alert">
+                        <i className="ri-error-warning-line" />
+                        <span>{couponError}</span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="checkout__summary-row checkout__summary-row--total">
                     <span>{t("checkout.finalTotal")}</span>
                     <strong className="checkout__final-price">
                       {formatPrice(
-                        hasValidAddress ? finalTotal : itemsSubtotal,
+                        hasValidAddress
+                          ? finalTotal
+                          : Math.max(
+                              0,
+                              itemsSubtotal - (isFreeShipping ? 0 : couponDeduction),
+                            ),
                         "EUR",
                         language,
                       )}

@@ -92,7 +92,9 @@ export default function Privileged() {
   const [couponFilter, setCouponFilter] = useState("all"); // "all" | "public" | "personalized"
   const [couponCode, setCouponCode] = useState("");
   const [couponName, setCouponName] = useState("");
-  const [couponType, setCouponType] = useState("percent"); // "percent" | "fixed" | "gift"
+  const [couponType, setCouponType] = useState("percent"); // "percent" | "fixed" | "gift" | "free_shipping"
+  const [couponUsageType, setCouponUsageType] = useState("unlimited"); // "single" | "unlimited" | "limited"
+  const [couponUsageLimit, setCouponUsageLimit] = useState("10");
   const [couponDiscount, setCouponDiscount] = useState("10");
   const [couponFixedAmount, setCouponFixedAmount] = useState("5");
   const [couponMinAmount, setCouponMinAmount] = useState("");
@@ -126,7 +128,9 @@ export default function Privileged() {
   const [sendingInquiryReply, setSendingInquiryReply] = useState(false);
   const [inquiryFilter, setInquiryFilter] = useState("all"); // "all" | "unread" | "guest" | "registered"
   const [inquirySearch, setInquirySearch] = useState("");
-  const [expandedInquiryMsgIds, setExpandedInquiryMsgIds] = useState(() => new Set());
+  const [expandedInquiryMsgIds, setExpandedInquiryMsgIds] = useState(
+    () => new Set(),
+  );
 
   const toggleInquiryMsgExpand = (id) => {
     setExpandedInquiryMsgIds((prev) => {
@@ -169,7 +173,9 @@ export default function Privileged() {
 
   const handleConfirmTransfer = async () => {
     if (!activeInquiry || !selectedTargetAdminId || transferring) return;
-    const targetAdmin = candidateAdmins.find((a) => a.id === selectedTargetAdminId);
+    const targetAdmin = candidateAdmins.find(
+      (a) => a.id === selectedTargetAdminId,
+    );
     if (!targetAdmin) return;
 
     setTransferring(true);
@@ -189,7 +195,7 @@ export default function Privileged() {
       });
 
       setInquiries((prev) =>
-        prev.map((i) => (i.id === activeInquiry.id ? updated : i))
+        prev.map((i) => (i.id === activeInquiry.id ? updated : i)),
       );
       setTransferModalOpen(false);
       setTransferReason("");
@@ -635,6 +641,8 @@ export default function Privileged() {
     setCouponCode("");
     setCouponName("");
     setCouponType("percent");
+    setCouponUsageType("unlimited");
+    setCouponUsageLimit("10");
     setCouponDiscount("10");
     setCouponFixedAmount("5");
     setCouponMinAmount("");
@@ -700,7 +708,8 @@ export default function Privileged() {
       selectedUserIds.length === 0
     ) {
       await customAlert({
-        title: language === "ru" ? "Пользователи не выбраны" : "No Users Selected",
+        title:
+          language === "ru" ? "Пользователи не выбраны" : "No Users Selected",
         message: t("privileged.coupons.noUserSelectedAlert"),
         type: "warning",
       });
@@ -717,6 +726,13 @@ export default function Privileged() {
       const isForAll = isAudiencePublic ? true : applyToAllUsers;
       const targetUserIds = isForAll ? [] : selectedUserIds;
 
+      const maxUses =
+        couponUsageType === "single"
+          ? 1
+          : couponUsageType === "limited"
+            ? Math.max(1, Number(couponUsageLimit) || 1)
+            : null;
+
       const actionPayload = {
         type: couponType,
         percent:
@@ -724,15 +740,16 @@ export default function Privileged() {
         amount:
           couponType === "fixed" ? Number(couponFixedAmount) || 5 : undefined,
         minAmount:
-          (couponType === "percent" || couponType === "fixed") &&
-          couponMinAmount !== ""
-            ? Number(couponMinAmount)
-            : undefined,
+          couponMinAmount !== "" ? Number(couponMinAmount) : undefined,
         maxAmount:
           (couponType === "percent" || couponType === "fixed") &&
           couponMaxAmount !== ""
             ? Number(couponMaxAmount)
             : undefined,
+        usageType: couponUsageType,
+        maxUses,
+        usedCount: 0,
+        usedByUsers: [],
         hasCondition: hasGiftCondition,
         condition: hasGiftCondition
           ? {
@@ -804,7 +821,12 @@ export default function Privileged() {
       const newCoupon = await createCoupon({
         code: couponCode.trim(),
         name:
-          couponName.trim() || (couponType === "gift" ? giftName.trim() : ""),
+          couponName.trim() ||
+          (couponType === "free_shipping"
+            ? (language === "ru" ? "Бесплатная доставка" : "Free shipping")
+            : couponType === "gift"
+              ? giftName.trim()
+              : ""),
         starts_at: now.toISOString(),
         ends_at: endsAt.toISOString(),
         action: actionPayload,
@@ -988,7 +1010,8 @@ export default function Privileged() {
         language === "ru"
           ? "Вы уверены, что хотите удалить это объявление? Оно сразу перестанет показываться на сайте."
           : "Are you sure you want to delete this announcement? It will immediately stop showing on the website.",
-      confirmText: language === "ru" ? "Удалить объявление" : "Delete Announcement",
+      confirmText:
+        language === "ru" ? "Удалить объявление" : "Delete Announcement",
       type: "danger",
     });
     if (!ok) return;
@@ -1044,8 +1067,8 @@ export default function Privileged() {
             ? "Объявление активировано"
             : "Объявление приостановлено"
           : updated.active
-          ? "Announcement activated"
-          : "Announcement paused",
+            ? "Announcement activated"
+            : "Announcement paused",
       );
     } catch (err) {
       showNotice(err.message || "Ошибка обновления", true);
@@ -1334,7 +1357,9 @@ export default function Privileged() {
           <i
             className={`ri-restart-line privileged__refresh-icon ${loadingData ? "privileged__spin" : ""}`}
           />
-          <span className="privileged__refresh-text">{t("privileged.refresh")}</span>
+          <span className="privileged__refresh-text">
+            {t("privileged.refresh")}
+          </span>
         </button>
       </div>
 
@@ -1654,12 +1679,12 @@ export default function Privileged() {
                             onClick={() => handleToggleUserStatus(u)}
                             title={
                               isStatusPriv
-                                ? (language === "ru"
+                                ? language === "ru"
                                   ? "Нажмите, чтобы отозвать привилегии"
-                                  : "Click to revoke privilege")
-                                : (language === "ru"
+                                  : "Click to revoke privilege"
+                                : language === "ru"
                                   ? "Нажмите, чтобы сделать привилегированным"
-                                  : "Click to make privileged")
+                                  : "Click to make privileged"
                             }
                           >
                             <i
@@ -1671,12 +1696,12 @@ export default function Privileged() {
                             />
                             <span>
                               {isStatusPriv
-                                ? (language === "ru"
+                                ? language === "ru"
                                   ? "Привилегированный"
-                                  : "Privileged")
-                                : (language === "ru"
+                                  : "Privileged"
+                                : language === "ru"
                                   ? "Юзер"
-                                  : "User")}
+                                  : "User"}
                             </span>
                           </button>
                         </td>
@@ -1701,7 +1726,7 @@ export default function Privileged() {
                                     type="button"
                                     className={`privileged__mini-role-btn ${has ? "privileged__mini-role-btn--active" : ""}`}
                                     onClick={() => handleToggleUserRole(u, r)}
-                                    title={`${has ? (language === "ru" ? "Убрать роль " : "Remove role ") : (language === "ru" ? "Назначить роль " : "Add role ")}${formatRoleName(r, language)}`}
+                                    title={`${has ? (language === "ru" ? "Убрать роль " : "Remove role ") : language === "ru" ? "Назначить роль " : "Add role "}${formatRoleName(r, language)}`}
                                   >
                                     {has ? "✓ " : "+ "}
                                     {formatRoleName(r, language)}
@@ -1837,7 +1862,7 @@ export default function Privileged() {
                               type="button"
                               className={`privileged__mini-role-btn ${has ? "privileged__mini-role-btn--active" : ""}`}
                               onClick={() => handleToggleUserRole(u, r)}
-                              title={`${has ? (language === "ru" ? "Убрать роль " : "Remove role ") : (language === "ru" ? "Назначить роль " : "Add role ")}${formatRoleName(r, language)}`}
+                              title={`${has ? (language === "ru" ? "Убрать роль " : "Remove role ") : language === "ru" ? "Назначить роль " : "Add role "}${formatRoleName(r, language)}`}
                             >
                               {has ? "✓ " : "+ "}
                               {formatRoleName(r, language)}
@@ -1937,7 +1962,8 @@ export default function Privileged() {
                       onClick={() => setCouponFilter("public")}
                     >
                       <i className="ri-global-line" />
-                      {t("privileged.coupons.filterPublic")} ({publicCouponsCount})
+                      {t("privileged.coupons.filterPublic")} (
+                      {publicCouponsCount})
                     </button>
                     <button
                       type="button"
@@ -1945,215 +1971,254 @@ export default function Privileged() {
                       onClick={() => setCouponFilter("personalized")}
                     >
                       <i className="ri-user-star-line" />
-                      {t("privileged.coupons.filterPersonalized")} ({personalizedCouponsCount})
+                      {t("privileged.coupons.filterPersonalized")} (
+                      {personalizedCouponsCount})
                     </button>
                   </div>
 
                   {/* Coupons list */}
                   <div className="privileged__coupons-grid">
                     {displayedCoupons.map((coupon) => {
-                const action = coupon.action || {};
-                const isPercent =
-                  action.type === "percent" ||
-                  (!action.type && action.percent != null);
-                const isFixed =
-                  action.type === "fixed" ||
-                  (!action.type && action.amount != null);
-                const isGift = action.type === "gift";
+                      const action = coupon.action || {};
+                      const isFreeShipping = action.type === "free_shipping";
+                      const isPercent =
+                        action.type === "percent" ||
+                        (!action.type && action.percent != null);
+                      const isFixed =
+                        action.type === "fixed" ||
+                        (!action.type && action.amount != null);
+                      const isGift = action.type === "gift";
 
-                const discountLabel = isPercent
-                  ? `${action.percent || 10}%`
-                  : isFixed
-                    ? `${action.amount || 0} €`
-                    : isGift
-                      ? `🎁 ${t("privileged.coupons.giftBadge")}`
-                      : action.percent
-                        ? `${action.percent}%`
-                        : action.amount
-                          ? `${action.amount} €`
-                          : t("privileged.coupons.discountFallback");
+                      const discountLabel = isFreeShipping
+                        ? `🚚 ${t("privileged.coupons.typeFreeShipping")}`
+                        : isPercent
+                          ? `${action.percent || 10}%`
+                          : isFixed
+                            ? `${action.amount || 0} €`
+                            : isGift
+                              ? `🎁 ${t("privileged.coupons.giftBadge")}`
+                              : action.percent
+                                ? `${action.percent}%`
+                                : action.amount
+                                  ? `${action.amount} €`
+                                  : t("privileged.coupons.discountFallback");
 
-                const isExpired =
-                  coupon.ends_at && new Date(coupon.ends_at) < new Date();
-                const target = action.target || {};
-                const isForAll =
-                  target.applyToAll !== false ||
-                  !target.userIds ||
-                  target.userIds.length === 0;
-                const couponCondition =
-                  (action.hasCondition && action.condition) ||
-                  (action.gift?.hasCondition && action.gift?.condition) ||
-                  action.condition;
+                      const isExpired =
+                        coupon.ends_at && new Date(coupon.ends_at) < new Date();
+                      const target = action.target || {};
+                      const isForAll =
+                        target.applyToAll !== false ||
+                        !target.userIds ||
+                        target.userIds.length === 0;
+                      const couponCondition =
+                        (action.hasCondition && action.condition) ||
+                        (action.gift?.hasCondition && action.gift?.condition) ||
+                        action.condition;
 
-                return (
-                  <div
-                    className={`privileged__coupon-card ${isExpired ? "privileged__coupon-card--expired" : ""} ${isGift ? "privileged__coupon-card--gift" : ""}`}
-                    key={coupon.id}
-                  >
-                    <div
-                      className={`privileged__coupon-ticket ${isGift ? "privileged__coupon-ticket--gift" : ""}`}
-                    >
-                      <div className="privileged__coupon-code">
-                        {coupon.code}
-                      </div>
-                      <div className="privileged__coupon-discount">
-                        {discountLabel}
-                      </div>
-                    </div>
-                    <div className="privileged__coupon-body">
-                      <strong className="privileged__coupon-name">
-                        {coupon.name ||
-                          (isGift && action.gift?.name) ||
-                          t("privileged.coupons.nameFallback")}
-                      </strong>
-
-                      {/* Coupon metadata tags */}
-                      <div className="privileged__coupon-tags">
-                        <span
-                          className="privileged__coupon-tag"
-                          title={
-                            !isForAll
-                              ? target.userIds
-                                  .map((uid) => {
-                                    const u = users.find((x) => x.id === uid);
-                                    return u
-                                      ? `${u.first_name || ""} ${u.last_name || ""} (${u.email})`.trim()
-                                      : uid;
-                                  })
-                                  .join(", ")
-                              : ""
-                          }
+                      return (
+                        <div
+                          className={`privileged__coupon-card ${isExpired ? "privileged__coupon-card--expired" : ""} ${isGift ? "privileged__coupon-card--gift" : ""} ${isFreeShipping ? "privileged__coupon-card--shipping" : ""}`}
+                          key={coupon.id}
                         >
-                          <i
-                            className={
-                              isForAll ? "ri-group-line" : "ri-user-line"
-                            }
-                          />
-                          {isForAll
-                            ? t("privileged.coupons.forAllUsers")
-                            : `${t("privileged.coupons.forUsersCount")} ${target.userIds.length}`}
-                        </span>
+                          <div
+                            className={`privileged__coupon-ticket ${isGift ? "privileged__coupon-ticket--gift" : ""} ${isFreeShipping ? "privileged__coupon-ticket--shipping" : ""}`}
+                          >
+                            <div className="privileged__coupon-code">
+                              {coupon.code}
+                            </div>
+                            <div className="privileged__coupon-discount">
+                              {discountLabel}
+                            </div>
+                          </div>
+                          <div className="privileged__coupon-body">
+                            <strong className="privileged__coupon-name">
+                              {coupon.name ||
+                                (isFreeShipping && t("privileged.coupons.typeFreeShipping")) ||
+                                (isGift && action.gift?.name) ||
+                                t("privileged.coupons.nameFallback")}
+                            </strong>
 
-                        {(action.minAmount != null ||
-                          action.maxAmount != null) && (
-                          <span className="privileged__coupon-tag">
-                            {action.minAmount != null &&
-                              `min: ${action.minAmount} €`}
-                            {action.minAmount != null &&
-                              action.maxAmount != null &&
-                              " / "}
-                            {action.maxAmount != null &&
-                              `max: ${action.maxAmount} €`}
-                          </span>
-                        )}
+                            {/* Coupon metadata tags */}
+                            <div className="privileged__coupon-tags">
+                              {/* Usage mode tag */}
+                              <span className="privileged__coupon-tag privileged__coupon-tag--usage">
+                                {action.usageType === "single" || action.maxUses === 1 ? (
+                                  <>
+                                    <i className="ri-user-follow-line" />
+                                    <span>
+                                      {t("privileged.coupons.singleBadge")} ({action.usedCount || 0}/1)
+                                    </span>
+                                  </>
+                                ) : action.usageType === "limited" ? (
+                                  <>
+                                    <i className="ri-numbers-line" />
+                                    <span>
+                                      {t("privileged.coupons.usedTimes")} {action.usedCount || 0} {t("privileged.coupons.timesOf")} {action.maxUses}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="ri-repeat-line" />
+                                    <span>
+                                      {t("privileged.coupons.unlimitedBadge")} ({action.usedCount || 0})
+                                    </span>
+                                  </>
+                                )}
+                              </span>
 
-                        {couponCondition && (
-                          <span className="privileged__coupon-tag privileged__coupon-tag--condition">
-                            <i className="ri-information-line" />
-                            {couponCondition.type === "purchased" && (
-                              <>
-                                {t("privileged.coupons.condPurchased")}:{" "}
-                                {couponCondition.amount} €
-                              </>
-                            )}
-                            {couponCondition.type === "client" &&
-                              couponCondition.clientMode === "since" && (
-                                <>
-                                  {t("privileged.coupons.condOurClient")}{" "}
-                                  {t("privileged.coupons.clientSinceOption")}{" "}
-                                  {formatDate(
-                                    couponCondition.sinceDate,
-                                    language,
+                              <span
+                                className="privileged__coupon-tag"
+                                title={
+                                  !isForAll
+                                    ? target.userIds
+                                        .map((uid) => {
+                                          const u = users.find(
+                                            (x) => x.id === uid,
+                                          );
+                                          return u
+                                            ? `${u.first_name || ""} ${u.last_name || ""} (${u.email})`.trim()
+                                            : uid;
+                                        })
+                                        .join(", ")
+                                    : ""
+                                }
+                              >
+                                <i
+                                  className={
+                                    isForAll ? "ri-group-line" : "ri-user-line"
+                                  }
+                                />
+                                {isForAll
+                                  ? t("privileged.coupons.forAllUsers")
+                                  : `${t("privileged.coupons.forUsersCount")} ${target.userIds.length}`}
+                              </span>
+
+                              {(action.minAmount != null ||
+                                action.maxAmount != null) && (
+                                <span className="privileged__coupon-tag">
+                                  {action.minAmount != null &&
+                                    `min: ${action.minAmount} €`}
+                                  {action.minAmount != null &&
+                                    action.maxAmount != null &&
+                                    " / "}
+                                  {action.maxAmount != null &&
+                                    `max: ${action.maxAmount} €`}
+                                </span>
+                              )}
+
+                              {couponCondition && (
+                                <span className="privileged__coupon-tag privileged__coupon-tag--condition">
+                                  <i className="ri-information-line" />
+                                  {couponCondition.type === "purchased" && (
+                                    <>
+                                      {t("privileged.coupons.condPurchased")}:{" "}
+                                      {couponCondition.amount} €
+                                    </>
                                   )}
-                                </>
+                                  {couponCondition.type === "client" &&
+                                    couponCondition.clientMode === "since" && (
+                                      <>
+                                        {t("privileged.coupons.condOurClient")}{" "}
+                                        {t(
+                                          "privileged.coupons.clientSinceOption",
+                                        )}{" "}
+                                        {formatDate(
+                                          couponCondition.sinceDate,
+                                          language,
+                                        )}
+                                      </>
+                                    )}
+                                  {couponCondition.type === "client" &&
+                                    couponCondition.clientMode ===
+                                      "already" && (
+                                      <>
+                                        {t("privileged.coupons.condOurClient")}{" "}
+                                        {t(
+                                          "privileged.coupons.clientAlreadyOption",
+                                        )}
+                                        :{" "}
+                                        {[
+                                          couponCondition.duration?.years
+                                            ? `${couponCondition.duration.years} ${t("privileged.coupons.durationYears")}`
+                                            : null,
+                                          couponCondition.duration?.months
+                                            ? `${couponCondition.duration.months} ${t("privileged.coupons.durationMonths")}`
+                                            : null,
+                                          couponCondition.duration?.days
+                                            ? `${couponCondition.duration.days} ${t("privileged.coupons.durationDays")}`
+                                            : null,
+                                          couponCondition.duration?.hours
+                                            ? `${couponCondition.duration.hours} ${t("privileged.coupons.durationHours")}`
+                                            : null,
+                                          couponCondition.duration?.minutes
+                                            ? `${couponCondition.duration.minutes} ${t("privileged.coupons.durationMinutes")}`
+                                            : null,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" ") || "0"}
+                                      </>
+                                    )}
+                                </span>
                               )}
-                            {couponCondition.type === "client" &&
-                              couponCondition.clientMode === "already" && (
-                                <>
-                                  {t("privileged.coupons.condOurClient")}{" "}
-                                  {t("privileged.coupons.clientAlreadyOption")}:{" "}
-                                  {[
-                                    couponCondition.duration?.years
-                                      ? `${couponCondition.duration.years} ${t("privileged.coupons.durationYears")}`
-                                      : null,
-                                    couponCondition.duration?.months
-                                      ? `${couponCondition.duration.months} ${t("privileged.coupons.durationMonths")}`
-                                      : null,
-                                    couponCondition.duration?.days
-                                      ? `${couponCondition.duration.days} ${t("privileged.coupons.durationDays")}`
-                                      : null,
-                                    couponCondition.duration?.hours
-                                      ? `${couponCondition.duration.hours} ${t("privileged.coupons.durationHours")}`
-                                      : null,
-                                    couponCondition.duration?.minutes
-                                      ? `${couponCondition.duration.minutes} ${t("privileged.coupons.durationMinutes")}`
-                                      : null,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" ") || "0"}
-                                </>
-                              )}
-                          </span>
-                        )}
-                      </div>
+                            </div>
 
-                      <div className="privileged__coupon-meta">
-                        <span>
-                          {t("privileged.coupons.validUntil")}{" "}
-                          <strong>
-                            {coupon.ends_at
-                              ? formatDate(coupon.ends_at, language)
-                              : t("privileged.coupons.indefinite")}
-                          </strong>
-                        </span>
-                        {isExpired && (
-                          <span className="privileged__expired-badge">
-                            {t("privileged.coupons.expired")}
-                          </span>
-                        )}
+                            <div className="privileged__coupon-meta">
+                              <span>
+                                {t("privileged.coupons.validUntil")}{" "}
+                                <strong>
+                                  {coupon.ends_at
+                                    ? formatDate(coupon.ends_at, language)
+                                    : t("privileged.coupons.indefinite")}
+                                </strong>
+                              </span>
+                              {isExpired && (
+                                <span className="privileged__expired-badge">
+                                  {t("privileged.coupons.expired")}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className="privileged__coupon-delete-btn"
+                              onClick={() =>
+                                handleDeleteCoupon(coupon.id, coupon.code)
+                              }
+                              title={t("privileged.coupons.deleteTitle")}
+                            >
+                              <i className="ri-delete-bin-line" />
+                              {t("privileged.coupons.deleteBtn")}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {coupons.length === 0 && (
+                      <div className="privileged__empty-box">
+                        <i className="ri-ticket-2-line privileged__empty-icon" />
+                        <p>{t("privileged.coupons.empty")}</p>
+                        <button
+                          type="button"
+                          className="button button--ghost"
+                          onClick={() => {
+                            resetCouponForm();
+                            setShowCouponModal(true);
+                          }}
+                        >
+                          <i className="ri-add-line" />
+                          {t("privileged.coupons.createFirst")}
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="privileged__coupon-delete-btn"
-                        onClick={() =>
-                          handleDeleteCoupon(coupon.id, coupon.code)
-                        }
-                        title={t("privileged.coupons.deleteTitle")}
-                      >
-                        <i className="ri-delete-bin-line" />
-                        {t("privileged.coupons.deleteBtn")}
-                      </button>
-                    </div>
+                    )}
+                    {coupons.length > 0 && displayedCoupons.length === 0 && (
+                      <div className="privileged__empty-box">
+                        <i className="ri-ticket-2-line privileged__empty-icon" />
+                        <p>{t("privileged.coupons.empty")}</p>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
-              {coupons.length === 0 && (
-                <div className="privileged__empty-box">
-                  <i className="ri-ticket-2-line privileged__empty-icon" />
-                  <p>{t("privileged.coupons.empty")}</p>
-                  <button
-                    type="button"
-                    className="button button--ghost"
-                    onClick={() => {
-                      resetCouponForm();
-                      setShowCouponModal(true);
-                    }}
-                  >
-                    <i className="ri-add-line" />
-                    {t("privileged.coupons.createFirst")}
-                  </button>
-                </div>
-              )}
-              {coupons.length > 0 && displayedCoupons.length === 0 && (
-                <div className="privileged__empty-box">
-                  <i className="ri-ticket-2-line privileged__empty-icon" />
-                  <p>{t("privileged.coupons.empty")}</p>
-                </div>
-              )}
-            </div>
-          </>
-        );
-      })()}
+                </>
+              );
+            })()}
 
             {/* Create Coupon Modal */}
             {showCouponModal && (
@@ -2243,12 +2308,16 @@ export default function Privileged() {
                       <>
                         <div className="privileged__coupon-audience-info privileged__coupon-audience-info--user">
                           <i className="ri-shield-user-line" />
-                          <span>{t("privileged.coupons.personalizedHint")}</span>
+                          <span>
+                            {t("privileged.coupons.personalizedHint")}
+                          </span>
                         </div>
 
                         {/* Target Users */}
                         <div className="privileged__form-field">
-                          <label>{t("privileged.coupons.targetUsersLabel")}</label>
+                          <label>
+                            {t("privileged.coupons.targetUsersLabel")}
+                          </label>
                           <div className="privileged__user-selector">
                             {selectedUserIds.length > 0 && (
                               <div className="privileged__selected-users">
@@ -2306,8 +2375,12 @@ export default function Privileged() {
                                       const q = userSearchText.toLowerCase();
                                       const fullName =
                                         `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
-                                      const email = (u.email || "").toLowerCase();
-                                      const phone = (u.phone || "").toLowerCase();
+                                      const email = (
+                                        u.email || ""
+                                      ).toLowerCase();
+                                      const phone = (
+                                        u.phone || ""
+                                      ).toLowerCase();
                                       return (
                                         fullName.includes(q) ||
                                         email.includes(q) ||
@@ -2451,6 +2524,20 @@ export default function Privileged() {
                             {t("privileged.coupons.typeGift")}
                           </span>
                         </label>
+
+                        <label
+                          className={`privileged__type-option ${couponType === "free_shipping" ? "privileged__type-option--active" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={couponType === "free_shipping"}
+                            onChange={() => setCouponType("free_shipping")}
+                          />
+                          <span>
+                            <i className="ri-truck-line" />{" "}
+                            {t("privileged.coupons.typeFreeShipping")}
+                          </span>
+                        </label>
                       </div>
                     </div>
 
@@ -2589,6 +2676,98 @@ export default function Privileged() {
                           />
                         </div>
                         {renderConditionFields()}
+                      </div>
+                    )}
+
+                    {couponType === "free_shipping" && (
+                      <div className="privileged__type-settings">
+                        <div className="privileged__form-field">
+                          <label htmlFor="couponMinAmountShipping">
+                            {t("privileged.coupons.minAmountLabel")}
+                          </label>
+                          <input
+                            id="couponMinAmountShipping"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder={t(
+                              "privileged.coupons.minAmountPlaceholder",
+                            )}
+                            value={couponMinAmount}
+                            onChange={(e) =>
+                              setCouponMinAmount(e.target.value)
+                            }
+                          />
+                        </div>
+                        {renderConditionFields()}
+                      </div>
+                    )}
+
+                    {/* Coupon Usage Type (Single, Unlimited, Limited) */}
+                    <div className="privileged__form-field">
+                      <label>{t("privileged.coupons.usageTypeLabel")}</label>
+                      <div className="privileged__type-options">
+                        <label
+                          className={`privileged__type-option ${couponUsageType === "single" ? "privileged__type-option--active" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={couponUsageType === "single"}
+                            onChange={() => setCouponUsageType("single")}
+                          />
+                          <span>
+                            <i className="ri-user-follow-line" />{" "}
+                            {t("privileged.coupons.usageSingle")}
+                          </span>
+                        </label>
+
+                        <label
+                          className={`privileged__type-option ${couponUsageType === "unlimited" ? "privileged__type-option--active" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={couponUsageType === "unlimited"}
+                            onChange={() => setCouponUsageType("unlimited")}
+                          />
+                          <span>
+                            <i className="ri-repeat-line" />{" "}
+                            {t("privileged.coupons.usageUnlimited")}
+                          </span>
+                        </label>
+
+                        <label
+                          className={`privileged__type-option ${couponUsageType === "limited" ? "privileged__type-option--active" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={couponUsageType === "limited"}
+                            onChange={() => setCouponUsageType("limited")}
+                          />
+                          <span>
+                            <i className="ri-numbers-line" />{" "}
+                            {t("privileged.coupons.usageLimited")}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {couponUsageType === "limited" && (
+                      <div className="privileged__form-field">
+                        <label htmlFor="couponUsageLimit">
+                          {t("privileged.coupons.usageLimitLabel")}
+                        </label>
+                        <input
+                          id="couponUsageLimit"
+                          type="number"
+                          min="1"
+                          max="100000"
+                          placeholder={t(
+                            "privileged.coupons.usageLimitPlaceholder",
+                          )}
+                          value={couponUsageLimit}
+                          onChange={(e) => setCouponUsageLimit(e.target.value)}
+                          required
+                        />
                       </div>
                     )}
 
@@ -3082,9 +3261,7 @@ export default function Privileged() {
                               <span className="privileged__inquiry-tag privileged__inquiry-tag--reg">
                                 <i className="ri-check-line" />
                                 <span>
-                                  {language === "ru"
-                                    ? "Клиент"
-                                    : "Registered"}
+                                  {language === "ru" ? "Клиент" : "Registered"}
                                 </span>
                               </span>
                             )}
@@ -3093,10 +3270,14 @@ export default function Privileged() {
                             <a
                               href={`mailto:${activeInquiry.interlocutors_info?.userEmail}`}
                               className="privileged__client-email-link"
-                              title={activeInquiry.interlocutors_info?.userEmail}
+                              title={
+                                activeInquiry.interlocutors_info?.userEmail
+                              }
                             >
                               <i className="ri-mail-line" />
-                              <span>{activeInquiry.interlocutors_info?.userEmail}</span>
+                              <span>
+                                {activeInquiry.interlocutors_info?.userEmail}
+                              </span>
                             </a>
                             {activeInquiry.interlocutors_info?.adminName && (
                               <span className="privileged__assigned-chip">
@@ -3106,7 +3287,10 @@ export default function Privileged() {
                                     ? "Ответственный: "
                                     : "Assigned: "}
                                   <strong>
-                                    {activeInquiry.interlocutors_info?.adminName}
+                                    {
+                                      activeInquiry.interlocutors_info
+                                        ?.adminName
+                                    }
                                   </strong>
                                 </span>
                               </span>
@@ -3120,14 +3304,26 @@ export default function Privileged() {
                           type="button"
                           className="privileged__chat-action-btn privileged__chat-action-btn--history"
                           onClick={() => setHistoryModalOpen(true)}
-                          title={language === "ru" ? "История передач этого клиента" : "Transfer history"}
+                          title={
+                            language === "ru"
+                              ? "История передач этого клиента"
+                              : "Transfer history"
+                          }
                         >
                           <i className="ri-history-line" />
-                          <span>{language === "ru" ? "История передач" : "History"}</span>
-                          {Array.isArray(activeInquiry.interlocutors_info?.transferHistory) &&
-                            activeInquiry.interlocutors_info.transferHistory.length > 0 && (
+                          <span>
+                            {language === "ru" ? "История передач" : "History"}
+                          </span>
+                          {Array.isArray(
+                            activeInquiry.interlocutors_info?.transferHistory,
+                          ) &&
+                            activeInquiry.interlocutors_info.transferHistory
+                              .length > 0 && (
                               <span className="privileged__history-count-badge">
-                                {activeInquiry.interlocutors_info.transferHistory.length}
+                                {
+                                  activeInquiry.interlocutors_info
+                                    .transferHistory.length
+                                }
                               </span>
                             )}
                         </button>
@@ -3136,10 +3332,18 @@ export default function Privileged() {
                           type="button"
                           className="privileged__chat-action-btn privileged__chat-action-btn--transfer"
                           onClick={() => handleOpenTransferModal(activeInquiry)}
-                          title={language === "ru" ? "Передать клиента другому администратору" : "Transfer client"}
+                          title={
+                            language === "ru"
+                              ? "Передать клиента другому администратору"
+                              : "Transfer client"
+                          }
                         >
                           <i className="ri-user-shared-line" />
-                          <span>{language === "ru" ? "Передать клиента" : "Transfer"}</span>
+                          <span>
+                            {language === "ru"
+                              ? "Передать клиента"
+                              : "Transfer"}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -3170,11 +3374,16 @@ export default function Privileged() {
 
                         if (msg.sender === "system") {
                           return (
-                            <div key={msgKey} className="privileged__msg-system-row">
+                            <div
+                              key={msgKey}
+                              className="privileged__msg-system-row"
+                            >
                               <div className="privileged__msg-system-badge">
                                 <i className="ri-user-shared-line" />
                                 <span>{msg.text}</span>
-                                <time>{formatDate(msg.timestamp, language)}</time>
+                                <time>
+                                  {formatDate(msg.timestamp, language)}
+                                </time>
                               </div>
                             </div>
                           );
@@ -3387,7 +3596,9 @@ export default function Privileged() {
               >
                 <i className="ri-add-line privileged__btn-icon" />
                 <span className="privileged__btn-text">
-                  {language === "ru" ? "Создать объявление" : "New Announcement"}
+                  {language === "ru"
+                    ? "Создать объявление"
+                    : "New Announcement"}
                 </span>
               </button>
             </div>
@@ -3417,8 +3628,10 @@ export default function Privileged() {
                 onClick={() => setAnnouncementFilter("large")}
               >
                 <i className="ri-image-2-line" />
-                {language === "ru" ? "Плакаты над рулеткой" : "Roulette Posters"} (
-                {announcements.filter((a) => a.type === "large").length})
+                {language === "ru"
+                  ? "Плакаты над рулеткой"
+                  : "Roulette Posters"}{" "}
+                ({announcements.filter((a) => a.type === "large").length})
               </button>
             </div>
 
@@ -3443,7 +3656,9 @@ export default function Privileged() {
                 >
                   <i className="ri-add-line privileged__btn-icon" />
                   <span className="privileged__btn-text">
-                    {language === "ru" ? "Создать объявление" : "New Announcement"}
+                    {language === "ru"
+                      ? "Создать объявление"
+                      : "New Announcement"}
                   </span>
                 </button>
               </div>
@@ -3451,8 +3666,10 @@ export default function Privileged() {
               <div className="privileged__ann-list">
                 {announcements
                   .filter((item) => {
-                    if (announcementFilter === "small") return item.type === "small";
-                    if (announcementFilter === "large") return item.type === "large";
+                    if (announcementFilter === "small")
+                      return item.type === "small";
+                    if (announcementFilter === "large")
+                      return item.type === "large";
                     return true;
                   })
                   .map((ann) => {
@@ -3476,9 +3693,7 @@ export default function Privileged() {
                               type="button"
                               className="privileged__ann-order-btn"
                               title={
-                                language === "ru"
-                                  ? "Поднять выше"
-                                  : "Move up"
+                                language === "ru" ? "Поднять выше" : "Move up"
                               }
                               disabled={originalIndex === 0}
                               onClick={() =>
@@ -3526,8 +3741,8 @@ export default function Privileged() {
                                     ? "Большой плакат (рулетка)"
                                     : "Large Poster (roulette)"
                                   : language === "ru"
-                                  ? "Небольшая вставка (вверху)"
-                                  : "Small Inset (top)"}
+                                    ? "Небольшая вставка (вверху)"
+                                    : "Small Inset (top)"}
                               </span>
 
                               <span
@@ -3549,8 +3764,8 @@ export default function Privileged() {
                                       ? "Приостановить"
                                       : "Pause"
                                     : language === "ru"
-                                    ? "Включить"
-                                    : "Enable"
+                                      ? "Включить"
+                                      : "Enable"
                                 }
                                 onClick={() =>
                                   handleToggleAnnouncementActive(ann)
@@ -3577,9 +3792,7 @@ export default function Privileged() {
                               <button
                                 type="button"
                                 className="privileged__ann-action-btn privileged__ann-action-btn--delete"
-                                title={
-                                  language === "ru" ? "Удалить" : "Delete"
-                                }
+                                title={language === "ru" ? "Удалить" : "Delete"}
                                 onClick={() => handleDeleteAnnouncement(ann.id)}
                               >
                                 <i className="ri-delete-bin-line" />
@@ -3598,7 +3811,8 @@ export default function Privileged() {
                                     className="privileged__ann-poster-img"
                                     onError={(e) => {
                                       e.currentTarget.style.display = "none";
-                                      const next = e.currentTarget.nextElementSibling;
+                                      const next =
+                                        e.currentTarget.nextElementSibling;
                                       if (next) next.style.display = "flex";
                                     }}
                                   />
@@ -3703,8 +3917,8 @@ export default function Privileged() {
                             ? "Редактировать объявление"
                             : "Edit Announcement"
                           : language === "ru"
-                          ? "Новое объявление"
-                          : "New Announcement"}
+                            ? "Новое объявление"
+                            : "New Announcement"}
                       </h3>
                       <p className="privileged__modal-subtitle">
                         {language === "ru"
@@ -3795,8 +4009,8 @@ export default function Privileged() {
                               ? "Содержимое текстовой вставки"
                               : "Inset Content"
                             : language === "ru"
-                            ? "Изображение большого плаката"
-                            : "Poster Image"}
+                              ? "Изображение большого плаката"
+                              : "Poster Image"}
                         </span>
                       </div>
 
@@ -3938,9 +4152,7 @@ export default function Privileged() {
                         <div className="privileged__form-field">
                           <label className="privileged__field-label">
                             <i className="ri-calendar-line" />
-                            {language === "ru"
-                              ? "Начало показа"
-                              : "Start Date"}
+                            {language === "ru" ? "Начало показа" : "Start Date"}
                           </label>
                           <input
                             type="datetime-local"
@@ -4031,8 +4243,8 @@ export default function Privileged() {
                                 ? "Сохранить изменения"
                                 : "Save Changes"
                               : language === "ru"
-                              ? "Создать объявление"
-                              : "Create Announcement"}
+                                ? "Создать объявление"
+                                : "Create Announcement"}
                           </>
                         )}
                       </button>
@@ -4284,14 +4496,16 @@ export default function Privileged() {
                       {language === "ru" ? "Клиент:" : "Client:"}
                     </span>
                     <strong className="privileged__modal-client-name">
-                      {activeInquiry.interlocutors_info?.userName || "Пользователь"}
+                      {activeInquiry.interlocutors_info?.userName ||
+                        "Пользователь"}
                     </strong>
                     <span className="privileged__modal-client-email">
                       ({activeInquiry.interlocutors_info?.userEmail})
                     </span>
                     {activeInquiry.interlocutors_info?.isGuest && (
                       <span className="privileged__inquiry-tag privileged__inquiry-tag--guest">
-                        <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+                        <i className="ri-mail-line" />{" "}
+                        {language === "ru" ? "Гость" : "Guest"}
                       </span>
                     )}
                   </p>
@@ -4321,7 +4535,10 @@ export default function Privileged() {
                       "Администратор"}
                   </strong>
                   <span className="privileged__muted">
-                    ({activeInquiry.interlocutors_info?.adminEmail || "support@litera.md"})
+                    (
+                    {activeInquiry.interlocutors_info?.adminEmail ||
+                      "support@litera.md"}
+                    )
                   </span>
                 </div>
               </div>
@@ -4374,7 +4591,7 @@ export default function Privileged() {
                   rows={3}
                   placeholder={
                     language === "ru"
-                      ? "Например: Клиент интересуется оптовым заказом книг / Франкоязычная литература..."
+                      ? "Например: Клиент интересуется оптовым заказом книг / Клиент хочет купить спецэффическую книгу..."
                       : "E.g. Client inquiries about wholesale orders / Specific genre specialist..."
                   }
                   value={transferReason}
@@ -4407,9 +4624,7 @@ export default function Privileged() {
                   <>
                     <i className="ri-loader-4-line ri-spin" />
                     <span>
-                      {language === "ru"
-                        ? "Передача..."
-                        : "Transferring..."}
+                      {language === "ru" ? "Передача..." : "Transferring..."}
                     </span>
                   </>
                 ) : (
@@ -4454,14 +4669,16 @@ export default function Privileged() {
                       {language === "ru" ? "Клиент:" : "Client:"}
                     </span>
                     <strong className="privileged__modal-client-name">
-                      {activeInquiry.interlocutors_info?.userName || "Пользователь"}
+                      {activeInquiry.interlocutors_info?.userName ||
+                        "Пользователь"}
                     </strong>
                     <span className="privileged__modal-client-email">
                       ({activeInquiry.interlocutors_info?.userEmail})
                     </span>
                     {activeInquiry.interlocutors_info?.isGuest && (
                       <span className="privileged__inquiry-tag privileged__inquiry-tag--guest">
-                        <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+                        <i className="ri-mail-line" />{" "}
+                        {language === "ru" ? "Гость" : "Guest"}
                       </span>
                     )}
                   </p>
@@ -4492,14 +4709,13 @@ export default function Privileged() {
                 </div>
                 <div className="privileged__history-stat">
                   <span className="privileged__muted">
-                    {language === "ru"
-                      ? "Всего передач:"
-                      : "Total transfers:"}
+                    {language === "ru" ? "Всего передач:" : "Total transfers:"}
                   </span>
                   <span className="privileged__history-badge">
-                    {(
-                      activeInquiry.interlocutors_info?.transferHistory || []
-                    ).length}
+                    {
+                      (activeInquiry.interlocutors_info?.transferHistory || [])
+                        .length
+                    }
                   </span>
                 </div>
               </div>
@@ -4561,7 +4777,7 @@ export default function Privileged() {
                           )}
                         </div>
                       </div>
-                    )
+                    ),
                   )}
                 </div>
               )}

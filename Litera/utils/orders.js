@@ -11,6 +11,7 @@ export async function createOrderInProgress({
   itemsSubtotal,
   shippingCost,
   finalTotal,
+  coupon,
 }) {
   try {
     const response = await fetch(TABLE_URL, {
@@ -30,6 +31,7 @@ export async function createOrderInProgress({
           itemsSubtotal,
           shippingCost,
           finalTotal,
+          coupon: coupon || null,
           createdAt: new Date().toISOString(),
         },
         status: "in_progress",

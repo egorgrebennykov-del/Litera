@@ -1606,7 +1606,7 @@
 /* Coupon Type Selector */
 .privileged__type-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
   gap: 0.6rem;
 }
 
@@ -1783,6 +1783,17 @@
 
 .privileged__coupon-ticket--gift {
   background: linear-gradient(135deg, #059669, #10b981) !important;
+}
+
+.privileged__coupon-ticket--shipping {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9) !important;
+}
+
+.privileged__coupon-tag--usage {
+  color: #4f46e5;
+  background-color: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  font-weight: 600;
 }
 
 @media (max-width: 600px) {
