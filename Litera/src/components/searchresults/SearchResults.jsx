@@ -86,34 +86,19 @@ export default function SearchResults() {
   const cartReady = !needsCartCheck || cartLoaded;
 
   const cached = cache.get(query);
+  const loading = Boolean(query) && !cached && result.query !== query;
   const books = cached ?? (result.query === query ? result.books : []);
-  const [searching, setSearching] = useState(false);
-  const loading =
-    Boolean(query) &&
-    !cached &&
-    (result.query !== query || (searching && books.length === 0));
 
   useEffect(() => {
-    if (!query || cache.get(query)) {
-      setSearching(false);
-      return;
-    }
+    if (!query || cache.get(query)) return;
 
     let cancelled = false;
-    setSearching(true);
-    searchBooks(query, {
-      onProgress: (partialBooks) => {
-        if (!cancelled && partialBooks.length > 0) {
-          setResult({ query, books: partialBooks });
-        }
-      },
-    })
+    searchBooks(query)
       .then((found) => {
         cache.set(query, found);
         if (!cancelled) setResult({ query, books: found });
       })
-      .catch(() => !cancelled && setResult({ query, books: [] }))
-      .finally(() => !cancelled && setSearching(false));
+      .catch(() => !cancelled && setResult({ query, books: [] }));
 
     return () => {
       cancelled = true;

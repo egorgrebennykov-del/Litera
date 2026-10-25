@@ -2016,8 +2016,9 @@ body.dark-theme {
   .litera-chat-panel {
     width: calc(100vw - 28px);
     max-width: none;
-    height: calc(100dvh - var(--mobile-tabbar-height) - 40px);
-    max-height: 640px;
+    height: calc(100dvh - var(--mobile-tabbar-height) - 148px);
+    max-height: 510px;
+    min-height: 220px;
   }
 
   /* Auth pages (login / sign-up): assistant would cover the submit button */
