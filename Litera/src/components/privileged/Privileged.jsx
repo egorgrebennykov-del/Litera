@@ -124,6 +124,16 @@ export default function Privileged() {
   const [sendingInquiryReply, setSendingInquiryReply] = useState(false);
   const [inquiryFilter, setInquiryFilter] = useState("all"); // "all" | "unread" | "guest" | "registered"
   const [inquirySearch, setInquirySearch] = useState("");
+  const [expandedInquiryMsgIds, setExpandedInquiryMsgIds] = useState(() => new Set());
+
+  const toggleInquiryMsgExpand = (id) => {
+    setExpandedInquiryMsgIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Announcements state
   const [announcements, setAnnouncements] = useState([]);
@@ -3036,13 +3046,39 @@ export default function Privileged() {
                     {/* Messages feed */}
                     <div className="privileged__chat-feed">
                       {(activeInquiry.chat || []).map((msg, idx) => {
+                        const msgKey = msg.id || `admin-inq-${idx}`;
                         const isAdmin = msg.sender === "admin";
+                        const isLongMsg =
+                          Boolean(msg.text) &&
+                          (msg.text.length > 55 ||
+                            (msg.text.match(/\n/g) || []).length >= 2 ||
+                            (!msg.text.includes(" ") && msg.text.length > 32));
+                        const isExpanded = expandedInquiryMsgIds.has(msgKey);
+
                         return (
                           <div
-                            key={msg.id || idx}
+                            key={msgKey}
                             className={`privileged__msg-row ${isAdmin ? "privileged__msg-row--admin" : "privileged__msg-row--user"}`}
                           >
-                            <div className="privileged__msg-bubble">
+                            <div
+                              className={`privileged__msg-bubble ${
+                                isLongMsg
+                                  ? isExpanded
+                                    ? "privileged__msg-bubble--expanded"
+                                    : "privileged__msg-bubble--collapsed"
+                                  : ""
+                              }`}
+                              onClick={
+                                isLongMsg && !isExpanded
+                                  ? () => toggleInquiryMsgExpand(msgKey)
+                                  : undefined
+                              }
+                              style={
+                                isLongMsg && !isExpanded
+                                  ? { cursor: "pointer" }
+                                  : undefined
+                              }
+                            >
                               <div className="privileged__msg-author">
                                 {isAdmin
                                   ? msg.senderName || "Администратор"
@@ -3051,6 +3087,44 @@ export default function Privileged() {
                               <div className="privileged__msg-text">
                                 {msg.text}
                               </div>
+
+                              {isLongMsg && (
+                                <button
+                                  type="button"
+                                  className="privileged__msg-expand-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleInquiryMsgExpand(msgKey);
+                                  }}
+                                  title={
+                                    isExpanded
+                                      ? language === "ru"
+                                        ? "Свернуть сообщение"
+                                        : "Collapse"
+                                      : language === "ru"
+                                        ? "Раскрыть полностью"
+                                        : "Expand"
+                                  }
+                                  aria-label={
+                                    isExpanded
+                                      ? language === "ru"
+                                        ? "Свернуть сообщение"
+                                        : "Collapse"
+                                      : language === "ru"
+                                        ? "Раскрыть полностью"
+                                        : "Expand"
+                                  }
+                                >
+                                  <i
+                                    className={
+                                      isExpanded
+                                        ? "ri-arrow-up-s-line"
+                                        : "ri-arrow-down-s-line"
+                                    }
+                                  />
+                                </button>
+                              )}
+
                               <div className="privileged__msg-footer">
                                 <span>
                                   {formatDate(msg.timestamp, language)}

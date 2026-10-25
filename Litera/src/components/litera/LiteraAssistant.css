@@ -414,8 +414,8 @@
   box-sizing: border-box;
   min-width: 44px;
   max-width: 100%;
-  word-break: break-all;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
   position: relative;
 }
 
@@ -425,8 +425,8 @@
   border-bottom-left-radius: 4px;
   border: 1px solid var(--litera-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .litera-msg-row--user .litera-msg-bubble {
@@ -437,20 +437,32 @@
   text-align: left;
   max-width: 100%;
   min-width: 0;
-  word-break: break-all;
+  word-break: normal;
   overflow-wrap: anywhere;
 }
 
 .litera-msg-text {
   margin: 0;
   white-space: pre-wrap;
-  word-break: break-all;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
   max-width: 100%;
   min-width: 0;
 }
 
-/* Collapsible long user messages with centered three dots */
+.litera-msg-row--assistant .litera-msg-text {
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: manual;
+  line-height: 1.55;
+}
+
+.litera-msg-row--user .litera-msg-text {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Collapsible long user messages with centered minimalist arrow */
 .litera-msg-bubble--collapsed .litera-msg-text {
   max-height: 64px;
   overflow: hidden;
@@ -460,7 +472,7 @@
 }
 
 .litera-msg-bubble--collapsed {
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .litera-msg-bubble--expanded .litera-msg-text {
@@ -469,37 +481,28 @@
   display: block;
 }
 
-.litera-msg-dots-btn {
+.litera-msg-expand-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 6px auto 2px auto;
-  padding: 3px 16px;
-  background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 12px;
+  margin: 4px auto 0 auto;
+  padding: 2px 14px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 10px;
   color: #ffffff;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: 1.15rem;
   line-height: 1;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   outline: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   user-select: none;
   width: fit-content;
 }
 
-.litera-msg-dots-btn:hover {
-  background: rgba(255, 255, 255, 0.42);
-  transform: scale(1.06);
-}
-
-.litera-msg-dots {
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: 3px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.litera-msg-expand-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(1px);
 }
 
 .litera-msg-timestamp {
@@ -833,12 +836,14 @@
 
 .litera-chat-input-form {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   background: var(--litera-purple-bg);
   border: 1px solid var(--litera-border);
-  border-radius: 24px;
-  padding: 4px 6px 4px 14px;
+  border-radius: 26px;
+  padding: 4px 6px 4px 16px;
+  min-height: 48px;
+  box-sizing: border-box;
   transition: border-color 0.2s, border-radius 0.2s, box-shadow 0.2s;
 }
 
@@ -847,9 +852,11 @@
   box-shadow: 0 0 0 2px rgba(121, 82, 179, 0.15);
 }
 
+.litera-chat-input-form.multiline,
 .litera-chat-input-form.litera-input-expanded {
-  border-radius: 16px;
-  padding: 8px 8px 8px 14px;
+  align-items: flex-end;
+  border-radius: 18px;
+  padding: 8px 8px 8px 16px;
 }
 
 .litera-chat-textarea {
@@ -857,15 +864,18 @@
   background: transparent;
   border: none;
   outline: none;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.9rem;
+  line-height: 24px;
   color: var(--litera-text);
   resize: none;
-  min-height: 28px;
+  min-height: 24px;
+  height: 24px;
   max-height: 110px;
   overflow-y: auto;
   font-family: inherit;
-  padding: 4px 0;
+  padding: 0;
+  margin: 0;
+  display: block;
   box-sizing: border-box;
 }
 
@@ -884,6 +894,7 @@
 
 .litera-chat-textarea::placeholder {
   color: var(--litera-text-muted);
+  line-height: 24px;
 }
 
 .litera-input-actions {
@@ -891,6 +902,12 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  align-self: center;
+  margin-bottom: 0;
+}
+
+.litera-chat-input-form.multiline .litera-input-actions,
+.litera-chat-input-form.litera-input-expanded .litera-input-actions {
   align-self: flex-end;
   margin-bottom: 2px;
 }

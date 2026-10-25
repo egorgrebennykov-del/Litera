@@ -110,17 +110,20 @@ export default function LiteraAssistant() {
     textarea.style.height = "auto";
     const scrollHeight = textarea.scrollHeight;
 
-    // Expand button appears as soon as content wraps past 1 line (~38px+), or length > 40, or has newline
-    const isLarge = scrollHeight > 38 || input.length > 40 || input.includes("\n");
+    // Expand button appears as soon as content wraps past 1 line (~34px+), or length > 40, or has newline
+    const isLarge = scrollHeight > 34 || input.length > 40 || input.includes("\n");
     setIsTooLarge(isLarge);
 
     if (isExpanded) {
       // Substantial expansion mode
       textarea.style.height = "220px";
-    } else {
-      // Normal auto-expand: grows smoothly line-by-line up to 110px (~5 lines)
-      const targetHeight = Math.min(Math.max(scrollHeight, 28), 110);
+    } else if (isLarge) {
+      // Multi-line auto-expand: grows smoothly line-by-line up to 110px (~5 lines)
+      const targetHeight = Math.min(Math.max(scrollHeight, 24), 110);
       textarea.style.height = `${targetHeight}px`;
+    } else {
+      // Single line: neat 24px height perfectly centered
+      textarea.style.height = "24px";
     }
   }, [input, isExpanded]);
 
@@ -601,7 +604,7 @@ export default function LiteraAssistant() {
                         {isLongMsg && (
                           <button
                             type="button"
-                            className="litera-msg-dots-btn"
+                            className="litera-msg-expand-btn"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleMsgExpand(msg.id);
@@ -625,13 +628,13 @@ export default function LiteraAssistant() {
                                   : "Show full message"
                             }
                           >
-                            <span className="litera-msg-dots">
-                              {isMsgExpanded ? (
-                                <i className="ri-arrow-up-s-line" />
-                              ) : (
-                                "•••"
-                              )}
-                            </span>
+                            <i
+                              className={
+                                isMsgExpanded
+                                  ? "ri-arrow-up-s-line"
+                                  : "ri-arrow-down-s-line"
+                              }
+                            />
                           </button>
                         )}
 
@@ -809,7 +812,7 @@ export default function LiteraAssistant() {
             {/* Input Bar */}
             <div className={`litera-chat-footer ${isExpanded ? "footer-expanded" : ""}`}>
               <form
-                className={`litera-chat-input-form ${isExpanded ? "litera-input-expanded" : ""}`}
+                className={`litera-chat-input-form ${isTooLarge || isExpanded ? "multiline" : ""} ${isExpanded ? "litera-input-expanded" : ""}`}
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();

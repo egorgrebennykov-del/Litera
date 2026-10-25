@@ -2145,6 +2145,60 @@
 
 .privileged__msg-text {
   white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.privileged__msg-bubble--collapsed .privileged__msg-text {
+  max-height: 64px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.privileged__msg-bubble--collapsed {
+  padding-bottom: 6px;
+}
+
+.privileged__msg-bubble--expanded .privileged__msg-text {
+  max-height: none;
+  overflow: visible;
+  display: block;
+}
+
+.privileged__msg-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px auto 2px auto;
+  padding: 2px 14px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  outline: none;
+  user-select: none;
+  width: fit-content;
+}
+
+.privileged__msg-row--user .privileged__msg-expand-btn {
+  background: rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.25);
+  color: #4f46e5;
+}
+
+.privileged__msg-expand-btn:hover {
+  transform: translateY(1px);
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.privileged__msg-row--user .privileged__msg-expand-btn:hover {
+  background: rgba(79, 70, 229, 0.2);
 }
 
 .privileged__msg-footer {

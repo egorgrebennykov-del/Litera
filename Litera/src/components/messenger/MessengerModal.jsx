@@ -45,6 +45,16 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [isEditingGuest, setIsEditingGuest] = useState(false);
+  const [expandedMsgIds, setExpandedMsgIds] = useState(() => new Set());
+
+  const toggleMsgExpand = (id) => {
+    setExpandedMsgIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const messagesEndRef = useRef(null);
   const pollTimerRef = useRef(null);
@@ -440,19 +450,83 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
                 </div>
               ) : (
                 messages.map((msg, idx) => {
+                  const msgKey = msg.id || `msg-${idx}`;
                   const isUser = msg.sender === "user";
+                  const isLongMsg =
+                    Boolean(msg.text) &&
+                    (msg.text.length > 55 ||
+                      (msg.text.match(/\n/g) || []).length >= 2 ||
+                      (!msg.text.includes(" ") && msg.text.length > 32));
+                  const isMsgExpanded = expandedMsgIds.has(msgKey);
+
                   return (
                     <div
-                      key={msg.id || idx}
+                      key={msgKey}
                       className={`inquiry-msg-row ${isUser ? "inquiry-msg-row--user" : "inquiry-msg-row--admin"}`}
                     >
-                      <div className="inquiry-msg-bubble">
+                      <div
+                        className={`inquiry-msg-bubble ${
+                          isLongMsg
+                            ? isMsgExpanded
+                              ? "inquiry-msg-bubble--expanded"
+                              : "inquiry-msg-bubble--collapsed"
+                            : ""
+                        }`}
+                        onClick={
+                          isLongMsg && !isMsgExpanded
+                            ? () => toggleMsgExpand(msgKey)
+                            : undefined
+                        }
+                        style={
+                          isLongMsg && !isMsgExpanded
+                            ? { cursor: "pointer" }
+                            : undefined
+                        }
+                      >
                         {!isUser && (
                           <div className="inquiry-msg-sender">
                             {msg.senderName || adminName}
                           </div>
                         )}
                         <div className="inquiry-msg-text">{msg.text}</div>
+
+                        {isLongMsg && (
+                          <button
+                            type="button"
+                            className="inquiry-msg-expand-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleMsgExpand(msgKey);
+                            }}
+                            title={
+                              language === "ru"
+                                ? isMsgExpanded
+                                  ? "Свернуть сообщение"
+                                  : "Раскрыть полностью"
+                                : isMsgExpanded
+                                  ? "Collapse message"
+                                  : "Show full message"
+                            }
+                            aria-label={
+                              language === "ru"
+                                ? isMsgExpanded
+                                  ? "Свернуть сообщение"
+                                  : "Раскрыть полностью"
+                                : isMsgExpanded
+                                  ? "Collapse message"
+                                  : "Show full message"
+                            }
+                          >
+                            <i
+                              className={
+                                isMsgExpanded
+                                  ? "ri-arrow-up-s-line"
+                                  : "ri-arrow-down-s-line"
+                              }
+                            />
+                          </button>
+                        )}
+
                         <div className="inquiry-msg-meta">
                           <span className="inquiry-msg-time">
                             {formatMsgTime(msg.timestamp)}
