@@ -1860,8 +1860,8 @@ body.dark-theme {
 
   /* Litera assistant sits above the tab bar */
   .litera-assistant-root {
-    right: 14px;
-    bottom: calc(var(--mobile-tabbar-height) + 14px + env(safe-area-inset-bottom));
+    right: 14px !important;
+    bottom: calc(var(--mobile-tabbar-height) + 22px + env(safe-area-inset-bottom)) !important;
   }
 
   .show-scroll {

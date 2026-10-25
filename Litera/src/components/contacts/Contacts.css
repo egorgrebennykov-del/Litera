@@ -44,7 +44,7 @@
 
 .contacts__hero-grid {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 306px 1fr;
   gap: 2.75rem;
   align-items: center;
 }
@@ -53,7 +53,7 @@
 .contacts__photo-wrap {
   position: relative;
   width: 100%;
-  max-width: 300px;
+  max-width: 306px;
   margin-inline: auto;
 }
 
@@ -79,11 +79,12 @@
   object-fit: cover;
   object-position: center top;
   display: block;
+  transform: scale(1.02);
   transition: transform 0.35s ease;
 }
 
 .contacts__photo-wrap:hover .contacts__photo {
-  transform: scale(1.03);
+  transform: scale(1.05);
 }
 
 .contacts__photo-glow {
@@ -417,7 +418,7 @@
   }
 
   .contacts__photo-wrap {
-    max-width: 240px;
+    max-width: 245px;
   }
 }
 

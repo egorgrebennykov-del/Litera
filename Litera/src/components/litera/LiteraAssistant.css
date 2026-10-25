@@ -33,6 +33,13 @@
   font-family: inherit;
 }
 
+@media screen and (max-width: 1149px) {
+  .litera-assistant-root {
+    right: 14px;
+    bottom: calc(var(--mobile-tabbar-height, 4rem) + 22px + env(safe-area-inset-bottom));
+  }
+}
+
 /* Floating Trigger Button */
 .litera-trigger-container {
   position: relative;
