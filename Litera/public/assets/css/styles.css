@@ -553,6 +553,16 @@ body.dark-theme {
   transition: box-shadow 0.4s;
 }
 
+.button i:first-child:not(:last-child) {
+  margin-right: 0.55rem;
+  vertical-align: middle;
+}
+
+.button i:last-child:not(:first-child) {
+  margin-left: 0.55rem;
+  vertical-align: middle;
+}
+
 .button:hover {
   box-shadow: 0 4px 32px hsla(230, 72%, 32%, 0.4);
 }

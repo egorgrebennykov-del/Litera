@@ -148,7 +148,7 @@ export default function Cart({ onSearch }) {
         {!loading && items.length > 0 && (
           <Link to="/checkout" className="button cart__order-btn">
             <i className="ri-shopping-bag-3-line" />
-            {t("cart.makeOrder")}
+            <span>{t("cart.makeOrder")}</span>
           </Link>
         )}
       </div>

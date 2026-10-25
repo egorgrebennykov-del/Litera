@@ -51,6 +51,9 @@ export function resolveUserRoles(user) {
   }
 
   const roleSet = new Set();
+  // Любой привилегированный пользователь также всегда имеет статус/роль VIP
+  roleSet.add("vip");
+
   for (const r of parsedRoles) {
     if (!r || typeof r !== "string") continue;
     const norm = r.trim().toLowerCase();

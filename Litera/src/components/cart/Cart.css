@@ -12,15 +12,24 @@
 }
 
 .cart__order-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.65rem !important;
   padding: 0.75rem 1.5rem;
   font-weight: var(--font-semi-bold);
   box-shadow: 0 4px 12px hsla(230, 62%, 56%, 0.25);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+.cart__order-btn i {
+  font-size: 1.25rem !important;
+  margin-right: 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
 }
 
 .cart__order-btn:hover {
