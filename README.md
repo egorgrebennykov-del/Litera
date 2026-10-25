@@ -12,6 +12,18 @@
 
 ---
 
+## 🔑 Test Users / Demo Accounts (For Reviewers)
+
+There are **3 pre-configured test accounts** in the database (2 privileged administrators/VIPs and 1 standard user). Enter the **Name (Login / Email)** and **Password** on the `/login` page:
+
+| Account Type / Role | Name (Login) | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **Privileged User 1** (`privileged`) | `test_vip_1` | `test_vip_1` | Full access + Admin Control Panel (`/privileged`), store badges, coupons, announcements, orders & inquiries management |
+| **Privileged User 2** (`privileged`) | `test_vip_2` | `test_vip_2` | Full access + Admin Control Panel (`/privileged`), store badges, coupons, announcements, orders & inquiries management |
+| **Standard User** (`user`) | `test_user` | `test_user` | Standard authenticated user access (`/profile`, `/cart`, `/checkout`, `/orders`, creating/editing/deleting own reviews on `/testimonial`) |
+
+---
+
 ## 🚀 How to Install Packages and Run the Project Locally
 
 ### Prerequisites
@@ -153,6 +165,12 @@ Litera/
   - **Saved Delivery Addresses & Phones (`user.adresses` & `user.phones` on `/checkout`):** Logged-in users can **Create**, **Read**, and **Delete** saved delivery addresses and phone numbers.
   - **Orders & Inquiries:** Logged-in users can **Create** orders (`/checkout`) and real-time support chat threads with administrators.
   - **Privileged / Admin Users (`/privileged`):** Can also perform full CRUD on site-wide **Announcements** (`announcements`), **Discount Coupons** (`coupons`), **Users** (`user`), and manage **Orders** and **GitHub Actions**.
+- **Pre-configured Test Accounts for Reviewers:**
+  - **Privileged Users (2 accounts):**
+    1. Name / Login: `test_vip_1` | Password: `test_vip_1`
+    2. Name / Login: `test_vip_2` | Password: `test_vip_2`
+  - **Standard Authenticated User (1 account):**
+    3. Name / Login: `test_user` | Password: `test_user`
 
 ---
 
