@@ -21,6 +21,8 @@ import {
   fetchAllInquiries,
   sendInquiryMessage,
   markInquiryReadByAdmin,
+  getCandidateAdmins,
+  transferInquiryAdmin,
 } from "../../../utils/inquiries";
 import {
   fetchAllAnnouncementsAdmin,
@@ -133,6 +135,87 @@ export default function Privileged() {
       else next.add(id);
       return next;
     });
+  };
+
+  // Inquiry transfer and history state
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [candidateAdmins, setCandidateAdmins] = useState([]);
+  const [selectedTargetAdminId, setSelectedTargetAdminId] = useState("");
+  const [transferReason, setTransferReason] = useState("");
+  const [transferring, setTransferring] = useState(false);
+
+  const handleOpenTransferModal = async (inq) => {
+    try {
+      setTransferReason("");
+      const admins = await getCandidateAdmins();
+      setCandidateAdmins(admins || []);
+      const currentAdminId = inq?.interlocutors_info?.adminId;
+      const otherAdmins = (admins || []).filter((a) => a.id !== currentAdminId);
+      setSelectedTargetAdminId(otherAdmins[0]?.id || admins?.[0]?.id || "");
+      setTransferModalOpen(true);
+    } catch (err) {
+      console.warn("Failed to load candidate admins:", err);
+      await customAlert({
+        title: language === "ru" ? "Ошибка" : "Error",
+        message:
+          language === "ru"
+            ? "Не удалось загрузить список администраторов"
+            : "Failed to load admin list",
+        type: "danger",
+      });
+    }
+  };
+
+  const handleConfirmTransfer = async () => {
+    if (!activeInquiry || !selectedTargetAdminId || transferring) return;
+    const targetAdmin = candidateAdmins.find((a) => a.id === selectedTargetAdminId);
+    if (!targetAdmin) return;
+
+    setTransferring(true);
+    try {
+      const targetAdminName =
+        `${targetAdmin.firstName || ""} ${targetAdmin.lastName || ""}`.trim() ||
+        targetAdmin.email ||
+        "Администратор";
+
+      const updated = await transferInquiryAdmin({
+        inquiryId: activeInquiry.id,
+        toAdminId: targetAdmin.id,
+        toAdminName: targetAdminName,
+        toAdminEmail: targetAdmin.email || "",
+        reason: transferReason,
+        fromAdminUser: cookieUser || getCookieUser(),
+      });
+
+      setInquiries((prev) =>
+        prev.map((i) => (i.id === activeInquiry.id ? updated : i))
+      );
+      setTransferModalOpen(false);
+      setTransferReason("");
+
+      await customAlert({
+        title: language === "ru" ? "Клиент передан" : "Client Transferred",
+        message:
+          language === "ru"
+            ? `Диалог с клиентом успешно передан администратору: ${targetAdminName}`
+            : `Client inquiry has been successfully transferred to: ${targetAdminName}`,
+        type: "success",
+      });
+    } catch (err) {
+      console.error("Transfer error:", err);
+      await customAlert({
+        title: language === "ru" ? "Ошибка передачи" : "Transfer Error",
+        message:
+          err.message ||
+          (language === "ru"
+            ? "Не удалось передать диалог"
+            : "Failed to transfer inquiry"),
+        type: "danger",
+      });
+    } finally {
+      setTransferring(false);
+    }
   };
 
   // Announcements state
@@ -3022,6 +3105,36 @@ export default function Privileged() {
                           </div>
                         </div>
                       </div>
+
+                      <div className="privileged__chat-header-actions">
+                        <button
+                          type="button"
+                          className="button button--outline privileged__chat-action-btn"
+                          onClick={() => setHistoryModalOpen(true)}
+                          title={language === "ru" ? "История передач этого клиента" : "Transfer history"}
+                        >
+                          <i className="ri-history-line" />
+                          <span>
+                            {language === "ru" ? "История передач" : "History"}
+                            {Array.isArray(activeInquiry.interlocutors_info?.transferHistory) &&
+                              activeInquiry.interlocutors_info.transferHistory.length > 0 && (
+                                <span className="privileged__history-count-badge">
+                                  {activeInquiry.interlocutors_info.transferHistory.length}
+                                </span>
+                              )}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="button button--primary privileged__chat-action-btn"
+                          onClick={() => handleOpenTransferModal(activeInquiry)}
+                          title={language === "ru" ? "Передать клиента другому администратору" : "Transfer client"}
+                        >
+                          <i className="ri-user-shared-line" />
+                          <span>{language === "ru" ? "Передать клиента" : "Transfer"}</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Guest Notification Banner */}
@@ -3047,6 +3160,19 @@ export default function Privileged() {
                     <div className="privileged__chat-feed">
                       {(activeInquiry.chat || []).map((msg, idx) => {
                         const msgKey = msg.id || `admin-inq-${idx}`;
+
+                        if (msg.sender === "system") {
+                          return (
+                            <div key={msgKey} className="privileged__msg-system-row">
+                              <div className="privileged__msg-system-badge">
+                                <i className="ri-user-shared-line" />
+                                <span>{msg.text}</span>
+                                <time>{formatDate(msg.timestamp, language)}</time>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         const isAdmin = msg.sender === "admin";
                         const isLongMsg =
                           Boolean(msg.text) &&
@@ -4119,6 +4245,315 @@ export default function Privileged() {
                 onClick={() => setSelectedLogAction(null)}
               >
                 {t("privileged.gitActions.closeLogs")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Inquiry Modal */}
+      {transferModalOpen && activeInquiry && (
+        <div
+          className="privileged__modal-backdrop"
+          onClick={() => setTransferModalOpen(false)}
+        >
+          <div
+            className="privileged__modal privileged__modal--transfer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="privileged__modal-header">
+              <div className="privileged__modal-header-icon">
+                <i className="ri-user-shared-line" />
+              </div>
+              <div>
+                <h3>
+                  {language === "ru"
+                    ? "Передать клиента другому администратору"
+                    : "Transfer Client to Another Admin"}
+                </h3>
+                <p className="privileged__muted">
+                  {language === "ru"
+                    ? `Клиент: ${activeInquiry.interlocutors_info?.userName || "Пользователь"} (${activeInquiry.interlocutors_info?.userEmail})`
+                    : `Client: ${activeInquiry.interlocutors_info?.userName || "User"} (${activeInquiry.interlocutors_info?.userEmail})`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="privileged__modal-close"
+                onClick={() => setTransferModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="privileged__modal-body">
+              <div className="privileged__form-group">
+                <label className="privileged__form-label">
+                  {language === "ru"
+                    ? "Текущий ответственный администратор"
+                    : "Current Assigned Administrator"}
+                </label>
+                <div className="privileged__current-admin-pill">
+                  <i className="ri-user-star-line" />
+                  <strong>
+                    {activeInquiry.interlocutors_info?.adminName ||
+                      "Администратор"}
+                  </strong>
+                  <span className="privileged__muted">
+                    ({activeInquiry.interlocutors_info?.adminEmail || "support@litera.md"})
+                  </span>
+                </div>
+              </div>
+
+              <div className="privileged__form-group">
+                <label className="privileged__form-label">
+                  {language === "ru"
+                    ? "Выберите нового администратора"
+                    : "Select New Administrator"}{" "}
+                  *
+                </label>
+                <select
+                  className="privileged__select"
+                  value={selectedTargetAdminId}
+                  onChange={(e) => setSelectedTargetAdminId(e.target.value)}
+                >
+                  {candidateAdmins.map((admin) => {
+                    const isCurrent =
+                      admin.id === activeInquiry.interlocutors_info?.adminId;
+                    const name =
+                      `${admin.firstName || ""} ${admin.lastName || ""}`.trim() ||
+                      admin.email ||
+                      "Администратор";
+                    return (
+                      <option
+                        key={admin.id}
+                        value={admin.id}
+                        disabled={isCurrent}
+                      >
+                        {name} ({admin.email}){" "}
+                        {isCurrent
+                          ? language === "ru"
+                            ? "— текущий"
+                            : "— current"
+                          : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div className="privileged__form-group">
+                <label className="privileged__form-label">
+                  {language === "ru"
+                    ? "Причина передачи / Примечание (необязательно)"
+                    : "Transfer Reason / Note (optional)"}
+                </label>
+                <textarea
+                  className="privileged__textarea"
+                  rows={3}
+                  placeholder={
+                    language === "ru"
+                      ? "Например: Клиент интересуется оптовым заказом книг / Франкоязычная литература..."
+                      : "E.g. Client inquiries about wholesale orders / Specific genre specialist..."
+                  }
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="privileged__modal-actions">
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={() => setTransferModalOpen(false)}
+                disabled={transferring}
+              >
+                {language === "ru" ? "Отмена" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={handleConfirmTransfer}
+                disabled={
+                  !selectedTargetAdminId ||
+                  transferring ||
+                  selectedTargetAdminId ===
+                    activeInquiry.interlocutors_info?.adminId
+                }
+              >
+                {transferring ? (
+                  <>
+                    <i className="ri-loader-4-line ri-spin" />
+                    <span>
+                      {language === "ru"
+                        ? "Передача..."
+                        : "Transferring..."}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <i className="ri-check-line" />
+                    <span>
+                      {language === "ru"
+                        ? "Подтвердить передачу"
+                        : "Confirm Transfer"}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer History Modal */}
+      {historyModalOpen && activeInquiry && (
+        <div
+          className="privileged__modal-backdrop"
+          onClick={() => setHistoryModalOpen(false)}
+        >
+          <div
+            className="privileged__modal privileged__modal--history"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="privileged__modal-header">
+              <div className="privileged__modal-header-icon privileged__modal-header-icon--history">
+                <i className="ri-history-line" />
+              </div>
+              <div>
+                <h3>
+                  {language === "ru"
+                    ? "История передачи клиента"
+                    : "Client Transfer History"}
+                </h3>
+                <p className="privileged__muted">
+                  {activeInquiry.interlocutors_info?.userName ||
+                    "Пользователь"}{" "}
+                  • {activeInquiry.interlocutors_info?.userEmail}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="privileged__modal-close"
+                onClick={() => setHistoryModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="privileged__modal-body">
+              <div className="privileged__history-summary-box">
+                <div className="privileged__history-stat">
+                  <span className="privileged__muted">
+                    {language === "ru"
+                      ? "Текущий администратор:"
+                      : "Current admin:"}
+                  </span>
+                  <strong>
+                    {activeInquiry.interlocutors_info?.adminName ||
+                      "Администратор"}
+                  </strong>
+                </div>
+                <div className="privileged__history-stat">
+                  <span className="privileged__muted">
+                    {language === "ru"
+                      ? "Всего передач:"
+                      : "Total transfers:"}
+                  </span>
+                  <span className="privileged__history-badge">
+                    {(
+                      activeInquiry.interlocutors_info?.transferHistory || []
+                    ).length}
+                  </span>
+                </div>
+              </div>
+
+              {!activeInquiry.interlocutors_info?.transferHistory ||
+              activeInquiry.interlocutors_info.transferHistory.length === 0 ? (
+                <div className="privileged__history-empty">
+                  <i className="ri-shield-user-line" />
+                  <p>
+                    {language === "ru"
+                      ? `Этот диалог ещё не передавался. За клиентом закреплен администратор: ${
+                          activeInquiry.interlocutors_info?.adminName ||
+                          "Администратор"
+                        }.`
+                      : `This client inquiry has not been transferred yet. Assigned to: ${
+                          activeInquiry.interlocutors_info?.adminName || "Admin"
+                        }.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="privileged__transfer-timeline">
+                  {activeInquiry.interlocutors_info.transferHistory.map(
+                    (tr, idx) => (
+                      <div
+                        key={tr.id || idx}
+                        className="privileged__timeline-item"
+                      >
+                        <div className="privileged__timeline-marker">
+                          <span className="privileged__timeline-number">
+                            {idx + 1}
+                          </span>
+                          {idx <
+                            activeInquiry.interlocutors_info.transferHistory
+                              .length -
+                              1 && (
+                            <span className="privileged__timeline-line" />
+                          )}
+                        </div>
+                        <div className="privileged__timeline-content">
+                          <div className="privileged__timeline-header">
+                            <div className="privileged__timeline-route">
+                              <span className="privileged__timeline-from">
+                                {tr.fromAdminName}
+                              </span>
+                              <i className="ri-arrow-right-line" />
+                              <span className="privileged__timeline-to">
+                                {tr.toAdminName}
+                              </span>
+                            </div>
+                            <time className="privileged__timeline-time">
+                              {formatDate(tr.timestamp, language)}
+                            </time>
+                          </div>
+                          {tr.reason && (
+                            <div className="privileged__timeline-reason">
+                              <i className="ri-chat-quote-line" />
+                              <span>{tr.reason}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="privileged__modal-actions">
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={() => setHistoryModalOpen(false)}
+              >
+                {language === "ru" ? "Закрыть" : "Close"}
+              </button>
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={() => {
+                  setHistoryModalOpen(false);
+                  handleOpenTransferModal(activeInquiry);
+                }}
+              >
+                <i className="ri-user-shared-line" />
+                <span>
+                  {language === "ru"
+                    ? "Передать другому админу"
+                    : "Transfer to Another Admin"}
+                </span>
               </button>
             </div>
           </div>

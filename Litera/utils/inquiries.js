@@ -396,6 +396,108 @@ export async function sendInquiryMessage({
 }
 
 /**
+ * Transfer an inquiry/client to another administrator.
+ * Records the transfer in interlocutors_info.transferHistory and adds a system message to the chat.
+ */
+export async function transferInquiryAdmin({
+  inquiryId,
+  toAdminId,
+  toAdminName,
+  toAdminEmail = "",
+  reason = "",
+  fromAdminUser = null,
+}) {
+  if (!inquiryId || !toAdminId) {
+    throw new Error("Не указан ID диалога или администратора");
+  }
+
+  let inquiry = await fetchInquiryById(inquiryId);
+  if (!inquiry) {
+    throw new Error("Диалог не найден");
+  }
+
+  const info = inquiry.interlocutors_info || {};
+  const fromAdminId = fromAdminUser?.id || info.adminId || "admin";
+  const fromAdminName =
+    (fromAdminUser
+      ? `${fromAdminUser.firstName || ""} ${fromAdminUser.lastName || ""}`.trim() || fromAdminUser.email
+      : null) ||
+    info.adminName ||
+    "Администратор";
+
+  const transferTimestamp = new Date().toISOString();
+  const transferEntry = {
+    id: `tr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    fromAdminId,
+    fromAdminName,
+    toAdminId,
+    toAdminName: toAdminName || "Администратор",
+    toAdminEmail: toAdminEmail || "",
+    reason: (reason || "").trim(),
+    timestamp: transferTimestamp,
+  };
+
+  const currentHistory = Array.isArray(info.transferHistory)
+    ? info.transferHistory
+    : [];
+  const updatedHistory = [...currentHistory, transferEntry];
+
+  const updatedInfo = {
+    ...info,
+    adminId: toAdminId,
+    adminName: toAdminName || "Администратор",
+    adminEmail: toAdminEmail || info.adminEmail || "",
+    transferHistory: updatedHistory,
+  };
+
+  const cleanReason = (reason || "").trim();
+  const systemText = cleanReason
+    ? `Диалог передан: ${fromAdminName} → ${toAdminName}. Причина: ${cleanReason}`
+    : `Диалог передан: ${fromAdminName} → ${toAdminName}`;
+
+  const currentChat = Array.isArray(inquiry.chat) ? inquiry.chat : [];
+  const systemMsg = {
+    id: `sys_tr_${Date.now()}`,
+    sender: "system",
+    text: systemText,
+    timestamp: transferTimestamp,
+  };
+
+  const updatedChat = [...currentChat, systemMsg];
+
+  const patchRes = await fetch(
+    `${TABLE_URL}?id=eq.${encodeURIComponent(inquiryId)}`,
+    {
+      method: "PATCH",
+      headers: { ...headers, Prefer: "return=representation" },
+      body: JSON.stringify({
+        interlocutors_info: updatedInfo,
+        chat: updatedChat,
+        notifications_admin: (inquiry.notifications_admin || 0) + 1,
+      }),
+    }
+  );
+
+  if (!patchRes.ok) {
+    const err = await patchRes.json().catch(() => null);
+    throw new Error(err?.message || "Не удалось сохранить передачу диалога");
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("litera-inquiries-updated"));
+  }
+
+  const updatedRow = await patchRes.json().catch(() => null);
+  return (
+    updatedRow?.[0] || {
+      ...inquiry,
+      interlocutors_info: updatedInfo,
+      chat: updatedChat,
+    }
+  );
+}
+
+/**
  * Mark messages as read by the user (clears notifications_user).
  */
 export async function markInquiryReadByUser(inquiryId) {

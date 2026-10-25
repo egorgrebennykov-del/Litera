@@ -485,6 +485,18 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
               ) : (
                 messages.map((msg, idx) => {
                   const msgKey = msg.id || `msg-${idx}`;
+
+                  if (msg.sender === "system") {
+                    return (
+                      <div key={msgKey} className="inquiry-msg-system-row">
+                        <div className="inquiry-msg-system-badge">
+                          <i className="ri-user-shared-line" />
+                          <span>{msg.text}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const isUser = msg.sender === "user";
                   const isLongMsg =
                     Boolean(msg.text) &&
