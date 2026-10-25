@@ -63,10 +63,13 @@ export function resolveUserRoles(user) {
       norm === "разработчик"
     ) {
       roleSet.add("developer");
+    } else if (norm === "vip" || norm === "вип") {
+      roleSet.add("vip");
     }
   }
 
-  // Если пользователь привилегированный, но не разработчик и не админ, то его роль называется VIP
+  // Привилегированный пользователь автоматически не может иметь роль 'user'.
+  // Он должен иметь роль VIP, или разработчик, или админ.
   if (roleSet.size === 0) {
     return ["vip"];
   }
@@ -310,6 +313,8 @@ export async function updateUserStatus(userId, newStatus) {
   const payload = { status: newStatus };
   if (newStatus === "user") {
     payload.role = ["user"];
+  } else if (newStatus === "privileged") {
+    payload.role = ["vip"];
   }
   const response = await fetch(
     `${TABLE_URL}?id=eq.${encodeURIComponent(userId)}`,
@@ -327,11 +332,14 @@ export async function updateUserStatus(userId, newStatus) {
 }
 
 export async function updateUserRoles(userId, newRoles) {
-  const rolesArray = Array.isArray(newRoles) ? newRoles : [newRoles];
-  const payload = { role: rolesArray };
-  if (rolesArray.some((r) => r === "developer" || r === "admin" || r === "vip")) {
-    payload.status = "privileged";
+  let rolesArray = Array.isArray(newRoles) ? newRoles : [newRoles];
+  rolesArray = rolesArray.filter(
+    (r) => r === "developer" || r === "admin" || r === "vip",
+  );
+  if (rolesArray.length === 0) {
+    rolesArray = ["vip"];
   }
+  const payload = { role: rolesArray, status: "privileged" };
   const response = await fetch(
     `${TABLE_URL}?id=eq.${encodeURIComponent(userId)}`,
     {
@@ -387,14 +395,25 @@ export async function createUserByAdmin({
   // Hash the password with bcrypt (10 salt rounds)
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  const isPriv = status === "privileged";
+  let finalRoles;
+  if (isPriv) {
+    const filtered = (Array.isArray(roles) ? roles : [roles]).filter(
+      (r) => r === "vip" || r === "admin" || r === "developer",
+    );
+    finalRoles = filtered.length > 0 ? filtered : ["vip"];
+  } else {
+    finalRoles = ["user"];
+  }
+
   const payload = {
     firstName: (firstName || "").trim() || cleanEmail,
     lastName: (lastName || "").trim(),
     email: cleanEmail,
     password_hash: hashedPassword,
     phone: phoneArray,
-    status: status === "privileged" ? "privileged" : "user",
-    role: Array.isArray(roles) && roles.length > 0 ? roles : ["user"],
+    status: isPriv ? "privileged" : "user",
+    role: finalRoles,
   };
 
   const response = await fetch(TABLE_URL, {

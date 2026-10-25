@@ -149,17 +149,23 @@ export default function Privileged() {
 
     setCreatingUser(true);
     try {
+      const isPriv = createUserForm.status === "privileged";
+      const sanitizedRoles = isPriv
+        ? createUserForm.roles.filter(
+            (r) => r !== "user" && (r === "vip" || r === "admin" || r === "developer"),
+          )
+        : ["user"];
+      const finalRoles =
+        isPriv && sanitizedRoles.length === 0 ? ["vip"] : sanitizedRoles;
+
       const newUser = await createUserByAdmin({
         firstName: createUserForm.firstName.trim() || cleanEmail,
         lastName: createUserForm.lastName.trim(),
         email: cleanEmail,
         password: createUserForm.password,
         phone: createUserForm.phone.trim(),
-        status: createUserForm.status,
-        roles:
-          createUserForm.status === "privileged"
-            ? createUserForm.roles
-            : ["user"],
+        status: isPriv ? "privileged" : "user",
+        roles: finalRoles,
       });
 
       setUsers((prev) => [newUser, ...prev]);
@@ -557,12 +563,7 @@ export default function Privileged() {
           const updated = {
             ...u,
             status: nextStatus,
-            role:
-              nextStatus === "user"
-                ? ["user"]
-                : u.role && Array.isArray(u.role) && !u.role.includes("user")
-                  ? u.role
-                  : [],
+            role: nextStatus === "user" ? ["user"] : ["vip"],
           };
           const resolvedRoles = resolveUserRoles(updated);
           return {
@@ -589,11 +590,14 @@ export default function Privileged() {
 
     if (currentRoles.includes(roleToToggle)) {
       newRoles = currentRoles.filter(
-        (r) => r !== roleToToggle && r !== "user" && r !== "vip",
+        (r) => r !== roleToToggle && r !== "user",
       );
+      if (newRoles.length === 0) {
+        newRoles = ["vip"];
+      }
     } else {
       newRoles = [
-        ...currentRoles.filter((r) => r !== "user" && r !== "vip"),
+        ...currentRoles.filter((r) => r !== "user"),
         roleToToggle,
       ];
     }
@@ -1864,33 +1868,29 @@ export default function Privileged() {
                         </td>
                         <td>
                           <div className="privileged__roles-cell">
-                            <div className="privileged__roles-tags">
-                              {userRolesList.map((r) => (
-                                <span
-                                  key={r}
-                                  className={`privileged__role-pill privileged__role-pill--${r}`}
-                                >
-                                  {formatRoleName(r, language)}
-                                </span>
-                              ))}
-                            </div>
-                            <div className="privileged__role-quick-toggle">
-                              {["developer", "admin"].map((r) => {
-                                const has = userRolesList.includes(r);
-                                return (
-                                  <button
-                                    key={r}
-                                    type="button"
-                                    className={`privileged__mini-role-btn ${has ? "privileged__mini-role-btn--active" : ""}`}
-                                    onClick={() => handleToggleUserRole(u, r)}
-                                    title={`${has ? (language === "ru" ? "Убрать роль " : "Remove role ") : language === "ru" ? "Назначить роль " : "Add role "}${formatRoleName(r, language)}`}
-                                  >
-                                    {has ? "✓ " : "+ "}
-                                    {formatRoleName(r, language)}
-                                  </button>
-                                );
-                              })}
-                            </div>
+                            {isStatusPriv ? (
+                              <div className="privileged__role-quick-toggle">
+                                {["vip", "admin", "developer"].map((r) => {
+                                  const has = userRolesList.includes(r);
+                                  return (
+                                    <button
+                                      key={r}
+                                      type="button"
+                                      className={`privileged__mini-role-btn ${has ? "privileged__mini-role-btn--active" : ""}`}
+                                      onClick={() => handleToggleUserRole(u, r)}
+                                      title={`${has ? (language === "ru" ? "Убрать роль " : "Remove role ") : language === "ru" ? "Назначить роль " : "Add role "}${formatRoleName(r, language)}`}
+                                    >
+                                      {has ? "✓ " : "+ "}
+                                      {formatRoleName(r, language)}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="privileged__role-pill privileged__role-pill--user">
+                                {formatRoleName("user", language)}
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td>
@@ -2094,12 +2094,6 @@ export default function Privileged() {
                             <span>{language === "ru" ? "Сгенерировать" : "Generate"}</span>
                           </button>
                         </div>
-                        <span className="privileged__form-hint">
-                          <i className="ri-shield-check-line" />{" "}
-                          {language === "ru"
-                            ? "Пароль сохраняется в базу данных уже хэшированным (bcrypt)"
-                            : "Password will be saved already hashed (bcrypt)"}
-                        </span>
                       </div>
 
                       <div className="privileged__form-group">
@@ -2138,11 +2132,16 @@ export default function Privileged() {
                               value="privileged"
                               checked={createUserForm.status === "privileged"}
                               onChange={() =>
-                                setCreateUserForm((prev) => ({
-                                  ...prev,
-                                  status: "privileged",
-                                  roles: prev.roles.includes("privileged") ? prev.roles : [...prev.roles, "privileged"],
-                                }))
+                                setCreateUserForm((prev) => {
+                                  const filtered = prev.roles.filter(
+                                    (r) => r !== "user" && (r === "vip" || r === "admin" || r === "developer"),
+                                  );
+                                  return {
+                                    ...prev,
+                                    status: "privileged",
+                                    roles: filtered.length > 0 ? filtered : ["vip"],
+                                  };
+                                })
                               }
                             />
                             <div className="privileged__radio-card-info">
@@ -2165,7 +2164,7 @@ export default function Privileged() {
                           </label>
                           <div className="privileged__roles-box">
                             <div className="privileged__roles-checkboxes">
-                              {["user", "admin", "developer"].map((roleKey) => {
+                              {["vip", "admin", "developer"].map((roleKey) => {
                                 const isChecked = createUserForm.roles.includes(roleKey);
                                 return (
                                   <label
@@ -2177,12 +2176,15 @@ export default function Privileged() {
                                       checked={isChecked}
                                       onChange={() => {
                                         setCreateUserForm((prev) => {
-                                          const nextRoles = isChecked
-                                            ? prev.roles.filter((r) => r !== roleKey)
-                                            : [...prev.roles, roleKey];
+                                          let nextRoles = isChecked
+                                            ? prev.roles.filter((r) => r !== roleKey && r !== "user")
+                                            : [...prev.roles.filter((r) => r !== "user"), roleKey];
+                                          if (nextRoles.length === 0) {
+                                            nextRoles = ["vip"];
+                                          }
                                           return {
                                             ...prev,
-                                            roles: nextRoles.length > 0 ? nextRoles : ["user"],
+                                            roles: nextRoles,
                                           };
                                         });
                                       }}
@@ -2268,14 +2270,6 @@ export default function Privileged() {
                               ? "Привилегированный"
                               : "Privileged"}
                           </span>
-                          {resolveUserRoles(u).map((role) => (
-                            <span
-                              key={role}
-                              className={`privileged__role-pill privileged__role-pill--${role}`}
-                            >
-                              {formatRoleName(role, language)}
-                            </span>
-                          ))}
                         </div>
                       </div>
                     </div>
@@ -2308,7 +2302,7 @@ export default function Privileged() {
 
                     <div className="privileged__user-card-actions">
                       <div className="privileged__role-quick-toggle">
-                        {["developer", "admin"].map((r) => {
+                        {["vip", "admin", "developer"].map((r) => {
                           const userRolesList = resolveUserRoles(u);
                           const has = userRolesList.includes(r);
                           return (
