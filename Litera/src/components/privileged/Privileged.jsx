@@ -4269,32 +4269,41 @@ export default function Privileged() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="privileged__modal-header">
-              <div className="privileged__modal-header-icon">
-                <i className="ri-user-shared-line" />
-              </div>
-              <div>
-                <h3>
-                  {language === "ru"
-                    ? "Передать клиента другому администратору"
-                    : "Transfer Client to Another Admin"}
-                </h3>
-                <p className="privileged__muted">
-                  {language === "ru"
-                    ? `Клиент: ${activeInquiry.interlocutors_info?.userName || "Пользователь"} (${activeInquiry.interlocutors_info?.userEmail})`
-                    : `Client: ${activeInquiry.interlocutors_info?.userName || "User"} (${activeInquiry.interlocutors_info?.userEmail})`}
-                  {activeInquiry.interlocutors_info?.isGuest && (
-                    <span className="privileged__inquiry-tag privileged__inquiry-tag--guest" style={{ marginLeft: "8px", verticalAlign: "middle" }}>
-                      <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+              <div className="privileged__modal-header-left">
+                <div className="privileged__modal-header-icon">
+                  <i className="ri-user-shared-line" />
+                </div>
+                <div className="privileged__modal-header-text">
+                  <h3>
+                    {language === "ru"
+                      ? "Передать клиента другому администратору"
+                      : "Transfer Client to Another Admin"}
+                  </h3>
+                  <p className="privileged__modal-header-sub">
+                    <span className="privileged__modal-client-label">
+                      {language === "ru" ? "Клиент:" : "Client:"}
                     </span>
-                  )}
-                </p>
+                    <strong className="privileged__modal-client-name">
+                      {activeInquiry.interlocutors_info?.userName || "Пользователь"}
+                    </strong>
+                    <span className="privileged__modal-client-email">
+                      ({activeInquiry.interlocutors_info?.userEmail})
+                    </span>
+                    {activeInquiry.interlocutors_info?.isGuest && (
+                      <span className="privileged__inquiry-tag privileged__inquiry-tag--guest">
+                        <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                className="privileged__modal-close"
+                className="privileged__modal-close-btn"
                 onClick={() => setTransferModalOpen(false)}
+                aria-label="Close"
               >
-                ×
+                <i className="ri-close-line" />
               </button>
             </div>
 
@@ -4377,7 +4386,7 @@ export default function Privileged() {
             <div className="privileged__modal-actions">
               <button
                 type="button"
-                className="button button--ghost"
+                className="privileged__modal-action-btn privileged__modal-action-btn--cancel"
                 onClick={() => setTransferModalOpen(false)}
                 disabled={transferring}
               >
@@ -4385,7 +4394,7 @@ export default function Privileged() {
               </button>
               <button
                 type="button"
-                className="button button--primary"
+                className="privileged__modal-action-btn privileged__modal-action-btn--confirm"
                 onClick={handleConfirmTransfer}
                 disabled={
                   !selectedTargetAdminId ||
@@ -4430,32 +4439,41 @@ export default function Privileged() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="privileged__modal-header">
-              <div className="privileged__modal-header-icon privileged__modal-header-icon--history">
-                <i className="ri-history-line" />
-              </div>
-              <div>
-                <h3>
-                  {language === "ru"
-                    ? "История передачи клиента"
-                    : "Client Transfer History"}
-                </h3>
-                <p className="privileged__muted">
-                  {activeInquiry.interlocutors_info?.userName ||
-                    "Пользователь"}{" "}
-                  • {activeInquiry.interlocutors_info?.userEmail}
-                  {activeInquiry.interlocutors_info?.isGuest && (
-                    <span className="privileged__inquiry-tag privileged__inquiry-tag--guest" style={{ marginLeft: "8px", verticalAlign: "middle" }}>
-                      <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+              <div className="privileged__modal-header-left">
+                <div className="privileged__modal-header-icon privileged__modal-header-icon--history">
+                  <i className="ri-history-line" />
+                </div>
+                <div className="privileged__modal-header-text">
+                  <h3>
+                    {language === "ru"
+                      ? "История передачи клиента"
+                      : "Client Transfer History"}
+                  </h3>
+                  <p className="privileged__modal-header-sub">
+                    <span className="privileged__modal-client-label">
+                      {language === "ru" ? "Клиент:" : "Client:"}
                     </span>
-                  )}
-                </p>
+                    <strong className="privileged__modal-client-name">
+                      {activeInquiry.interlocutors_info?.userName || "Пользователь"}
+                    </strong>
+                    <span className="privileged__modal-client-email">
+                      ({activeInquiry.interlocutors_info?.userEmail})
+                    </span>
+                    {activeInquiry.interlocutors_info?.isGuest && (
+                      <span className="privileged__inquiry-tag privileged__inquiry-tag--guest">
+                        <i className="ri-mail-line" /> {language === "ru" ? "Гость" : "Guest"}
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                className="privileged__modal-close"
+                className="privileged__modal-close-btn"
                 onClick={() => setHistoryModalOpen(false)}
+                aria-label="Close"
               >
-                ×
+                <i className="ri-close-line" />
               </button>
             </div>
 
@@ -4552,14 +4570,14 @@ export default function Privileged() {
             <div className="privileged__modal-actions">
               <button
                 type="button"
-                className="button button--ghost"
+                className="privileged__modal-action-btn privileged__modal-action-btn--cancel"
                 onClick={() => setHistoryModalOpen(false)}
               >
                 {language === "ru" ? "Закрыть" : "Close"}
               </button>
               <button
                 type="button"
-                className="button button--primary"
+                className="privileged__modal-action-btn privileged__modal-action-btn--confirm"
                 onClick={() => {
                   setHistoryModalOpen(false);
                   handleOpenTransferModal(activeInquiry);
