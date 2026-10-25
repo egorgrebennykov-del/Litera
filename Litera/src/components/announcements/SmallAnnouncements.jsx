@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
+import { useLanguage } from "../../context/languageContext";
 import "./SmallAnnouncements.css";
 
 const DISMISSED_KEY = "litera_dismissed_announcements";
 
 export default function SmallAnnouncements({ items = [] }) {
+  const { language } = useLanguage();
   const [dismissedIds, setDismissedIds] = useState(() => {
     try {
       const saved = localStorage.getItem(DISMISSED_KEY);
@@ -33,8 +35,18 @@ export default function SmallAnnouncements({ items = [] }) {
   return (
     <div className="litera-small-announcements-stack">
       {visibleItems.map((item) => {
-        const hasLink = Boolean(item.linkUrl?.trim());
-        const isExternal = hasLink && (item.linkUrl.startsWith("http://") || item.linkUrl.startsWith("https://"));
+        const text =
+          language === "en"
+            ? item.text_en || item.en?.text || item.text_ru || item.text
+            : item.text_ru || item.ru?.text || item.text_en || item.text;
+        const linkUrl =
+          language === "en"
+            ? item.linkUrl_en || item.en?.linkUrl || item.linkUrl_ru || item.linkUrl
+            : item.linkUrl_ru || item.ru?.linkUrl || item.linkUrl_en || item.linkUrl;
+        const hasLink = Boolean(linkUrl?.trim());
+        const isExternal =
+          hasLink &&
+          (linkUrl.startsWith("http://") || linkUrl.startsWith("https://"));
 
         return (
           <div key={item.id} className="litera-small-announcement-banner">
@@ -43,32 +55,40 @@ export default function SmallAnnouncements({ items = [] }) {
             </div>
 
             <div className="litera-small-announcement-content">
-              <span className="litera-small-announcement-text">{item.text}</span>
+              <span className="litera-small-announcement-text">{text}</span>
 
-              {hasLink && (
-                isExternal ? (
+              {hasLink &&
+                (isExternal ? (
                   <a
-                    href={item.linkUrl}
+                    href={linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="litera-small-announcement-link"
                   >
-                    Подробнее <i className="ri-arrow-right-line" />
+                    {language === "ru" ? "Подробнее" : "Learn more"}{" "}
+                    <i className="ri-arrow-right-line" />
                   </a>
                 ) : (
-                  <Link to={item.linkUrl} className="litera-small-announcement-link">
-                    Подробнее <i className="ri-arrow-right-line" />
+                  <Link
+                    to={linkUrl}
+                    className="litera-small-announcement-link"
+                  >
+                    {language === "ru" ? "Подробнее" : "Learn more"}{" "}
+                    <i className="ri-arrow-right-line" />
                   </Link>
-                )
-              )}
+                ))}
             </div>
 
             <button
               type="button"
               className="litera-small-announcement-close"
               onClick={() => handleDismiss(item.id)}
-              aria-label="Закрыть объявление"
-              title="Закрыть"
+              aria-label={
+                language === "ru"
+                  ? "Закрыть объявление"
+                  : "Close announcement"
+              }
+              title={language === "ru" ? "Закрыть" : "Close"}
             >
               <i className="ri-close-line" />
             </button>

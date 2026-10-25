@@ -8,22 +8,45 @@ const headers = {
   "Content-Type": "application/json",
 };
 
+function safeParse(val) {
+  if (!val) return {};
+  if (typeof val === "object") return val;
+  if (typeof val === "string") {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return { text: val };
+    }
+  }
+  return {};
+}
+
 /**
  * Normalizes an announcement row from Supabase.
+ * Supports localized `content_ru` and `content_en` as well as legacy `content`.
  */
 export function normalizeAnnouncement(row) {
   if (!row) return null;
 
-  let parsedContent = {};
-  if (typeof row.content === "object" && row.content !== null) {
-    parsedContent = row.content;
-  } else if (typeof row.content === "string") {
-    try {
-      parsedContent = JSON.parse(row.content);
-    } catch {
-      parsedContent = { text: row.content };
-    }
-  }
+  const ru = safeParse(row.content_ru);
+  const en = safeParse(row.content_en);
+  const legacy = safeParse(row.content);
+
+  const type =
+    ru.type === "large" || en.type === "large" || legacy.type === "large"
+      ? "large"
+      : "small";
+
+  const order = Number(ru.order ?? en.order ?? legacy.order ?? 0);
+  const active =
+    (ru.active !== false) && (en.active !== false) && (legacy.active !== false);
+
+  const text_ru = ru.text || legacy.text || "";
+  const text_en = en.text || legacy.text || "";
+  const imageUrl_ru = ru.imageUrl || legacy.imageUrl || "";
+  const imageUrl_en = en.imageUrl || legacy.imageUrl || "";
+  const linkUrl_ru = ru.linkUrl || legacy.linkUrl || "";
+  const linkUrl_en = en.linkUrl || legacy.linkUrl || linkUrl_ru;
 
   return {
     id: row.id,
@@ -31,12 +54,33 @@ export function normalizeAnnouncement(row) {
     from: row.from || row.created_at,
     until: row.until,
     userId: row.user_id,
-    type: parsedContent.type === "large" ? "large" : "small",
-    text: parsedContent.text || "",
-    imageUrl: parsedContent.imageUrl || "",
-    linkUrl: parsedContent.linkUrl || "",
-    order: Number(parsedContent.order ?? 0),
-    active: parsedContent.active !== false,
+    type,
+    order,
+    active,
+    // Localized content objects
+    ru: {
+      type,
+      text: text_ru,
+      imageUrl: imageUrl_ru,
+      linkUrl: linkUrl_ru,
+    },
+    en: {
+      type,
+      text: text_en,
+      imageUrl: imageUrl_en,
+      linkUrl: linkUrl_en,
+    },
+    // Distinct language field accessors
+    text_ru,
+    text_en,
+    imageUrl_ru,
+    imageUrl_en,
+    linkUrl_ru,
+    linkUrl_en,
+    // Universal accessors with language fallback
+    text: text_ru || text_en,
+    imageUrl: imageUrl_ru || imageUrl_en,
+    linkUrl: linkUrl_ru || linkUrl_en,
   };
 }
 
@@ -106,39 +150,71 @@ export async function fetchActiveAnnouncements() {
 }
 
 /**
- * Create a new announcement.
+ * Create a new announcement with both Russian and English variants.
  * 'until' is mandatory!
  */
 export async function createAnnouncement({
   type = "small", // "small" | "large"
-  text = "",
-  imageUrl = "",
-  linkUrl = "",
+  text_ru = "",
+  text_en = "",
+  imageUrl_ru = "",
+  imageUrl_en = "",
+  linkUrl_ru = "",
+  linkUrl_en = "",
   order = 0,
   from = null,
   until,
   userId = null,
+  text = "",
+  imageUrl = "",
+  linkUrl = "",
 }) {
   if (!until) {
     throw new Error("Срок окончания показа объявления обязателен для заполнения");
   }
 
-  if (type === "large" && !imageUrl?.trim()) {
-    throw new Error("Для большого объявления ссылка на фото обязательна");
+  const final_text_ru = (text_ru || text || "").trim();
+  const final_text_en = (text_en || text || "").trim();
+  const final_image_ru = (imageUrl_ru || imageUrl || "").trim();
+  const final_image_en = (imageUrl_en || imageUrl || "").trim();
+  const final_link_ru = (linkUrl_ru || linkUrl || "").trim();
+  const final_link_en = (linkUrl_en || final_link_ru).trim();
+
+  if (type === "small") {
+    if (!final_text_ru) {
+      throw new Error("Для небольшого объявления текст на русском языке обязателен");
+    }
+    if (!final_text_en) {
+      throw new Error("Для небольшого объявления текст на английском языке обязателен");
+    }
   }
 
-  if (type === "small" && !text?.trim()) {
-    throw new Error("Для небольшого объявления текст обязателен");
+  if (type === "large") {
+    if (!final_image_ru) {
+      throw new Error("Для большого объявления ссылка на фото (RU) обязательна");
+    }
+    if (!final_image_en) {
+      throw new Error("Для большого объявления ссылка на фото (EN) обязательна");
+    }
   }
 
   const fromDate = from ? new Date(from).toISOString() : new Date().toISOString();
   const untilDate = new Date(until).toISOString();
 
-  const content = {
+  const content_ru = {
     type: type === "large" ? "large" : "small",
-    text: text ? text.trim() : "",
-    imageUrl: imageUrl ? imageUrl.trim() : "",
-    linkUrl: linkUrl ? linkUrl.trim() : "",
+    text: final_text_ru,
+    imageUrl: final_image_ru,
+    linkUrl: final_link_ru,
+    order: Number(order) || 0,
+    active: true,
+  };
+
+  const content_en = {
+    type: type === "large" ? "large" : "small",
+    text: final_text_en,
+    imageUrl: final_image_en,
+    linkUrl: final_link_en,
     order: Number(order) || 0,
     active: true,
   };
@@ -147,7 +223,8 @@ export async function createAnnouncement({
     user_id: userId || null,
     from: fromDate,
     until: untilDate,
-    content,
+    content_ru,
+    content_en,
   };
 
   const res = await fetch(TABLE_URL, {
@@ -166,39 +243,71 @@ export async function createAnnouncement({
 }
 
 /**
- * Update an existing announcement.
+ * Update an existing announcement with Russian and English variants.
  */
 export async function updateAnnouncement(id, {
   type = "small",
-  text = "",
-  imageUrl = "",
-  linkUrl = "",
+  text_ru = "",
+  text_en = "",
+  imageUrl_ru = "",
+  imageUrl_en = "",
+  linkUrl_ru = "",
+  linkUrl_en = "",
   order = 0,
   from,
   until,
   active = true,
+  text = "",
+  imageUrl = "",
+  linkUrl = "",
 }) {
   if (!id) throw new Error("ID объявления обязателен");
   if (!until) {
     throw new Error("Срок окончания показа объявления обязателен для заполнения");
   }
 
-  if (type === "large" && !imageUrl?.trim()) {
-    throw new Error("Для большого объявления ссылка на фото обязательна");
+  const final_text_ru = (text_ru || text || "").trim();
+  const final_text_en = (text_en || text || "").trim();
+  const final_image_ru = (imageUrl_ru || imageUrl || "").trim();
+  const final_image_en = (imageUrl_en || imageUrl || "").trim();
+  const final_link_ru = (linkUrl_ru || linkUrl || "").trim();
+  const final_link_en = (linkUrl_en || final_link_ru).trim();
+
+  if (type === "small") {
+    if (!final_text_ru) {
+      throw new Error("Для небольшого объявления текст на русском языке обязателен");
+    }
+    if (!final_text_en) {
+      throw new Error("Для небольшого объявления текст на английском языке обязателен");
+    }
   }
 
-  if (type === "small" && !text?.trim()) {
-    throw new Error("Для небольшого объявления текст обязателен");
+  if (type === "large") {
+    if (!final_image_ru) {
+      throw new Error("Для большого объявления ссылка на фото (RU) обязательна");
+    }
+    if (!final_image_en) {
+      throw new Error("Для большого объявления ссылка на фото (EN) обязательна");
+    }
   }
 
   const fromDate = from ? new Date(from).toISOString() : new Date().toISOString();
   const untilDate = new Date(until).toISOString();
 
-  const content = {
+  const content_ru = {
     type: type === "large" ? "large" : "small",
-    text: text ? text.trim() : "",
-    imageUrl: imageUrl ? imageUrl.trim() : "",
-    linkUrl: linkUrl ? linkUrl.trim() : "",
+    text: final_text_ru,
+    imageUrl: final_image_ru,
+    linkUrl: final_link_ru,
+    order: Number(order) || 0,
+    active: active !== false,
+  };
+
+  const content_en = {
+    type: type === "large" ? "large" : "small",
+    text: final_text_en,
+    imageUrl: final_image_en,
+    linkUrl: final_link_en,
     order: Number(order) || 0,
     active: active !== false,
   };
@@ -206,7 +315,8 @@ export async function updateAnnouncement(id, {
   const payload = {
     from: fromDate,
     until: untilDate,
-    content,
+    content_ru,
+    content_en,
   };
 
   const res = await fetch(`${TABLE_URL}?id=eq.${encodeURIComponent(id)}`, {
@@ -248,11 +358,19 @@ export async function reorderAnnouncements(orderedList) {
 
   const promises = orderedList.map(async (item, idx) => {
     const newOrder = idx + 1;
-    const content = {
+    const content_ru = {
       type: item.type,
-      text: item.text,
-      imageUrl: item.imageUrl,
-      linkUrl: item.linkUrl,
+      text: item.text_ru || item.ru?.text || item.text || "",
+      imageUrl: item.imageUrl_ru || item.ru?.imageUrl || item.imageUrl || "",
+      linkUrl: item.linkUrl_ru || item.ru?.linkUrl || item.linkUrl || "",
+      order: newOrder,
+      active: item.active !== false,
+    };
+    const content_en = {
+      type: item.type,
+      text: item.text_en || item.en?.text || item.text || "",
+      imageUrl: item.imageUrl_en || item.en?.imageUrl || item.imageUrl || "",
+      linkUrl: item.linkUrl_en || item.en?.linkUrl || item.linkUrl || "",
       order: newOrder,
       active: item.active !== false,
     };
@@ -260,7 +378,7 @@ export async function reorderAnnouncements(orderedList) {
     return fetch(`${TABLE_URL}?id=eq.${encodeURIComponent(item.id)}`, {
       method: "PATCH",
       headers,
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content_ru, content_en }),
     });
   });
 

@@ -232,9 +232,12 @@ export default function Privileged() {
   const [savingAnnouncement, setSavingAnnouncement] = useState(false);
   const [announcementFilter, setAnnouncementFilter] = useState("all"); // "all" | "small" | "large"
   const [announcementType, setAnnouncementType] = useState("small"); // "small" | "large"
-  const [announcementText, setAnnouncementText] = useState("");
-  const [announcementImageUrl, setAnnouncementImageUrl] = useState("");
-  const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
+  const [announcementTextRu, setAnnouncementTextRu] = useState("");
+  const [announcementTextEn, setAnnouncementTextEn] = useState("");
+  const [announcementImageUrlRu, setAnnouncementImageUrlRu] = useState("");
+  const [announcementImageUrlEn, setAnnouncementImageUrlEn] = useState("");
+  const [announcementLinkUrlRu, setAnnouncementLinkUrlRu] = useState("");
+  const [announcementLinkUrlEn, setAnnouncementLinkUrlEn] = useState("");
   const [announcementFrom, setAnnouncementFrom] = useState("");
   const [announcementUntil, setAnnouncementUntil] = useState("");
   const [announcementActive, setAnnouncementActive] = useState(true);
@@ -888,9 +891,12 @@ export default function Privileged() {
     };
     setEditingAnnouncement(null);
     setAnnouncementType("small");
-    setAnnouncementText("");
-    setAnnouncementImageUrl("");
-    setAnnouncementLinkUrl("");
+    setAnnouncementTextRu("");
+    setAnnouncementTextEn("");
+    setAnnouncementImageUrlRu("");
+    setAnnouncementImageUrlEn("");
+    setAnnouncementLinkUrlRu("");
+    setAnnouncementLinkUrlEn("");
     setAnnouncementFrom(formatIsoForInput(now));
     // Default until to +7 days
     const defaultUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -914,9 +920,16 @@ export default function Privileged() {
 
     setEditingAnnouncement(ann);
     setAnnouncementType(ann.type || "small");
-    setAnnouncementText(ann.text || "");
-    setAnnouncementImageUrl(ann.imageUrl || "");
-    setAnnouncementLinkUrl(ann.linkUrl || "");
+    setAnnouncementTextRu(ann.text_ru || ann.ru?.text || ann.text || "");
+    setAnnouncementTextEn(ann.text_en || ann.en?.text || "");
+    setAnnouncementImageUrlRu(
+      ann.imageUrl_ru || ann.ru?.imageUrl || ann.imageUrl || "",
+    );
+    setAnnouncementImageUrlEn(ann.imageUrl_en || ann.en?.imageUrl || "");
+    setAnnouncementLinkUrlRu(
+      ann.linkUrl_ru || ann.ru?.linkUrl || ann.linkUrl || "",
+    );
+    setAnnouncementLinkUrlEn(ann.linkUrl_en || ann.en?.linkUrl || "");
     setAnnouncementFrom(formatIsoForInput(ann.from));
     setAnnouncementUntil(formatIsoForInput(ann.until));
     setAnnouncementActive(ann.active !== false);
@@ -936,24 +949,46 @@ export default function Privileged() {
       return;
     }
 
-    if (announcementType === "large" && !announcementImageUrl.trim()) {
-      showNotice(
-        language === "ru"
-          ? "Для большого объявления укажите ссылку на фото"
-          : "Please provide a photo URL for the large announcement",
-        true,
-      );
-      return;
+    if (announcementType === "small") {
+      if (!announcementTextRu.trim()) {
+        showNotice(
+          language === "ru"
+            ? "Для небольшого объявления введите текст на русском языке"
+            : "Please enter text in Russian for the small announcement",
+          true,
+        );
+        return;
+      }
+      if (!announcementTextEn.trim()) {
+        showNotice(
+          language === "ru"
+            ? "Для небольшого объявления введите текст на английском языке"
+            : "Please enter text in English for the small announcement",
+          true,
+        );
+        return;
+      }
     }
 
-    if (announcementType === "small" && !announcementText.trim()) {
-      showNotice(
-        language === "ru"
-          ? "Для небольшого объявления введите текст"
-          : "Please enter text for the small announcement",
-        true,
-      );
-      return;
+    if (announcementType === "large") {
+      if (!announcementImageUrlRu.trim()) {
+        showNotice(
+          language === "ru"
+            ? "Для большого объявления укажите ссылку на фото (RU)"
+            : "Please provide a photo URL (RU) for the large announcement",
+          true,
+        );
+        return;
+      }
+      if (!announcementImageUrlEn.trim()) {
+        showNotice(
+          language === "ru"
+            ? "Для большого объявления укажите ссылку на фото (EN)"
+            : "Please provide a photo URL (EN) for the large announcement",
+          true,
+        );
+        return;
+      }
     }
 
     setSavingAnnouncement(true);
@@ -961,9 +996,12 @@ export default function Privileged() {
       if (editingAnnouncement) {
         const updated = await updateAnnouncement(editingAnnouncement.id, {
           type: announcementType,
-          text: announcementText,
-          imageUrl: announcementImageUrl,
-          linkUrl: announcementLinkUrl,
+          text_ru: announcementTextRu,
+          text_en: announcementTextEn,
+          imageUrl_ru: announcementImageUrlRu,
+          imageUrl_en: announcementImageUrlEn,
+          linkUrl_ru: announcementLinkUrlRu,
+          linkUrl_en: announcementLinkUrlEn || announcementLinkUrlRu,
           from: announcementFrom || new Date().toISOString(),
           until: announcementUntil,
           active: announcementActive,
@@ -987,9 +1025,12 @@ export default function Privileged() {
         );
         const created = await createAnnouncement({
           type: announcementType,
-          text: announcementText,
-          imageUrl: announcementImageUrl,
-          linkUrl: announcementLinkUrl,
+          text_ru: announcementTextRu,
+          text_en: announcementTextEn,
+          imageUrl_ru: announcementImageUrlRu,
+          imageUrl_en: announcementImageUrlEn,
+          linkUrl_ru: announcementLinkUrlRu,
+          linkUrl_en: announcementLinkUrlEn || announcementLinkUrlRu,
           from: announcementFrom || new Date().toISOString(),
           until: announcementUntil,
           order: maxOrder + 1,
@@ -3888,49 +3929,124 @@ export default function Privileged() {
                           {/* Preview Area */}
                           <div className="privileged__ann-preview-box">
                             {ann.type === "large" ? (
-                              <div className="privileged__ann-large-preview">
-                                {ann.imageUrl ? (
-                                  <img
-                                    src={ann.imageUrl}
-                                    alt="Poster Preview"
-                                    className="privileged__ann-poster-img"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = "none";
-                                      const next =
-                                        e.currentTarget.nextElementSibling;
-                                      if (next) next.style.display = "flex";
-                                    }}
-                                  />
-                                ) : null}
-                                <div
-                                  className="privileged__ann-img-fallback"
-                                  style={{
-                                    display: ann.imageUrl ? "none" : "flex",
-                                  }}
-                                >
-                                  <i className="ri-image-line" />
-                                  <span>
-                                    {language === "ru"
-                                      ? "Изображение недоступно"
-                                      : "Image not available"}
+                              <div className="privileged__ann-large-preview-dual">
+                                <div className="privileged__ann-poster-col">
+                                  <span className="privileged__ann-lang-badge">
+                                    🇷🇺 RU
                                   </span>
+                                  {ann.imageUrl_ru || ann.imageUrl ? (
+                                    <img
+                                      src={ann.imageUrl_ru || ann.imageUrl}
+                                      alt="Poster RU"
+                                      className="privileged__ann-poster-img"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                        const next =
+                                          e.currentTarget.nextElementSibling;
+                                        if (next) next.style.display = "flex";
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div
+                                    className="privileged__ann-img-fallback"
+                                    style={{
+                                      display:
+                                        ann.imageUrl_ru || ann.imageUrl
+                                          ? "none"
+                                          : "flex",
+                                    }}
+                                  >
+                                    <i className="ri-image-line" />
+                                    <span>
+                                      {language === "ru"
+                                        ? "Нет фото (RU)"
+                                        : "No photo (RU)"}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="privileged__ann-poster-col">
+                                  <span className="privileged__ann-lang-badge">
+                                    🇬🇧 EN
+                                  </span>
+                                  {ann.imageUrl_en || ann.imageUrl ? (
+                                    <img
+                                      src={ann.imageUrl_en || ann.imageUrl}
+                                      alt="Poster EN"
+                                      className="privileged__ann-poster-img"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                        const next =
+                                          e.currentTarget.nextElementSibling;
+                                        if (next) next.style.display = "flex";
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div
+                                    className="privileged__ann-img-fallback"
+                                    style={{
+                                      display:
+                                        ann.imageUrl_en || ann.imageUrl
+                                          ? "none"
+                                          : "flex",
+                                    }}
+                                  >
+                                    <i className="ri-image-line" />
+                                    <span>
+                                      {language === "ru"
+                                        ? "Нет фото (EN)"
+                                        : "No photo (EN)"}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             ) : (
-                              <div className="privileged__ann-small-preview">
-                                <i className="ri-information-line privileged__ann-info-icon" />
-                                <span className="privileged__ann-text-preview">
-                                  {ann.text}
-                                </span>
-                                <span
-                                  className="privileged__ann-close-demo"
-                                  title="Кнопка закрытия для пользователя"
-                                >
-                                  <i className="ri-close-line" />
-                                </span>
+                              <div className="privileged__ann-small-preview-dual">
+                                <div className="privileged__ann-small-lang-item">
+                                  <span className="privileged__ann-lang-badge">
+                                    🇷🇺 RU
+                                  </span>
+                                  <span className="privileged__ann-text-preview">
+                                    {ann.text_ru ||
+                                      ann.ru?.text ||
+                                      ann.text ||
+                                      "—"}
+                                  </span>
+                                </div>
+                                <div className="privileged__ann-small-lang-item">
+                                  <span className="privileged__ann-lang-badge">
+                                    🇬🇧 EN
+                                  </span>
+                                  <span className="privileged__ann-text-preview">
+                                    {ann.text_en ||
+                                      ann.en?.text ||
+                                      "—"}
+                                  </span>
+                                </div>
                               </div>
                             )}
                           </div>
+
+                          {(ann.linkUrl_ru || ann.linkUrl_en || ann.linkUrl) && (
+                            <div className="privileged__ann-links-row">
+                              <i className="ri-link" />
+                              <span className="privileged__ann-link-label">
+                                {language === "ru" ? "Ссылки:" : "Links:"}
+                              </span>
+                              {(ann.linkUrl_ru || ann.linkUrl) && (
+                                <span className="privileged__ann-link-pill">
+                                  🇷🇺 {ann.linkUrl_ru || ann.linkUrl}
+                                </span>
+                              )}
+                              {ann.linkUrl_en &&
+                                ann.linkUrl_en !==
+                                  (ann.linkUrl_ru || ann.linkUrl) && (
+                                  <span className="privileged__ann-link-pill">
+                                    🇬🇧 {ann.linkUrl_en}
+                                  </span>
+                                )}
+                            </div>
+                          )}
 
                           {/* Footer Details */}
                           <div className="privileged__ann-footer-row">
@@ -4084,142 +4200,366 @@ export default function Privileged() {
                       </div>
                     </div>
 
-                    {/* Step 2: Content */}
+                    {/* Step 2: Content (Russian & English variants) */}
                     <div className="privileged__form-section">
                       <div className="privileged__form-section-title">
                         <span className="privileged__step-num">2</span>
                         <span>
                           {announcementType === "small"
                             ? language === "ru"
-                              ? "Содержимое текстовой вставки"
-                              : "Inset Content"
+                              ? "Содержимое текстовой вставки (RU и EN)"
+                              : "Inset Content (RU & EN)"
                             : language === "ru"
-                              ? "Изображение большого плаката"
-                              : "Poster Image"}
+                              ? "Изображение большого плаката (RU и EN)"
+                              : "Poster Images (RU & EN)"}
                         </span>
                       </div>
 
                       {announcementType === "small" ? (
-                        <div className="privileged__form-field">
-                          <label className="privileged__field-label">
-                            {language === "ru"
-                              ? "Текст объявления"
-                              : "Announcement Text"}
-                            <span className="privileged__required-mark">*</span>
-                          </label>
-                          <textarea
-                            className="privileged__field-textarea"
-                            rows={3}
-                            required
-                            value={announcementText}
-                            onChange={(e) =>
-                              setAnnouncementText(e.target.value)
-                            }
-                            placeholder={
-                              language === "ru"
-                                ? "Например: Внимание! 1-3 мая магазин работает в обычном режиме. При заказе от 50€ доставка бесплатно!"
-                                : "e.g. Attention! Holiday weekend special: Free shipping on orders over €50!"
-                            }
-                          />
-                          <span className="privileged__field-hint">
-                            {language === "ru"
-                              ? "Этот текст будет показан в верхней плашке на главной странице."
-                              : "This text will be displayed in the top bar of the main page."}
-                          </span>
+                        <div className="privileged__ann-lang-blocks">
+                          {/* Russian variant */}
+                          <div className="privileged__ann-lang-card">
+                            <div className="privileged__ann-lang-card-header">
+                              <span className="privileged__ann-lang-flag">🇷🇺</span>
+                              <strong>
+                                {language === "ru"
+                                  ? "Русский вариант (RU)"
+                                  : "Russian Version (RU)"}
+                              </strong>
+                              <span className="privileged__required-mark">*</span>
+                            </div>
+
+                            <div className="privileged__form-field">
+                              <label className="privileged__field-label">
+                                {language === "ru"
+                                  ? "Текст объявления (RU)"
+                                  : "Announcement Text (RU)"}
+                                <span className="privileged__required-mark">*</span>
+                              </label>
+                              <textarea
+                                className="privileged__field-textarea"
+                                rows={3}
+                                required
+                                value={announcementTextRu}
+                                onChange={(e) =>
+                                  setAnnouncementTextRu(e.target.value)
+                                }
+                                placeholder={
+                                  language === "ru"
+                                    ? "Например: Внимание! 1-3 мая магазин работает в обычном режиме. При заказе от 50€ доставка бесплатно!"
+                                    : "e.g. Special offer in Russian..."
+                                }
+                              />
+                            </div>
+
+                            <div className="privileged__form-field">
+                              <label className="privileged__field-label">
+                                {language === "ru"
+                                  ? "Ссылка при клике (RU, необязательно)"
+                                  : "Click URL (RU, optional)"}
+                              </label>
+                              <input
+                                type="text"
+                                className="privileged__field-input"
+                                value={announcementLinkUrlRu}
+                                onChange={(e) =>
+                                  setAnnouncementLinkUrlRu(e.target.value)
+                                }
+                                placeholder="/catalog или https://..."
+                              />
+                            </div>
+                          </div>
+
+                          {/* English variant */}
+                          <div className="privileged__ann-lang-card">
+                            <div className="privileged__ann-lang-card-header">
+                              <span className="privileged__ann-lang-flag">🇬🇧</span>
+                              <strong>
+                                {language === "ru"
+                                  ? "Английский вариант (EN)"
+                                  : "English Version (EN)"}
+                              </strong>
+                              <span className="privileged__required-mark">*</span>
+                            </div>
+
+                            <div className="privileged__form-field">
+                              <label className="privileged__field-label">
+                                {language === "ru"
+                                  ? "Текст объявления (EN)"
+                                  : "Announcement Text (EN)"}
+                                <span className="privileged__required-mark">*</span>
+                              </label>
+                              <textarea
+                                className="privileged__field-textarea"
+                                rows={3}
+                                required
+                                value={announcementTextEn}
+                                onChange={(e) =>
+                                  setAnnouncementTextEn(e.target.value)
+                                }
+                                placeholder={
+                                  language === "ru"
+                                    ? "e.g. Attention! Holiday weekend special: Free shipping on orders over €50!"
+                                    : "e.g. Attention! Holiday weekend special: Free shipping on orders over €50!"
+                                }
+                              />
+                            </div>
+
+                            <div className="privileged__form-field">
+                              <div className="privileged__field-header-action">
+                                <label className="privileged__field-label">
+                                  {language === "ru"
+                                    ? "Ссылка при клике (EN, необязательно)"
+                                    : "Click URL (EN, optional)"}
+                                </label>
+                                {announcementLinkUrlRu && !announcementLinkUrlEn && (
+                                  <button
+                                    type="button"
+                                    className="privileged__copy-val-btn"
+                                    onClick={() =>
+                                      setAnnouncementLinkUrlEn(
+                                        announcementLinkUrlRu,
+                                      )
+                                    }
+                                  >
+                                    <i className="ri-file-copy-line" />
+                                    {language === "ru"
+                                      ? "Скопировать из RU"
+                                      : "Copy from RU"}
+                                  </button>
+                                )}
+                              </div>
+                              <input
+                                type="text"
+                                className="privileged__field-input"
+                                value={announcementLinkUrlEn}
+                                onChange={(e) =>
+                                  setAnnouncementLinkUrlEn(e.target.value)
+                                }
+                                placeholder="/catalog или https://..."
+                              />
+                            </div>
+                          </div>
                         </div>
                       ) : (
-                        <div className="privileged__form-field">
-                          <label className="privileged__field-label">
-                            {language === "ru"
-                              ? "Прямая ссылка на фото плаката (URL)"
-                              : "Direct Image URL"}
-                            <span className="privileged__required-mark">*</span>
-                          </label>
-                          <input
-                            type="url"
-                            className="privileged__field-input"
-                            required
-                            value={announcementImageUrl}
-                            onChange={(e) =>
-                              setAnnouncementImageUrl(e.target.value)
-                            }
-                            placeholder="https://images.unsplash.com/... или https://site.com/poster.jpg"
-                          />
-                          <span className="privileged__field-hint">
-                            {language === "ru"
-                              ? "Для плаката используется только ссылка на фото (рекомендуемый размер: 1200×450 px или пропорция 16:6)."
-                              : "Only an image link is needed for large posters (recommended ratio: 16:6 or 1200×450 px)."}
-                          </span>
-
-                          {/* Live preview */}
-                          {announcementImageUrl && (
-                            <div className="privileged__ann-live-preview-box">
-                              <span className="privileged__preview-tag">
+                        <div className="privileged__ann-lang-blocks">
+                          {/* Russian variant for Large Poster */}
+                          <div className="privileged__ann-lang-card">
+                            <div className="privileged__ann-lang-card-header">
+                              <span className="privileged__ann-lang-flag">🇷🇺</span>
+                              <strong>
                                 {language === "ru"
-                                  ? "Предпросмотр фото:"
-                                  : "Image Preview:"}
-                              </span>
-                              <div className="privileged__preview-img-wrap">
-                                <img
-                                  src={announcementImageUrl}
-                                  alt="Live Preview"
-                                  className="privileged__preview-img"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = "none";
-                                    const errEl =
-                                      e.currentTarget.nextElementSibling;
-                                    if (errEl) errEl.style.display = "flex";
-                                  }}
-                                  onLoad={(e) => {
-                                    e.currentTarget.style.display = "block";
-                                    const errEl =
-                                      e.currentTarget.nextElementSibling;
-                                    if (errEl) errEl.style.display = "none";
-                                  }}
-                                />
-                                <div
-                                  className="privileged__preview-error"
-                                  style={{ display: "none" }}
-                                >
-                                  <i className="ri-error-warning-line" />
-                                  <span>
-                                    {language === "ru"
-                                      ? "Не удалось загрузить изображение по указанному URL"
-                                      : "Failed to load image from the provided URL"}
-                                  </span>
+                                  ? "Плакат для русской версии (RU)"
+                                  : "Poster for Russian Version (RU)"}
+                              </strong>
+                              <span className="privileged__required-mark">*</span>
+                            </div>
+
+                            <div className="privileged__form-field">
+                              <label className="privileged__field-label">
+                                {language === "ru"
+                                  ? "Ссылка на фото плаката (RU)"
+                                  : "Poster Image URL (RU)"}
+                                <span className="privileged__required-mark">*</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="privileged__field-input"
+                                required
+                                value={announcementImageUrlRu}
+                                onChange={(e) =>
+                                  setAnnouncementImageUrlRu(e.target.value)
+                                }
+                                placeholder="https://images.unsplash.com/... или https://site.com/poster_ru.jpg"
+                              />
+                            </div>
+
+                            {/* Live preview RU */}
+                            {announcementImageUrlRu && (
+                              <div className="privileged__ann-live-preview-box">
+                                <span className="privileged__preview-tag">
+                                  {language === "ru"
+                                    ? "Предпросмотр фото (RU):"
+                                    : "Image Preview (RU):"}
+                                </span>
+                                <div className="privileged__preview-img-wrap">
+                                  <img
+                                    src={announcementImageUrlRu}
+                                    alt="Live Preview RU"
+                                    className="privileged__preview-img"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                      const errEl =
+                                        e.currentTarget.nextElementSibling;
+                                      if (errEl) errEl.style.display = "flex";
+                                    }}
+                                    onLoad={(e) => {
+                                      e.currentTarget.style.display = "block";
+                                      const errEl =
+                                        e.currentTarget.nextElementSibling;
+                                      if (errEl) errEl.style.display = "none";
+                                    }}
+                                  />
+                                  <div
+                                    className="privileged__preview-error"
+                                    style={{ display: "none" }}
+                                  >
+                                    <i className="ri-error-warning-line" />
+                                    <span>
+                                      {language === "ru"
+                                        ? "Не удалось загрузить изображение"
+                                        : "Failed to load image"}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
+                            )}
+
+                            <div className="privileged__form-field">
+                              <label className="privileged__field-label">
+                                {language === "ru"
+                                  ? "Ссылка при клике (RU, необязательно)"
+                                  : "Click URL (RU, optional)"}
+                              </label>
+                              <input
+                                type="text"
+                                className="privileged__field-input"
+                                value={announcementLinkUrlRu}
+                                onChange={(e) =>
+                                  setAnnouncementLinkUrlRu(e.target.value)
+                                }
+                                placeholder="/catalog или https://..."
+                              />
                             </div>
-                          )}
+                          </div>
+
+                          {/* English variant for Large Poster */}
+                          <div className="privileged__ann-lang-card">
+                            <div className="privileged__ann-lang-card-header">
+                              <span className="privileged__ann-lang-flag">🇬🇧</span>
+                              <strong>
+                                {language === "ru"
+                                  ? "Плакат для английской версии (EN)"
+                                  : "Poster for English Version (EN)"}
+                              </strong>
+                              <span className="privileged__required-mark">*</span>
+                              {announcementImageUrlRu &&
+                                !announcementImageUrlEn && (
+                                  <button
+                                    type="button"
+                                    className="privileged__copy-val-btn"
+                                    onClick={() =>
+                                      setAnnouncementImageUrlEn(
+                                        announcementImageUrlRu,
+                                      )
+                                    }
+                                  >
+                                    <i className="ri-image-add-line" />
+                                    {language === "ru"
+                                      ? "Использовать фото из RU"
+                                      : "Use photo from RU"}
+                                  </button>
+                                )}
+                            </div>
+
+                            <div className="privileged__form-field">
+                              <label className="privileged__field-label">
+                                {language === "ru"
+                                  ? "Ссылка на фото плаката (EN)"
+                                  : "Poster Image URL (EN)"}
+                                <span className="privileged__required-mark">*</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="privileged__field-input"
+                                required
+                                value={announcementImageUrlEn}
+                                onChange={(e) =>
+                                  setAnnouncementImageUrlEn(e.target.value)
+                                }
+                                placeholder="https://images.unsplash.com/... или https://site.com/poster_en.jpg"
+                              />
+                            </div>
+
+                            {/* Live preview EN */}
+                            {announcementImageUrlEn && (
+                              <div className="privileged__ann-live-preview-box">
+                                <span className="privileged__preview-tag">
+                                  {language === "ru"
+                                    ? "Предпросмотр фото (EN):"
+                                    : "Image Preview (EN):"}
+                                </span>
+                                <div className="privileged__preview-img-wrap">
+                                  <img
+                                    src={announcementImageUrlEn}
+                                    alt="Live Preview EN"
+                                    className="privileged__preview-img"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                      const errEl =
+                                        e.currentTarget.nextElementSibling;
+                                      if (errEl) errEl.style.display = "flex";
+                                    }}
+                                    onLoad={(e) => {
+                                      e.currentTarget.style.display = "block";
+                                      const errEl =
+                                        e.currentTarget.nextElementSibling;
+                                      if (errEl) errEl.style.display = "none";
+                                    }}
+                                  />
+                                  <div
+                                    className="privileged__preview-error"
+                                    style={{ display: "none" }}
+                                  >
+                                    <i className="ri-error-warning-line" />
+                                    <span>
+                                      {language === "ru"
+                                        ? "Не удалось загрузить изображение"
+                                        : "Failed to load image"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="privileged__form-field">
+                              <div className="privileged__field-header-action">
+                                <label className="privileged__field-label">
+                                  {language === "ru"
+                                    ? "Ссылка при клике (EN, необязательно)"
+                                    : "Click URL (EN, optional)"}
+                                </label>
+                                {announcementLinkUrlRu &&
+                                  !announcementLinkUrlEn && (
+                                    <button
+                                      type="button"
+                                      className="privileged__copy-val-btn"
+                                      onClick={() =>
+                                        setAnnouncementLinkUrlEn(
+                                          announcementLinkUrlRu,
+                                        )
+                                      }
+                                    >
+                                      <i className="ri-file-copy-line" />
+                                      {language === "ru"
+                                        ? "Скопировать из RU"
+                                        : "Copy from RU"}
+                                    </button>
+                                  )}
+                              </div>
+                              <input
+                                type="text"
+                                className="privileged__field-input"
+                                value={announcementLinkUrlEn}
+                                onChange={(e) =>
+                                  setAnnouncementLinkUrlEn(e.target.value)
+                                }
+                                placeholder="/catalog или https://..."
+                              />
+                            </div>
+                          </div>
                         </div>
                       )}
-
-                      {/* Optional Target Link */}
-                      <div className="privileged__form-field">
-                        <label className="privileged__field-label">
-                          {language === "ru"
-                            ? "Ссылка при клике (необязательно)"
-                            : "Click URL (optional)"}
-                        </label>
-                        <input
-                          type="text"
-                          className="privileged__field-input"
-                          value={announcementLinkUrl}
-                          onChange={(e) =>
-                            setAnnouncementLinkUrl(e.target.value)
-                          }
-                          placeholder={
-                            language === "ru"
-                              ? "Например: /books или https://example.com"
-                              : "e.g. /books or https://example.com"
-                          }
-                        />
-                        <span className="privileged__field-hint">
-                          {language === "ru"
-                            ? "Куда перейдет пользователь при нажатии на объявление (оставьте пустым, если ссылка не нужна)."
-                            : "Where the user will be redirected upon clicking (leave empty if not needed)."}
-                        </span>
-                      </div>
                     </div>
 
                     {/* Step 3: Dates */}

@@ -1,8 +1,27 @@
 import { useState, useEffect, useRef } from "react";
+import { useLanguage } from "../../context/languageContext";
 import "./LargeAnnouncementRoulette.css";
 
 export default function LargeAnnouncementRoulette({ items = [] }) {
-  const posters = items.filter((item) => item && item.type === "large" && item.imageUrl);
+  const { language } = useLanguage();
+
+  const getPosterImage = (item) => {
+    if (!item) return "";
+    return language === "en"
+      ? item.imageUrl_en || item.en?.imageUrl || item.imageUrl_ru || item.imageUrl
+      : item.imageUrl_ru || item.ru?.imageUrl || item.imageUrl_en || item.imageUrl;
+  };
+
+  const getPosterLink = (item) => {
+    if (!item) return "";
+    return language === "en"
+      ? item.linkUrl_en || item.en?.linkUrl || item.linkUrl_ru || item.linkUrl
+      : item.linkUrl_ru || item.ru?.linkUrl || item.linkUrl_en || item.linkUrl;
+  };
+
+  const posters = items.filter(
+    (item) => item && item.type === "large" && Boolean(getPosterImage(item)),
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef(null);
@@ -32,8 +51,13 @@ export default function LargeAnnouncementRoulette({ items = [] }) {
   };
 
   const currentPoster = posters[currentIndex];
-  const hasLink = Boolean(currentPoster?.linkUrl?.trim());
-  const isExternal = hasLink && (currentPoster.linkUrl.startsWith("http://") || currentPoster.linkUrl.startsWith("https://"));
+  const posterImageUrl = getPosterImage(currentPoster);
+  const posterLinkUrl = getPosterLink(currentPoster);
+  const hasLink = Boolean(posterLinkUrl?.trim());
+  const isExternal =
+    hasLink &&
+    (posterLinkUrl.startsWith("http://") ||
+      posterLinkUrl.startsWith("https://"));
 
   return (
     <div
@@ -44,14 +68,14 @@ export default function LargeAnnouncementRoulette({ items = [] }) {
       <div className="litera-poster-slide-wrapper">
         {hasLink ? (
           <a
-            href={currentPoster.linkUrl}
+            href={posterLinkUrl}
             target={isExternal ? "_blank" : "_self"}
             rel={isExternal ? "noopener noreferrer" : undefined}
             className="litera-poster-link"
           >
             <img
-              src={currentPoster.imageUrl}
-              alt="Рекламный плакат"
+              src={posterImageUrl}
+              alt={language === "ru" ? "Рекламный плакат" : "Promotional poster"}
               className="litera-poster-image"
               loading="eager"
             />
@@ -59,8 +83,8 @@ export default function LargeAnnouncementRoulette({ items = [] }) {
         ) : (
           <div className="litera-poster-link">
             <img
-              src={currentPoster.imageUrl}
-              alt="Рекламный плакат"
+              src={posterImageUrl}
+              alt={language === "ru" ? "Рекламный плакат" : "Promotional poster"}
               className="litera-poster-image"
               loading="eager"
             />
