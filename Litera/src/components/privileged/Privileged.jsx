@@ -293,9 +293,20 @@ export default function Privileged() {
         fromAdminUser: cookieUser || getCookieUser(),
       });
 
+      const currentAdminId = (cookieUser || getCookieUser())?.id;
+      const transferredAway =
+        updated?.interlocutors_info?.adminId &&
+        currentAdminId &&
+        updated.interlocutors_info.adminId !== currentAdminId;
+
       setInquiries((prev) =>
-        prev.map((i) => (i.id === activeInquiry.id ? updated : i)),
+        transferredAway
+          ? prev.filter((i) => i.id !== activeInquiry.id)
+          : prev.map((i) => (i.id === activeInquiry.id ? updated : i)),
       );
+      if (transferredAway && selectedInquiryId === activeInquiry.id) {
+        setSelectedInquiryId(null);
+      }
       setTransferModalOpen(false);
       setTransferReason("");
 
@@ -423,12 +434,13 @@ export default function Privileged() {
   const handleRefresh = async () => {
     setLoadingData(true);
     try {
+      const currentAdminId = (cookieUser || getCookieUser())?.id;
       const [usersList, ordersList, couponsList, inqList, annList] =
         await Promise.all([
           getAllUsers(),
           getAllOrdersAdmin(),
           getAllCoupons(),
-          fetchAllInquiries(),
+          fetchAllInquiries(currentAdminId),
           fetchAllAnnouncementsAdmin(),
         ]);
       setUsers(usersList);
@@ -456,7 +468,8 @@ export default function Privileged() {
 
     const loadInquiries = async () => {
       try {
-        const list = await fetchAllInquiries();
+        const currentAdminId = (cookieUser || getCookieUser())?.id;
+        const list = await fetchAllInquiries(currentAdminId);
         if (!cancelled && Array.isArray(list)) {
           setInquiries(list);
           if (selectedInquiryId) {

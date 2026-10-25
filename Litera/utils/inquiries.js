@@ -416,6 +416,16 @@ export async function sendInquiryMessage({
   }
 
   const info = inquiry.interlocutors_info || {};
+  if (
+    sender === "admin" &&
+    info.adminId &&
+    senderUser?.id &&
+    info.adminId !== senderUser.id
+  ) {
+    throw new Error(
+      "Доступ запрещён: этот диалог закреплён за другим ответственным администратором.",
+    );
+  }
   const isGuest = Boolean(info.isGuest);
   const currentChat = Array.isArray(inquiry.chat) ? inquiry.chat : [];
 
@@ -573,7 +583,6 @@ export async function transferInquiryAdmin({
         chat: updatedChat,
         notifications_admin: (inquiry.notifications_admin || 0) + 1,
         notifications_user: (inquiry.notifications_user || 0) + 1,
-        updated_at: transferTimestamp,
       }),
     }
   );
@@ -653,43 +662,41 @@ export async function markInquiryReadByAdmin(inquiryId) {
 }
 
 /**
- * Fetch all inquiries for admin panel.
- * Optionally filters by adminId, or returns all if null / superadmin.
+ * Fetch inquiries assigned strictly to the responsible administrator (adminId).
  */
 export async function fetchAllInquiries(adminId = null) {
+  if (!adminId) return [];
   try {
-    let url = `${TABLE_URL}?select=*&order=created_at.desc`;
-    if (adminId) {
-      url += `&interlocutors_info->>adminId=eq.${encodeURIComponent(adminId)}`;
-    }
+    const url = `${TABLE_URL}?select=*&interlocutors_info->>adminId=eq.${encodeURIComponent(adminId)}&order=created_at.desc`;
     const res = await fetch(url, { headers });
     if (!res.ok) return [];
-    return (await res.json()) || [];
+    const data = (await res.json()) || [];
+    return Array.isArray(data)
+      ? data.filter((i) => i.interlocutors_info?.adminId === adminId)
+      : [];
   } catch (err) {
-    console.warn("Error fetching all inquiries:", err);
+    console.warn("Error fetching admin inquiries:", err);
     return [];
   }
 }
 
 /**
- * Fetch total unread notifications count for admin.
- * If adminId is supplied and assigned inquiries exist, counts those; otherwise counts all unread.
+ * Fetch total unread notifications count strictly for the responsible administrator (adminId).
  */
 export async function fetchAdminUnreadCount(adminId = null) {
+  if (!adminId) return 0;
   try {
-    const res = await fetch(`${TABLE_URL}?select=notifications_admin,interlocutors_info`, { headers });
+    const res = await fetch(
+      `${TABLE_URL}?select=notifications_admin,interlocutors_info&interlocutors_info->>adminId=eq.${encodeURIComponent(adminId)}`,
+      { headers },
+    );
     if (!res.ok) return 0;
     const list = await res.json();
     if (!Array.isArray(list)) return 0;
 
-    if (adminId) {
-      const myInqs = list.filter((i) => i.interlocutors_info?.adminId === adminId);
-      if (myInqs.length > 0) {
-        return myInqs.reduce((acc, inq) => acc + (Number(inq.notifications_admin) || 0), 0);
-      }
-    }
-
-    return list.reduce((acc, inq) => acc + (Number(inq.notifications_admin) || 0), 0);
+    return list
+      .filter((i) => i.interlocutors_info?.adminId === adminId)
+      .reduce((acc, inq) => acc + (Number(inq.notifications_admin) || 0), 0);
   } catch (err) {
     console.warn("Error fetching admin unread count:", err);
     return 0;
