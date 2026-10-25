@@ -42,6 +42,15 @@ import {
 } from "./biblionService.js";
 import { processLiteraChat, filterInquiryMessageWithAI } from "./literaAssistantService.js";
 import { sendGuestInquiryEmail } from "./emailService.js";
+import { setHttpAdapter } from "./httpClient.js";
+
+const defaultHttpsAgent = new https.Agent({ rejectUnauthorized: false });
+setHttpAdapter({
+  get: (url, config = {}) =>
+    axios.get(url, { httpsAgent: defaultHttpsAgent, ...config }),
+  post: (url, payload, config = {}) =>
+    axios.post(url, payload, { httpsAgent: defaultHttpsAgent, ...config }),
+});
 
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 dotenv.config({ path: path.resolve(appDir, ".env") });

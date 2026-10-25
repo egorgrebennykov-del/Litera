@@ -1,4 +1,3 @@
-import process from "node:process";
 import { searchLibrarius } from "./librariusService.js";
 import { searchUlysses } from "./ulyssesService.js";
 import { searchCarteamea } from "./carteameaService.js";
@@ -12,6 +11,15 @@ import {
 import getExchangeRate, { DEFAULT_RATE } from "../utils/getExchangeRate.js";
 
 const DEFAULT_API_KEY = "";
+
+function getGeminiApiKey() {
+  return (
+    globalThis.process?.env?.GEMINI_API_KEY ||
+    globalThis.process?.env?.VITE_GEMINI_API_KEY ||
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY) ||
+    DEFAULT_API_KEY
+  );
+}
 const GEMINI_MODELS = [
   "gemini-flash-lite-latest",
   "gemini-3.5-flash-lite",
@@ -261,7 +269,7 @@ export async function discoverBooksByMeaning(
   const cleanQ = (userQuery || "").trim();
   if (!cleanQ) return [];
 
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
 
   let contextSection = "";
   if (previouslyRecommended && previouslyRecommended.length > 0) {
@@ -680,7 +688,7 @@ export async function filterForeignEditionsWithAI(products, userQuery = "") {
     return products;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
 
   const items = products.map((p, idx) => ({
     id: idx,
@@ -752,7 +760,7 @@ export async function filterHaramBooksWithAI(products, userQuery = "") {
 
   if (regexCleaned.length === 0) return [];
 
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
   if (!apiKey) {
     return regexCleaned;
   }
@@ -888,7 +896,7 @@ export function extractConversationContext(history = [], latestMessage = "") {
 export async function evaluateGiftSuitabilityWithAI(products, userQuery = "") {
   if (!Array.isArray(products) || products.length === 0) return [];
 
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
 
   const items = products.map((p, idx) => ({
     id: idx,
@@ -1010,7 +1018,7 @@ export async function searchGenericCategoryIfNeeded(
     contextSection += `PREVIOUSLY SHOWN BOOKS:\n${previouslyRecommended.map((b) => `- ${b.title}`).join("\n")}\n`;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
   let isGenericCategory = false;
   let searchQueries = [];
 
@@ -1760,7 +1768,7 @@ async function analyzeSearchIntent(messages) {
   }
 
   // Fallback: use Gemini to classify intent
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
   const historySnippet = (messages || [])
     .slice(-6)
     .map(
@@ -1878,7 +1886,7 @@ export async function callGeminiJson({ apiKey, systemInstruction, prompt, respon
  * Main handler for Litera Assistant chat requests
  */
 export async function processLiteraChat({ messages, language = "ru", context, onStatus } = {}) {
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
   const history = Array.isArray(messages) ? messages.slice(-10) : [];
   const latestMessage = history[history.length - 1]?.content || "";
 
@@ -2258,7 +2266,7 @@ export async function filterInquiryMessageWithAI({ text, language = "ru" }) {
   }
 
   // Tier 2: Gemini AI Semantic Classifier & Router
-  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  const apiKey = getGeminiApiKey();
   if (!apiKey) {
     return { allowed: true, redirectToLitera: false };
   }

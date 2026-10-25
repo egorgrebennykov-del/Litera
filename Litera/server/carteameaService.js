@@ -1,8 +1,5 @@
-import axios from "axios";
-import https from "node:https";
+import httpClient from "./httpClient.js";
 import decodeHtmlEntities from "../utils/decodeHtmlEntities.js";
-
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 const searchCache = new Map();
 const detailsCache = new Map();
@@ -152,9 +149,8 @@ export async function searchCarteamea(query) {
 
   const fetchPage = async (page) => {
     try {
-      const res = await axios.get(getPageUrl(page), {
+      const res = await httpClient.get(getPageUrl(page), {
         headers: BASE_HEADERS,
-        httpsAgent,
         timeout: 8000,
       });
       return res.data;
@@ -221,9 +217,8 @@ export async function getCarteameaDetails(bookUrl) {
   }
 
   try {
-    const res = await axios.get(bookUrl, {
+    const res = await httpClient.get(bookUrl, {
       headers: BASE_HEADERS,
-      httpsAgent,
       timeout: 8000,
     });
 

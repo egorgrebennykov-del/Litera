@@ -1,8 +1,5 @@
-import axios from "axios";
-import https from "node:https";
+import httpClient from "./httpClient.js";
 import decodeHtmlEntities from "../utils/decodeHtmlEntities.js";
-
-const httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: false });
 
 const searchCache = new Map();
 const detailsCache = new Map();
@@ -77,9 +74,8 @@ export async function resolveHighResImage(productUrl, fallbackImg) {
     return highResCache.get(productUrl);
   }
   try {
-    const res = await axios.get(productUrl, {
+    const res = await httpClient.get(productUrl, {
       headers: BASE_HEADERS,
-      httpsAgent,
       family: 4,
       timeout: 3500,
     });
@@ -122,9 +118,8 @@ export async function searchUlysses(query) {
 
   const fetchPage = async (page) => {
     try {
-      const res = await axios.get(getPageUrl(page), {
+      const res = await httpClient.get(getPageUrl(page), {
         headers: BASE_HEADERS,
-        httpsAgent,
         family: 4,
         timeout: 6000,
       });
@@ -232,9 +227,8 @@ export async function getUlyssesDetails(bookUrl) {
   }
 
   try {
-    const res = await axios.get(bookUrl, {
+    const res = await httpClient.get(bookUrl, {
       headers: BASE_HEADERS,
-      httpsAgent,
       family: 4,
       timeout: 8000,
     });

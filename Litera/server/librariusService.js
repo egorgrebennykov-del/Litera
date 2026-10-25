@@ -1,8 +1,5 @@
-import axios from "axios";
-import https from "node:https";
+import httpClient from "./httpClient.js";
 import decodeHtmlEntities from "../utils/decodeHtmlEntities.js";
-
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 const searchCache = new Map();
 const detailsCache = new Map();
@@ -78,12 +75,11 @@ export async function searchLibrarius(query, maxFetchPages = 10) {
 
   const fetchPage = async (page) => {
     try {
-      const response = await axios.get(getPageUrl(page), {
+      const response = await httpClient.get(getPageUrl(page), {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         },
-        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
         timeout: 5000,
       });
       return response.data;
@@ -294,12 +290,11 @@ export async function getLibrariusDetails(url) {
     return cached.data;
   }
 
-  const response = await axios.get(url, {
+  const response = await httpClient.get(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     },
-    httpsAgent,
     timeout: 7000,
   });
 

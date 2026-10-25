@@ -1,11 +1,16 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "litera",
+  "main": "server/worker.js",
   "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     // Vite build output (npm run build)
     "directory": "./dist",
+    "binding": "ASSETS",
     // React Router: unknown paths (/contacts, /book/123, ...) fall back to index.html
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Route API and health check requests to the Cloudflare Worker first
+    "run_worker_first": ["/api/*", "/health"]
   }
 }

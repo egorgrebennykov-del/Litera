@@ -6,6 +6,7 @@ import { useLanguage } from "../../context/languageContext";
 import { useConfirm, useAlert } from "../../context/ConfirmContext";
 import { addToCart, getCart } from "../../../utils/cart";
 import { isLoggedIn, getCookieUser } from "../../../utils/auth";
+import { processLiteraChat } from "../../../server/literaAssistantService";
 import "./LiteraAssistant.css";
 
 const STORAGE_KEY = "litera_assistant_history_v2";
@@ -308,53 +309,67 @@ export default function LiteraAssistant() {
         },
       };
 
-      const response = await fetch("/api/litera-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Accept: "text/event-stream, application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-
-      const contentType = response.headers.get("content-type") || "";
       let data = null;
+      try {
+        const response = await fetch("/api/litera-chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            Accept: "text/event-stream, application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (contentType.includes("text/event-stream") && response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
+        const contentType = response.headers.get("content-type") || "";
 
-          const chunks = buffer.split("\n\n");
-          buffer = chunks.pop() || "";
+        if (contentType.includes("text/event-stream") && response.body) {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
 
-          for (const chunk of chunks) {
-            const trimmed = chunk.trim();
-            if (!trimmed.startsWith("data:")) continue;
-            try {
-              const eventData = JSON.parse(trimmed.replace(/^data:\s*/, ""));
-              if (eventData.type === "status") {
-                setLoadingStatus(eventData.status);
-                setEmotion(eventData.status === "searching" ? "thinking" : "speaking");
-              } else if (eventData.type === "result") {
-                data = eventData;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const chunks = buffer.split("\n\n");
+            buffer = chunks.pop() || "";
+
+            for (const chunk of chunks) {
+              const trimmed = chunk.trim();
+              if (!trimmed.startsWith("data:")) continue;
+              try {
+                const eventData = JSON.parse(trimmed.replace(/^data:\s*/, ""));
+                if (eventData.type === "status") {
+                  setLoadingStatus(eventData.status);
+                  setEmotion(
+                    eventData.status === "searching" ? "thinking" : "speaking",
+                  );
+                } else if (eventData.type === "result") {
+                  data = eventData;
+                }
+              } catch {
+                // Ignore malformed chunk
               }
-            } catch {
-              // Ignore malformed chunk
             }
           }
+        } else if (contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          throw new Error("Unexpected response content-type");
         }
-      } else {
-        data = await response.json();
+      } catch {
+        data = await processLiteraChat({
+          ...payload,
+          onStatus: (status) => {
+            setLoadingStatus(status);
+            setEmotion(status === "searching" ? "thinking" : "speaking");
+          },
+        });
       }
 
       // Handle navigation action if requested

@@ -1,9 +1,6 @@
-import axios from "axios";
-import https from "node:https";
+import httpClient from "./httpClient.js";
 import decodeHtmlEntities from "../utils/decodeHtmlEntities.js";
 import extractBookMetadata from "../utils/extractBookMetadata.js";
-
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 const searchCache = new Map();
 const detailsCache = new Map();
@@ -149,9 +146,8 @@ export async function searchBiblion(query, maxFetchPages = 10) {
 
   const fetchPage = async (page) => {
     try {
-      const res = await axios.get(getPageUrl(page), {
+      const res = await httpClient.get(getPageUrl(page), {
         headers: BASE_HEADERS,
-        httpsAgent,
         timeout: 5000,
       });
       return res.data;
@@ -219,9 +215,8 @@ export async function getBiblionDetails(bookUrl) {
   }
 
   try {
-    const res = await axios.get(bookUrl, {
+    const res = await httpClient.get(bookUrl, {
       headers: BASE_HEADERS,
-      httpsAgent,
       timeout: 9000,
     });
 
