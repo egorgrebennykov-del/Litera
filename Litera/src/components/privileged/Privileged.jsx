@@ -32,6 +32,7 @@ import {
   reorderAnnouncements,
 } from "../../../utils/announcements";
 import BookImage from "../common/BookImage";
+import { RussianFlag, BritishFlag } from "../common/FlagIcon";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
 import { useConfirm, useAlert } from "../../context/ConfirmContext";
@@ -3932,7 +3933,7 @@ export default function Privileged() {
                               <div className="privileged__ann-large-preview-dual">
                                 <div className="privileged__ann-poster-col">
                                   <span className="privileged__ann-lang-badge">
-                                    🇷🇺 RU
+                                    <RussianFlag width={16} height={11} /> RU
                                   </span>
                                   {ann.imageUrl_ru || ann.imageUrl ? (
                                     <img
@@ -3967,7 +3968,7 @@ export default function Privileged() {
 
                                 <div className="privileged__ann-poster-col">
                                   <span className="privileged__ann-lang-badge">
-                                    🇬🇧 EN
+                                    <BritishFlag width={16} height={11} /> EN
                                   </span>
                                   {ann.imageUrl_en || ann.imageUrl ? (
                                     <img
@@ -4004,7 +4005,7 @@ export default function Privileged() {
                               <div className="privileged__ann-small-preview-dual">
                                 <div className="privileged__ann-small-lang-item">
                                   <span className="privileged__ann-lang-badge">
-                                    🇷🇺 RU
+                                    <RussianFlag width={16} height={11} /> RU
                                   </span>
                                   <span className="privileged__ann-text-preview">
                                     {ann.text_ru ||
@@ -4015,7 +4016,7 @@ export default function Privileged() {
                                 </div>
                                 <div className="privileged__ann-small-lang-item">
                                   <span className="privileged__ann-lang-badge">
-                                    🇬🇧 EN
+                                    <BritishFlag width={16} height={11} /> EN
                                   </span>
                                   <span className="privileged__ann-text-preview">
                                     {ann.text_en ||
@@ -4035,14 +4036,16 @@ export default function Privileged() {
                               </span>
                               {(ann.linkUrl_ru || ann.linkUrl) && (
                                 <span className="privileged__ann-link-pill">
-                                  🇷🇺 {ann.linkUrl_ru || ann.linkUrl}
+                                  <RussianFlag width={14} height={10} />{" "}
+                                  {ann.linkUrl_ru || ann.linkUrl}
                                 </span>
                               )}
                               {ann.linkUrl_en &&
                                 ann.linkUrl_en !==
                                   (ann.linkUrl_ru || ann.linkUrl) && (
                                   <span className="privileged__ann-link-pill">
-                                    🇬🇧 {ann.linkUrl_en}
+                                    <BritishFlag width={14} height={10} />{" "}
+                                    {ann.linkUrl_en}
                                   </span>
                                 )}
                             </div>
@@ -4220,7 +4223,9 @@ export default function Privileged() {
                           {/* Russian variant */}
                           <div className="privileged__ann-lang-card">
                             <div className="privileged__ann-lang-card-header">
-                              <span className="privileged__ann-lang-flag">🇷🇺</span>
+                              <span className="privileged__ann-lang-flag">
+                                <RussianFlag width={24} height={16} />
+                              </span>
                               <strong>
                                 {language === "ru"
                                   ? "Русский вариант (RU)"
@@ -4273,7 +4278,9 @@ export default function Privileged() {
                           {/* English variant */}
                           <div className="privileged__ann-lang-card">
                             <div className="privileged__ann-lang-card-header">
-                              <span className="privileged__ann-lang-flag">🇬🇧</span>
+                              <span className="privileged__ann-lang-flag">
+                                <BritishFlag width={24} height={16} />
+                              </span>
                               <strong>
                                 {language === "ru"
                                   ? "Английский вариант (EN)"
@@ -4346,7 +4353,9 @@ export default function Privileged() {
                           {/* Russian variant for Large Poster */}
                           <div className="privileged__ann-lang-card">
                             <div className="privileged__ann-lang-card-header">
-                              <span className="privileged__ann-lang-flag">🇷🇺</span>
+                              <span className="privileged__ann-lang-flag">
+                                <RussianFlag width={24} height={16} />
+                              </span>
                               <strong>
                                 {language === "ru"
                                   ? "Плакат для русской версии (RU)"
@@ -4436,7 +4445,9 @@ export default function Privileged() {
                           {/* English variant for Large Poster */}
                           <div className="privileged__ann-lang-card">
                             <div className="privileged__ann-lang-card-header">
-                              <span className="privileged__ann-lang-flag">🇬🇧</span>
+                              <span className="privileged__ann-lang-flag">
+                                <BritishFlag width={24} height={16} />
+                              </span>
                               <strong>
                                 {language === "ru"
                                   ? "Плакат для английской версии (EN)"

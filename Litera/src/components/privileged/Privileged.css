@@ -3308,7 +3308,9 @@
 }
 
 .privileged__ann-lang-flag {
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 
