@@ -2734,7 +2734,7 @@ export default function Privileged() {
 
                         <button
                           type="button"
-                          className="button button--ghost privileged__btn-sm"
+                          className="privileged__order-status-btn"
                           onClick={() =>
                             handleUpdateOrderStatus(
                               order.id,
@@ -2744,9 +2744,11 @@ export default function Privileged() {
                           title={t("privileged.orders.toggleStatusTitle")}
                         >
                           <i className="ri-swap-line" />
-                          {isCompleted
-                            ? t("privileged.orders.markInProgress")
-                            : t("privileged.orders.markCompleted")}
+                          <span>
+                            {isCompleted
+                              ? t("privileged.orders.markInProgress")
+                              : t("privileged.orders.markCompleted")}
+                          </span>
                         </button>
                       </div>
                     </div>
