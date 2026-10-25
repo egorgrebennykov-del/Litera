@@ -16,15 +16,6 @@ export default function Contacts() {
     });
   };
 
-  const handleSendEmail = (e) => {
-    try {
-      window.location.href = `mailto:${email}`;
-    } catch {
-      // fallback
-    }
-    handleCopy("email-btn", email);
-  };
-
   const phone = "+359879485078";
   const email = "egor.grebennykov@gmail.com";
   const addressText =
@@ -118,19 +109,6 @@ export default function Contacts() {
                 <i className="ri-telegram-fill" />
                 <span>{language === "ru" ? "Написать в Telegram" : "Telegram Message"}</span>
               </a>
-
-              <a
-                href={`mailto:${email}`}
-                onClick={handleSendEmail}
-                className="button button--ghost contacts__action-btn"
-              >
-                <i className={copiedKey === "email-btn" ? "ri-check-line" : "ri-mail-send-line"} />
-                <span>
-                  {copiedKey === "email-btn"
-                    ? (language === "ru" ? "Email скопирован!" : "Email copied!")
-                    : (language === "ru" ? "Написать на Email" : "Send Email")}
-                </span>
-              </a>
             </div>
           </div>
         </div>
@@ -178,9 +156,7 @@ export default function Contacts() {
             </div>
             <div className="contacts__card-content">
               <span className="contacts__card-label">{t("contacts.email")}</span>
-              <a href={`mailto:${email}`} className="contacts__card-value">
-                {email}
-              </a>
+              <span className="contacts__card-value">{email}</span>
               <span className="contacts__card-desc">
                 {language === "ru"
                   ? "Вопросы сотрудничества и партнерства"
