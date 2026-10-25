@@ -43,6 +43,7 @@ export default function LiteraAssistant() {
   const [input, setInput] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTooLarge, setIsTooLarge] = useState(false);
+  const [expandedMsgIds, setExpandedMsgIds] = useState(() => new Set());
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("typing");
   const [cartAddingId, setCartAddingId] = useState(null);
@@ -146,6 +147,18 @@ export default function LiteraAssistant() {
     setEmotion("neutral");
   };
 
+  const toggleMsgExpand = (id) => {
+    setExpandedMsgIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   const handleClearHistory = async () => {
     const ok = await confirm({
       title: language === "ru" ? "Очистить историю диалога?" : "Clear Chat History?",
@@ -155,6 +168,7 @@ export default function LiteraAssistant() {
     });
     if (!ok) return;
 
+    setExpandedMsgIds(new Set());
     const freshWelcome = [
       {
         id: generateId("msg"),
@@ -543,22 +557,73 @@ export default function LiteraAssistant() {
 
             {/* Messages Body */}
             <div className="litera-chat-body">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`litera-msg-row litera-msg-row--${msg.role}`}
-                >
-                  {msg.role === "assistant" && (
-                    <LiteraCharacter
-                      emotion={msg.emotion || "neutral"}
-                      size={32}
-                      className="litera-msg-avatar"
-                    />
-                  )}
+              {messages.map((msg) => {
+                const isUser = msg.role === "user";
+                const isLongMsg =
+                  isUser &&
+                  msg.content &&
+                  (msg.content.length > 130 ||
+                    (msg.content.match(/\n/g) || []).length >= 3);
+                const isMsgExpanded = expandedMsgIds.has(msg.id);
 
-                  <div className="litera-msg-bubble-wrap">
-                    <div className="litera-msg-bubble">
-                      <p className="litera-msg-text">{msg.content}</p>
+                return (
+                  <div
+                    key={msg.id}
+                    className={`litera-msg-row litera-msg-row--${msg.role}`}
+                  >
+                    {msg.role === "assistant" && (
+                      <LiteraCharacter
+                        emotion={msg.emotion || "neutral"}
+                        size={32}
+                        className="litera-msg-avatar"
+                      />
+                    )}
+
+                    <div className="litera-msg-bubble-wrap">
+                      <div
+                        className={`litera-msg-bubble ${
+                          isLongMsg
+                            ? isMsgExpanded
+                              ? "litera-msg-bubble--expanded"
+                              : "litera-msg-bubble--collapsed"
+                            : ""
+                        }`}
+                      >
+                        <p className="litera-msg-text">{msg.content}</p>
+
+                        {isLongMsg && (
+                          <button
+                            type="button"
+                            className="litera-msg-dots-btn"
+                            onClick={() => toggleMsgExpand(msg.id)}
+                            title={
+                              language === "ru"
+                                ? isMsgExpanded
+                                  ? "Свернуть сообщение"
+                                  : "Раскрыть полностью"
+                                : isMsgExpanded
+                                  ? "Collapse message"
+                                  : "Show full message"
+                            }
+                            aria-label={
+                              language === "ru"
+                                ? isMsgExpanded
+                                  ? "Свернуть сообщение"
+                                  : "Раскрыть полностью"
+                                : isMsgExpanded
+                                  ? "Collapse message"
+                                  : "Show full message"
+                            }
+                          >
+                            <span className="litera-msg-dots">
+                              {isMsgExpanded ? (
+                                <i className="ri-arrow-up-s-line" />
+                              ) : (
+                                "•••"
+                              )}
+                            </span>
+                          </button>
+                        )}
 
                       {/* Recommended Real Book Cards */}
                       {Array.isArray(msg.books) && msg.books.length > 0 && (
@@ -681,7 +746,8 @@ export default function LiteraAssistant() {
                     </span>
                   </div>
                 </div>
-              ))}
+              );
+            })}
 
               {/* Thinking / Searching / Typing animation */}
               {loading && (
