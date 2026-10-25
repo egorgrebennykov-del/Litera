@@ -42,6 +42,7 @@ import {
 } from "./biblionService.js";
 import { processLiteraChat, filterInquiryMessageWithAI } from "./literaAssistantService.js";
 import { sendGuestInquiryEmail } from "./emailService.js";
+import { executeCatalogActionById } from "./catalogActionsService.js";
 import { setHttpAdapter } from "./httpClient.js";
 
 const defaultHttpsAgent = new https.Agent({ rejectUnauthorized: false });
@@ -648,6 +649,59 @@ const server = createServer(async (req, res) => {
   }
 });
 
+async function runAutoCatalogActions() {
+  const order = [
+    "update-exchange-rate",
+    "update-discounts",
+    "update-new-books",
+    "update-book-picks",
+    "update-home-books",
+  ];
+  for (const id of order) {
+    const action = ACTIONS[id];
+    if (!action || actionStatuses[id]?.status === "running") continue;
+    const startedAt = new Date().toISOString();
+    actionStatuses[id] = {
+      status: "running",
+      startedAt,
+      lastRun: startedAt,
+      method: "auto",
+      output: `[${new Date().toLocaleTimeString()}] Auto-running ${action.name}...\n`,
+      error: null,
+    };
+    try {
+      const summary = await executeCatalogActionById(id);
+      const finishedAt = new Date().toISOString();
+      actionStatuses[id] = {
+        status: "success",
+        startedAt,
+        finishedAt,
+        lastRun: finishedAt,
+        method: "auto",
+        output: `[${new Date().toLocaleTimeString()}] ${summary}\n`,
+        error: null,
+      };
+    } catch (err) {
+      const finishedAt = new Date().toISOString();
+      actionStatuses[id] = {
+        status: "error",
+        startedAt,
+        finishedAt,
+        lastRun: finishedAt,
+        method: "auto",
+        output: `[${new Date().toLocaleTimeString()}] Error: ${err.message}\n`,
+        error: err.message,
+      };
+    }
+  }
+}
+
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Book cover comparison API listening on ${PORT}`);
+  setTimeout(() => {
+    runAutoCatalogActions().catch(() => {});
+  }, 3000);
+  setInterval(() => {
+    runAutoCatalogActions().catch(() => {});
+  }, 6 * 60 * 60 * 1000);
 });

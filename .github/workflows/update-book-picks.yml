@@ -2,7 +2,12 @@ name: Update Book Picks
 
 on:
   schedule:
-    - cron: "0 3 * * 1"
+    - cron: "0 */6 * * *"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/update-book-picks.yml"
+      - "Litera/.github/updateBookPicks.js"
   workflow_dispatch:
 
 permissions:
@@ -17,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm

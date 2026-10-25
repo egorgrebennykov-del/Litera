@@ -32,6 +32,7 @@ import {
   filterInquiryMessageWithAI,
 } from "./literaAssistantService.js";
 import { sendGuestInquiryEmail } from "./emailService.js";
+import { executeCatalogActionById } from "./catalogActionsService.js";
 
 const ACTIONS = {
   "update-book-picks": {
@@ -69,6 +70,95 @@ for (const key of Object.keys(ACTIONS)) {
     output: "",
     error: null,
   };
+}
+
+const AUTO_RUN_INTERVAL_MS = 6 * 60 * 60 * 1000;
+let lastAutoRunAt = 0;
+let autoRunInFlight = false;
+
+async function triggerSingleAction(actionId) {
+  const action = ACTIONS[actionId];
+  if (!action) {
+    throw new Error(`Unknown action: ${actionId}`);
+  }
+  const startedAt = new Date().toISOString();
+  actionStatuses[actionId] = {
+    status: "running",
+    startedAt,
+    lastRun: startedAt,
+    output: `[${new Date().toLocaleTimeString()}] Running ${action.name}...\n`,
+    error: null,
+  };
+
+  try {
+    const githubToken =
+      globalThis.process?.env?.GITHUB_TOKEN ||
+      globalThis.process?.env?.GH_TOKEN;
+    if (githubToken) {
+      fetch(
+        `https://api.github.com/repos/egorgrebennykov-del/Litera/actions/workflows/${action.workflowFile}/dispatches`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${githubToken}`,
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "Litera-App",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ref: "main" }),
+        },
+      ).catch(() => {});
+    }
+
+    const summary = await executeCatalogActionById(actionId);
+    const finishedAt = new Date().toISOString();
+    actionStatuses[actionId] = {
+      status: "success",
+      startedAt,
+      finishedAt,
+      lastRun: finishedAt,
+      method: "auto-worker",
+      output: `[${new Date().toLocaleTimeString()}] ${summary}\n`,
+      error: null,
+    };
+    return actionStatuses[actionId];
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    actionStatuses[actionId] = {
+      status: "error",
+      startedAt,
+      finishedAt,
+      lastRun: finishedAt,
+      output: `[${new Date().toLocaleTimeString()}] Error: ${err.message}\n`,
+      error: err.message,
+    };
+    throw err;
+  }
+}
+
+async function runAllCatalogActionsSequential() {
+  if (autoRunInFlight) return;
+  autoRunInFlight = true;
+  lastAutoRunAt = Date.now();
+  try {
+    const order = [
+      "update-exchange-rate",
+      "update-discounts",
+      "update-new-books",
+      "update-book-picks",
+      "update-home-books",
+    ];
+    for (const id of order) {
+      try {
+        await triggerSingleAction(id);
+      } catch (err) {
+        console.warn(`Auto action ${id} warning:`, err.message);
+      }
+    }
+  } finally {
+    autoRunInFlight = false;
+  }
 }
 
 function syncProcessEnv(env) {
@@ -161,7 +251,17 @@ async function handleEnhanceImage(urlObj) {
 }
 
 export default {
-  async fetch(request, env) {
+  async scheduled(event, env, ctx) {
+    syncProcessEnv(env);
+    const task = runAllCatalogActionsSequential();
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(task);
+    } else {
+      await task;
+    }
+  },
+
+  async fetch(request, env, ctx) {
     syncProcessEnv(env);
 
     const urlObj = new URL(request.url);
@@ -173,6 +273,12 @@ export default {
     }
 
     if (method === "POST" && pathname === "/api/warmup") {
+      if (Date.now() - lastAutoRunAt > AUTO_RUN_INTERVAL_MS && !autoRunInFlight) {
+        const bgPromise = runAllCatalogActionsSequential().catch(() => {});
+        if (ctx?.waitUntil) {
+          ctx.waitUntil(bgPromise);
+        }
+      }
       return jsonResponse({ ready: true });
     }
 
@@ -419,48 +525,15 @@ export default {
         if (!action) {
           return jsonResponse({ error: `Unknown action: ${actionId}` }, 400);
         }
-        const githubToken =
-          globalThis.process?.env?.GITHUB_TOKEN ||
-          globalThis.process?.env?.GH_TOKEN;
-        if (githubToken) {
-          const ghRes = await fetch(
-            `https://api.github.com/repos/egorgrebennykov-del/Litera/actions/workflows/${action.workflowFile}/dispatches`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${githubToken}`,
-                Accept: "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "Litera-App",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ ref: "main" }),
-            },
-          );
-          if (ghRes.ok) {
-            const now = new Date().toISOString();
-            actionStatuses[actionId] = {
-              status: "success",
-              startedAt: now,
-              finishedAt: now,
-              lastRun: now,
-              method: "github",
-              output: `[${new Date().toLocaleTimeString()}] Successfully dispatched workflow ${action.workflowFile} to GitHub Actions!`,
-            };
-            return jsonResponse({
-              success: true,
-              method: "github",
-              message: `Dispatched ${action.name} to GitHub Actions`,
-            });
-          }
+        const runPromise = triggerSingleAction(actionId).catch(() => {});
+        if (ctx?.waitUntil) {
+          ctx.waitUntil(runPromise);
         }
-        return jsonResponse(
-          {
-            error:
-              "GitHub Actions token (GITHUB_TOKEN) is not configured in Cloudflare environment.",
-          },
-          501,
-        );
+        return jsonResponse({
+          success: true,
+          method: "auto-worker",
+          message: `Started ${action.name}`,
+        });
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);
       }

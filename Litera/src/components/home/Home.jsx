@@ -140,11 +140,9 @@ export default function Home() {
                       <span className="home__book-title">
                         {decodeHtmlEntities(book.title)}
                       </span>
-                      {book.publisher && (
-                        <span className="home__book-publisher">
-                          {book.publisher}
-                        </span>
-                      )}
+                      <span className="home__book-publisher">
+                        {book.publisher || "\u00A0"}
+                      </span>
                     </Link>
                   </article>
                 ))}

@@ -44,6 +44,11 @@ export default function LiteraAssistant() {
   const [input, setInput] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTooLarge, setIsTooLarge] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 767px)").matches
+      : false,
+  );
   const [expandedMsgIds, setExpandedMsgIds] = useState(() => new Set());
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("typing");
@@ -95,18 +100,38 @@ export default function LiteraAssistant() {
     }
   }, [messages, isOpen, loading]);
 
-  // Focus input when opened
   useEffect(() => {
-    if (isOpen) {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    if (mq.addEventListener) {
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }
+    mq.addListener(handler);
+    return () => mq.removeListener(handler);
+  }, []);
+
+  // Focus input when opened on desktop
+  useEffect(() => {
+    if (isOpen && !isMobile) {
       const timer = setTimeout(() => inputRef.current?.focus(), 150);
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
-  // Auto-resize input textarea and detect when content exceeds normal height
+  // Auto-resize input textarea on desktop; on mobile ONLY resize when user purposefully toggles isExpanded
   useEffect(() => {
     const textarea = inputRef.current;
     if (!textarea) return;
+
+    if (isMobile) {
+      const hasOverflow = input.length > 32 || input.includes("\n");
+      setIsTooLarge(hasOverflow);
+      textarea.style.height = isExpanded ? "100px" : "24px";
+      return;
+    }
 
     // Reset height temporarily to accurately measure scrollHeight
     textarea.style.height = "auto";
@@ -127,7 +152,7 @@ export default function LiteraAssistant() {
       // Single line: neat 24px height perfectly centered
       textarea.style.height = "24px";
     }
-  }, [input, isExpanded]);
+  }, [input, isExpanded, isMobile]);
 
   // Global listeners to trigger assistant from other components (404 page, admin messenger redirect)
   useEffect(() => {
@@ -915,7 +940,7 @@ export default function LiteraAssistant() {
             {/* Input Bar */}
             <div className={`litera-chat-footer ${isExpanded ? "footer-expanded" : ""}`}>
               <form
-                className={`litera-chat-input-form ${isTooLarge || isExpanded ? "multiline" : ""} ${isExpanded ? "litera-input-expanded" : ""}`}
+                className={`litera-chat-input-form ${(!isMobile && isTooLarge) || isExpanded ? "multiline" : ""} ${isExpanded ? "litera-input-expanded" : ""}`}
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();
@@ -927,7 +952,13 @@ export default function LiteraAssistant() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={t("assistant.placeholder")}
+                  placeholder={
+                    isMobile
+                      ? language === "ru"
+                        ? "Спросите о книгах или авторах..."
+                        : "Ask about books or authors..."
+                      : t("assistant.placeholder")
+                  }
                   rows={1}
                   disabled={loading}
                 />

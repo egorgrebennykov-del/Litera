@@ -12,10 +12,12 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(scriptDir, "../.env") });
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-const API_KEY = process.env.ZYTE_API_KEY;
+const API_KEY =
+  process.env.ZYTE_API_KEY || "24c074604b62474cbeb63b2e939de1b8";
 const SUPABASE_URL =
-  process.env.SUPABASE_URL ?? "https://qgxiisgzwcsevzyaoxvl.supabase.co";
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+  process.env.SUPABASE_URL || "https://qgxiisgzwcsevzyaoxvl.supabase.co";
+const SUPABASE_SECRET_KEY =
+  process.env.SUPABASE_SECRET_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 env.cacheDir = path.resolve(
   scriptDir,
   "node_modules/@huggingface/transformers/.cache/",

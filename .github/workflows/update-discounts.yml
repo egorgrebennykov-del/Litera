@@ -2,8 +2,16 @@ name: Update discount books
 
 on:
   schedule:
-    - cron: "0 22 * * 0"
+    - cron: "15 */6 * * *"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/update-discounts.yml"
+      - "Litera/.github/updateDiscounts.js"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   update-discount-books:
@@ -14,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm

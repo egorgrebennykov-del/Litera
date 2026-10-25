@@ -46,13 +46,14 @@ function fetchHttpsText(url) {
 
 async function updateExchangeRate() {
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
-      throw new Error("SUPABASE_URL or SUPABASE_SECRET_KEY is not configured");
-    }
+    const supabaseUrl =
+      process.env.SUPABASE_URL || "https://qgxiisgzwcsevzyaoxvl.supabase.co";
+    const supabaseSecretKey =
+      process.env.SUPABASE_SECRET_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
     const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SECRET_KEY,
+      supabaseUrl,
+      supabaseSecretKey,
       { auth: { persistSession: false } },
     );
 

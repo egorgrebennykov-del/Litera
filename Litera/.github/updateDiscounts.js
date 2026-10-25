@@ -9,10 +9,16 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(scriptDir, "../.env") });
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-const API_KEY = process.env.ZYTE_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const API_KEY =
+  process.env.ZYTE_API_KEY || "24c074604b62474cbeb63b2e939de1b8";
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  "https://qgxiisgzwcsevzyaoxvl.supabase.co";
 const SUPABASE_SECRET_KEY =
-  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY;
 const SOURCE_URL =
   process.env.DISCOUNT_SOURCE_URL ||
   "https://librarius.md/ru/catalog/hot-offers?sortBy=create_date_desc&perPage=36&lang%5B%5D=RU&lang%5B%5D=RU";
