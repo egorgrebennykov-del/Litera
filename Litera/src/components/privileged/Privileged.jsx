@@ -1648,9 +1648,12 @@ export default function Privileged() {
                     <th>{t("privileged.users.thEmail")}</th>
                     <th>{t("privileged.users.thPhone")}</th>
                     <th>{t("privileged.users.thRegistered")}</th>
-                    <th>{language === "ru" ? "Статус" : "Status"}</th>
+                    <th>
+                      {language === "ru"
+                        ? "Статус (нажмите чтобы изменить)"
+                        : "Status (click to change)"}
+                    </th>
                     <th>{language === "ru" ? "Роли" : "Roles"}</th>
-                    <th>{t("privileged.users.thAction")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1893,36 +1896,12 @@ export default function Privileged() {
                             )}
                           </div>
                         </td>
-                        <td>
-                          <button
-                            type="button"
-                            className={`button privileged__btn-sm ${isStatusPriv ? "button--ghost" : ""}`}
-                            onClick={() => handleToggleUserStatus(u)}
-                            title={
-                              isStatusPriv
-                                ? t("privileged.users.revokeTitle")
-                                : t("privileged.users.makeTitle")
-                            }
-                          >
-                            {isStatusPriv ? (
-                              <>
-                                <i className="ri-user-unfollow-line" />
-                                {t("privileged.users.revokePrivileges")}
-                              </>
-                            ) : (
-                              <>
-                                <i className="ri-vip-crown-line" />
-                                {t("privileged.users.makePrivileged")}
-                              </>
-                            )}
-                          </button>
-                        </td>
                       </tr>
                     );
                   })}
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="privileged__no-data">
+                      <td colSpan="6" className="privileged__no-data">
                         {t("privileged.users.empty")}
                       </td>
                     </tr>
