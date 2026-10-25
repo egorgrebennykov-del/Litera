@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "litera",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    // Vite build output (npm run build)
+    "directory": "./dist",
+    // React Router: unknown paths (/contacts, /book/123, ...) fall back to index.html
+    "not_found_handling": "single-page-application"
+  }
+}

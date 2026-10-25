@@ -227,6 +227,30 @@
 .contacts__action-btn--tg:hover {
   background-color: #1b86b9 !important;
   box-shadow: 0 4px 14px rgba(34, 158, 217, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.contacts__action-btn--insta {
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.contacts__action-btn--insta:hover {
+  box-shadow: 0 4px 16px rgba(214, 36, 159, 0.45) !important;
+  transform: translateY(-2px);
+}
+
+.contacts__action-btn--fb {
+  background-color: #1877f2 !important;
+  color: #ffffff !important;
+  border-color: #1877f2 !important;
+}
+
+.contacts__action-btn--fb:hover {
+  background-color: #1464cc !important;
+  box-shadow: 0 4px 14px rgba(24, 119, 242, 0.4) !important;
+  transform: translateY(-2px);
 }
 
 /* Section Blocks */
@@ -367,103 +391,9 @@
   font-size: 0.9rem;
 }
 
-/* Social Networks Grid */
-.contacts__socials-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-}
-
-.contacts__social-card {
-  background-color: var(--container-color);
-  border: 1px solid var(--border-color);
-  border-radius: 1.15rem;
-  padding: 1.25rem 1.4rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  text-decoration: none;
-  color: var(--title-color);
-  transition: all 0.25s ease;
-}
-
-.contacts__social-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
-}
-
-.dark-theme .contacts__social-card:hover {
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
-}
-
-.contacts__social-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-size: 1.6rem;
-  transition: transform 0.25s ease;
-}
-
-.contacts__social-card:hover .contacts__social-icon {
-  transform: scale(1.1);
-}
-
-.contacts__social--instagram .contacts__social-icon {
-  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%);
-  color: #ffffff;
-}
-
-.contacts__social--telegram .contacts__social-icon {
-  background: #229ed9;
-  color: #ffffff;
-}
-
-.contacts__social--facebook .contacts__social-icon {
-  background: #1877f2;
-  color: #ffffff;
-}
-
-.contacts__social-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.contacts__social-name {
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: var(--title-color);
-}
-
-.contacts__social-handle {
-  font-size: 0.82rem;
-  color: var(--text-color);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.contacts__social-arrow {
-  color: var(--text-color);
-  font-size: 1.25rem;
-  opacity: 0.6;
-  transition: all 0.2s ease;
-}
-
-.contacts__social-card:hover .contacts__social-arrow {
-  opacity: 1;
-  color: var(--first-color);
-  transform: translate(2px, -2px);
-}
-
 /* Responsive */
 @media screen and (max-width: 1024px) {
-  .contacts__cards-grid,
-  .contacts__socials-grid {
+  .contacts__cards-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -492,8 +422,7 @@
 }
 
 @media screen and (max-width: 600px) {
-  .contacts__cards-grid,
-  .contacts__socials-grid {
+  .contacts__cards-grid {
     grid-template-columns: 1fr;
   }
 

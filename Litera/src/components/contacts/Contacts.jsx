@@ -24,30 +24,6 @@ export default function Contacts() {
       : "Parva St, 8240 Nesebar, Bulgaria";
   const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent("Nesebar Parva street 8240 Bulgaria")}`;
 
-  const socials = [
-    {
-      name: "Instagram",
-      handle: "@egorgeb",
-      url: "https://www.instagram.com/egorgeb/",
-      icon: "ri-instagram-line",
-      colorClass: "contacts__social--instagram",
-    },
-    {
-      name: "Telegram",
-      handle: "@egorgeb",
-      url: "https://t.me/egorgeb",
-      icon: "ri-telegram-fill",
-      colorClass: "contacts__social--telegram",
-    },
-    {
-      name: "Facebook",
-      handle: language === "ru" ? "Егор Гребенников" : "Yegor Grebennykov",
-      url: "https://www.facebook.com/egor.grebennykov/",
-      icon: "ri-facebook-circle-fill",
-      colorClass: "contacts__social--facebook",
-    },
-  ];
-
   return (
     <section className="contacts section container" id="contacts">
       <div className="contacts__header">
@@ -99,6 +75,7 @@ export default function Contacts() {
               <p>{t("contacts.aboutP3")}</p>
             </div>
 
+            {/* Social Buttons under Bio */}
             <div className="contacts__quick-actions">
               <a
                 href="https://t.me/egorgeb"
@@ -107,14 +84,34 @@ export default function Contacts() {
                 className="button contacts__action-btn contacts__action-btn--tg"
               >
                 <i className="ri-telegram-fill" />
-                <span>{language === "ru" ? "Написать в Telegram" : "Telegram Message"}</span>
+                <span>Telegram</span>
+              </a>
+
+              <a
+                href="https://www.instagram.com/egorgeb/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button contacts__action-btn contacts__action-btn--insta"
+              >
+                <i className="ri-instagram-line" />
+                <span>Instagram</span>
+              </a>
+
+              <a
+                href="https://www.facebook.com/egor.grebennykov/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button contacts__action-btn contacts__action-btn--fb"
+              >
+                <i className="ri-facebook-circle-fill" />
+                <span>Facebook</span>
               </a>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Contact Channels Grid */}
+      {/* Direct Contact Channels Grid */}
       <div className="contacts__section-block">
         <h3 className="contacts__section-title">
           <i className="ri-contacts-line" />
@@ -205,37 +202,6 @@ export default function Contacts() {
               <span>{copiedKey === "address" ? t("contacts.copied") : t("contacts.copy")}</span>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Social Networks Section */}
-      <div className="contacts__section-block">
-        <h3 className="contacts__section-title">
-          <i className="ri-share-line" />
-          {t("contacts.socials")}
-        </h3>
-
-        <div className="contacts__socials-grid">
-          {socials.map((item) => (
-            <a
-              key={item.name}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`contacts__social-card ${item.colorClass}`}
-            >
-              <div className="contacts__social-icon">
-                <i className={item.icon} />
-              </div>
-              <div className="contacts__social-info">
-                <strong className="contacts__social-name">{item.name}</strong>
-                <span className="contacts__social-handle">{item.handle}</span>
-              </div>
-              <div className="contacts__social-arrow">
-                <i className="ri-arrow-right-up-line" />
-              </div>
-            </a>
-          ))}
         </div>
       </div>
     </section>
