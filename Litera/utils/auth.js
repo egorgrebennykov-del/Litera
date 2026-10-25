@@ -354,6 +354,86 @@ export async function updateUserRole(userId, newRole) {
   return updateUserRoles(userId, Array.isArray(newRole) ? newRole : [newRole]);
 }
 
+export async function createUserByAdmin({
+  firstName,
+  lastName = "",
+  email,
+  password,
+  phone = "",
+  status = "user",
+  roles = ["user"],
+}) {
+  const cleanEmail = (email || "").trim();
+  if (!cleanEmail) {
+    throw new Error("Email/login is required");
+  }
+  if (!password || password.length < 4) {
+    throw new Error("Password must be at least 4 characters");
+  }
+
+  // Check if a user with this email/login already exists
+  const existing = await findByEmail(cleanEmail);
+  if (existing) {
+    throw new Error("User with this email/login already exists");
+  }
+
+  const phoneArray =
+    Array.isArray(phone)
+      ? phone
+      : typeof phone === "string" && phone.trim()
+        ? [phone.trim()]
+        : [];
+
+  // Hash the password with bcrypt (10 salt rounds)
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const payload = {
+    firstName: (firstName || "").trim() || cleanEmail,
+    lastName: (lastName || "").trim(),
+    email: cleanEmail,
+    password_hash: hashedPassword,
+    phone: phoneArray,
+    status: status === "privileged" ? "privileged" : "user",
+    role: Array.isArray(roles) && roles.length > 0 ? roles : ["user"],
+  };
+
+  const response = await fetch(TABLE_URL, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify(payload),
+  });
+
+  if (
+    response.status === 409 ||
+    (await response.clone().text()).includes("23505")
+  ) {
+    throw new Error("User with this email/login already exists");
+  }
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Could not create user:", errText);
+    throw new Error("Could not create user in database");
+  }
+
+  const data = await response.json();
+  const created = data && data[0];
+  if (!created) {
+    throw new Error("Failed to receive created user data");
+  }
+
+  const userStatus =
+    created.status || (created.role === "privileged" ? "privileged" : "user");
+  const userRoles = resolveUserRoles({ status: userStatus, role: created.role });
+
+  return {
+    ...created,
+    status: userStatus,
+    roles: userRoles,
+    role: created.role,
+  };
+}
+
 export async function getUserPhones(userId) {
   const id = userId ?? getCookieUser()?.id;
   if (!id) return [];
