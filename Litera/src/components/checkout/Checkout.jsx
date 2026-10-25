@@ -1060,7 +1060,7 @@ export default function Checkout() {
                           <strong className="checkout__coupon-deduction-amount">
                             {isFreeShipping
                               ? `-${formatPrice(hasValidAddress ? baseShippingCost : 5.0, "EUR", language)} (${t("checkout.couponFreeShipping")})`
-                              : `-${formatPrice(couponDeduction, "EUR", language)}`}
+                              : `-${formatPrice(couponDeduction, "EUR", language)}${couponValidation.applyWithShipping ? ` (${language === "ru" ? "с доставкой" : "with shipping"})` : ""}`}
                           </strong>
                         </div>
                       </div>

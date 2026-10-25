@@ -171,10 +171,17 @@ export function validateCouponForCart({
     }
   }
 
+  const applyWithShipping = Boolean(
+    act.applyToShipping === true || act.applyScope === "with_shipping",
+  );
+  const baseOrderAmount = applyWithShipping
+    ? itemsSubtotal + shippingCost
+    : itemsSubtotal;
+
   // Check minimum purchase amount
   if (act.minAmount != null && act.minAmount !== "") {
     const min = Number(act.minAmount);
-    if (!isNaN(min) && min > 0 && itemsSubtotal < min) {
+    if (!isNaN(min) && min > 0 && baseOrderAmount < min) {
       return {
         valid: false,
         error:
@@ -200,20 +207,21 @@ export function validateCouponForCart({
         : `Free Shipping (save ${shippingCost.toFixed(2)} €)`;
   } else if (act.type === "percent") {
     const percent = Math.min(100, Math.max(0, Number(act.percent) || 0));
-    const raw = (itemsSubtotal * percent) / 100;
+    const raw = (baseOrderAmount * percent) / 100;
     const max = Number(act.maxAmount);
     deduction = !isNaN(max) && max > 0 ? Math.min(raw, max) : raw;
+    deduction = Math.min(deduction, itemsSubtotal + shippingCost);
     discountDescription =
       language === "ru"
-        ? `Скидка ${percent}% (-${deduction.toFixed(2)} €)`
-        : `Discount ${percent}% (-${deduction.toFixed(2)} €)`;
+        ? `Скидка ${percent}% (-${deduction.toFixed(2)} €)${applyWithShipping ? " (с доставкой)" : ""}`
+        : `Discount ${percent}% (-${deduction.toFixed(2)} €)${applyWithShipping ? " (with shipping)" : ""}`;
   } else if (act.type === "fixed") {
     const fixed = Math.max(0, Number(act.amount) || 0);
-    deduction = Math.min(fixed, itemsSubtotal);
+    deduction = Math.min(fixed, baseOrderAmount);
     discountDescription =
       language === "ru"
-        ? `Скидка ${fixed.toFixed(2)} €`
-        : `Discount ${fixed.toFixed(2)} €`;
+        ? `Скидка ${fixed.toFixed(2)} €${applyWithShipping ? " (с доставкой)" : ""}`
+        : `Discount ${fixed.toFixed(2)} €${applyWithShipping ? " (with shipping)" : ""}`;
   } else if (act.type === "gift") {
     deduction = 0;
     const giftTitle =
@@ -225,6 +233,7 @@ export function validateCouponForCart({
     valid: true,
     deduction,
     isFreeShipping,
+    applyWithShipping,
     discountDescription,
     action: act,
   };

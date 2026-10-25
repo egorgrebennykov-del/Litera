@@ -95,6 +95,7 @@ export default function Privileged() {
   const [couponType, setCouponType] = useState("percent"); // "percent" | "fixed" | "gift" | "free_shipping"
   const [couponUsageType, setCouponUsageType] = useState("unlimited"); // "single" | "unlimited" | "limited"
   const [couponUsageLimit, setCouponUsageLimit] = useState("10");
+  const [couponApplyScope, setCouponApplyScope] = useState("without_shipping"); // "without_shipping" | "with_shipping"
   const [couponDiscount, setCouponDiscount] = useState("10");
   const [couponFixedAmount, setCouponFixedAmount] = useState("5");
   const [couponMinAmount, setCouponMinAmount] = useState("");
@@ -643,6 +644,7 @@ export default function Privileged() {
     setCouponType("percent");
     setCouponUsageType("unlimited");
     setCouponUsageLimit("10");
+    setCouponApplyScope("without_shipping");
     setCouponDiscount("10");
     setCouponFixedAmount("5");
     setCouponMinAmount("");
@@ -735,6 +737,13 @@ export default function Privileged() {
 
       const actionPayload = {
         type: couponType,
+        applyScope:
+          couponType === "percent" || couponType === "fixed"
+            ? couponApplyScope
+            : "without_shipping",
+        applyToShipping:
+          (couponType === "percent" || couponType === "fixed") &&
+          couponApplyScope === "with_shipping",
         percent:
           couponType === "percent" ? Number(couponDiscount) || 10 : undefined,
         amount:
@@ -2066,6 +2075,31 @@ export default function Privileged() {
                                 )}
                               </span>
 
+                              {(action.applyScope ||
+                                action.applyToShipping != null ||
+                                action.type === "percent" ||
+                                action.type === "fixed") &&
+                                action.type !== "free_shipping" && (
+                                  <span
+                                    className={`privileged__coupon-tag ${action.applyScope === "with_shipping" || action.applyToShipping ? "privileged__coupon-tag--shipping-scope" : ""}`}
+                                  >
+                                    <i
+                                      className={
+                                        action.applyScope === "with_shipping" ||
+                                        action.applyToShipping
+                                          ? "ri-truck-line"
+                                          : "ri-shopping-basket-line"
+                                      }
+                                    />
+                                    <span>
+                                      {action.applyScope === "with_shipping" ||
+                                      action.applyToShipping
+                                        ? t("privileged.coupons.badgeWithShipping")
+                                        : t("privileged.coupons.badgeWithoutShipping")}
+                                    </span>
+                                  </span>
+                                )}
+
                               <span
                                 className="privileged__coupon-tag"
                                 title={
@@ -2700,6 +2734,57 @@ export default function Privileged() {
                           />
                         </div>
                         {renderConditionFields()}
+                      </div>
+                    )}
+
+                    {/* Amount affected by coupon: without shipping vs with shipping */}
+                    {(couponType === "percent" || couponType === "fixed") && (
+                      <div className="privileged__form-field">
+                        <label>{t("privileged.coupons.applyScopeLabel")}</label>
+                        <div className="privileged__type-options">
+                          <label
+                            className={`privileged__type-option ${couponApplyScope === "without_shipping" ? "privileged__type-option--active" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={couponApplyScope === "without_shipping"}
+                              onChange={() =>
+                                setCouponApplyScope("without_shipping")
+                              }
+                            />
+                            <span>
+                              <i className="ri-shopping-basket-line" />{" "}
+                              {t(
+                                "privileged.coupons.applyScopeWithoutShipping",
+                              )}
+                            </span>
+                          </label>
+
+                          <label
+                            className={`privileged__type-option ${couponApplyScope === "with_shipping" ? "privileged__type-option--active" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={couponApplyScope === "with_shipping"}
+                              onChange={() =>
+                                setCouponApplyScope("with_shipping")
+                              }
+                            />
+                            <span>
+                              <i className="ri-truck-line" />{" "}
+                              {t("privileged.coupons.applyScopeWithShipping")}
+                            </span>
+                          </label>
+                        </div>
+                        <span className="privileged__field-hint">
+                          {couponApplyScope === "with_shipping"
+                            ? t(
+                                "privileged.coupons.applyScopeWithShippingHint",
+                              )
+                            : t(
+                                "privileged.coupons.applyScopeWithoutShippingHint",
+                              )}
+                        </span>
                       </div>
                     )}
 

@@ -1796,6 +1796,13 @@
   font-weight: 600;
 }
 
+.privileged__coupon-tag--shipping-scope {
+  color: #0284c7;
+  background-color: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  font-weight: 500;
+}
+
 @media (max-width: 600px) {
   .privileged__header {
     flex-direction: column;
