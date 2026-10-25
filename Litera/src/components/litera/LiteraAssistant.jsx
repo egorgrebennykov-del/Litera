@@ -481,8 +481,8 @@ export default function LiteraAssistant() {
               <span className="litera-offer-badge-icon">✨</span>
               <span className="litera-offer-badge-text">
                 {language === "ru"
-                  ? "Я с радостью отвечу на этот вопрос! Нажмите на меня 💜"
-                  : "I'll gladly answer this question! Click me 💜"}
+                  ? "Я с радостью отвечу на этот вопрос! Нажмите на меня 🤍"
+                  : "I'll gladly answer this question! Click me 🤍"}
               </span>
               <button
                 type="button"

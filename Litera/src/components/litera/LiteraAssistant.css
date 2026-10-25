@@ -79,13 +79,15 @@
   border: 1px solid rgba(255, 255, 255, 0.45) !important;
   box-shadow: 0 8px 24px rgba(121, 82, 179, 0.45) !important;
   cursor: pointer;
-  padding: 10px 14px !important;
+  padding: 8px 16px !important;
   animation: literaPulseBubble 2.5s ease-in-out infinite !important;
-  max-width: 250px;
-  white-space: normal !important;
-  text-align: left;
-  line-height: 1.4;
-  font-size: 0.84rem;
+  white-space: nowrap !important;
+  width: auto !important;
+  max-width: calc(100vw - 48px) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 0.86rem;
   z-index: 10010;
 }
 
