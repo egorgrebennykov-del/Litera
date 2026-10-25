@@ -86,19 +86,33 @@ export default function SearchResults() {
   const cartReady = !needsCartCheck || cartLoaded;
 
   const cached = cache.get(query);
-  const loading = Boolean(query) && !cached && result.query !== query;
+  const [searching, setSearching] = useState(false);
   const books = cached ?? (result.query === query ? result.books : []);
+  const isSearching = Boolean(query) && !cached && (searching || result.query !== query);
+  const initialLoading = isSearching && books.length === 0;
+  const streamingMore = isSearching && books.length > 0;
 
   useEffect(() => {
-    if (!query || cache.get(query)) return;
+    if (!query || cache.get(query)) {
+      setSearching(false);
+      return;
+    }
 
     let cancelled = false;
-    searchBooks(query)
+    setSearching(true);
+    searchBooks(query, {
+      onProgress: (partialBooks) => {
+        if (!cancelled && partialBooks.length > 0) {
+          setResult({ query, books: partialBooks });
+        }
+      },
+    })
       .then((found) => {
         cache.set(query, found);
         if (!cancelled) setResult({ query, books: found });
       })
-      .catch(() => !cancelled && setResult({ query, books: [] }));
+      .catch(() => !cancelled && setResult({ query, books: [] }))
+      .finally(() => !cancelled && setSearching(false));
 
     return () => {
       cancelled = true;
@@ -221,13 +235,19 @@ export default function SearchResults() {
     <section className="results section container">
       <h2 className="section__title">{resultsHeading}</h2>
 
-      {loading && (
+      {initialLoading && (
         <div className="results__loader">
           <div className="results__spinner" />
           <LoadingMessage language={language} />
         </div>
       )}
-      {!loading && books.length === 0 && <p>{t("search.nothingFound")}</p>}
+      {streamingMore && (
+        <div className="results__loader results__loader--inline" role="status" aria-live="polite">
+          <div className="results__spinner results__spinner--small" />
+          <LoadingMessage language={language} />
+        </div>
+      )}
+      {!isSearching && books.length === 0 && <p>{t("search.nothingFound")}</p>}
       {cartError && (
         <p className="results__cart-error" role="alert">
           {cartError}
@@ -235,8 +255,7 @@ export default function SearchResults() {
       )}
 
       <div className="results__grid">
-        {!loading &&
-          books.map((book, i) => {
+        {books.map((book, i) => {
             const coverLoaded = imageStatuses.get(book.url) === "loaded";
             const cartItem = cartItems.get(book.url);
             const quantity = Math.max(
