@@ -5,6 +5,7 @@ import {
   sendInquiryMessage,
   markInquiryReadByUser,
   fetchInquiryById,
+  filterInquiryMessage,
 } from "../../../utils/inquiries";
 import { useLanguage } from "../../context/languageContext";
 import "./MessengerModal.css";
@@ -232,6 +233,19 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
     setSending(true);
 
     try {
+      // 1. AI Pre-filtering: Books, bookstore operations, cooperation only; no profanity or unethical content
+      const check = await filterInquiryMessage({ text, language });
+      if (!check.allowed) {
+        setSendError(
+          check.reason ||
+            (language === "ru"
+              ? "Сообщение не отправлено: служба поддержки принимает вопросы исключительно о книгах, работе книжного магазина или сотрудничестве."
+              : "Message rejected: inquiries must relate to books, bookstore services, or business cooperation.")
+        );
+        setSending(false);
+        return;
+      }
+
       let activeInquiry = inquiryRef.current || inquiry;
       if (!activeInquiry?.id) {
         activeInquiry = await ensureInquiry();
@@ -552,11 +566,19 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Error Banner if sending or connecting failed */}
+            {/* Error Banner if sending or connecting failed or AI filter rejected */}
             {sendError && (
               <div className="litera-messenger-send-error">
-                <i className="ri-error-warning-line" />
-                <span>{sendError}</span>
+                <i className="ri-shield-keyhole-line" />
+                <span className="litera-messenger-send-error-text">{sendError}</span>
+                <button
+                  type="button"
+                  className="litera-messenger-send-error-close"
+                  onClick={() => setSendError("")}
+                  aria-label="Close error"
+                >
+                  <i className="ri-close-line" />
+                </button>
               </div>
             )}
 

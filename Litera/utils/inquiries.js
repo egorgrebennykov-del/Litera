@@ -239,6 +239,37 @@ export async function getOrCreateInquiry({ user = null, guestEmail = null, guest
 }
 
 /**
+ * Pre-filter user inquiry message with AI before delivering to administrator.
+ */
+export async function filterInquiryMessage({ text, language = "ru" }) {
+  if (!text || !text.trim()) {
+    return {
+      allowed: false,
+      reason:
+        language === "ru"
+          ? "Сообщение не может быть пустым."
+          : "Message cannot be empty.",
+    };
+  }
+
+  try {
+    const res = await fetch("/api/filter-inquiry-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text.trim(), language }),
+    });
+
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("AI inquiry filter network error:", err);
+  }
+
+  return { allowed: true };
+}
+
+/**
  * Send a message within an inquiry.
  * If sender === 'admin' and the recipient is a guest, sends an email notification.
  */
@@ -253,6 +284,17 @@ export async function sendInquiryMessage({
   }
 
   const cleanText = text.trim();
+
+  // If message is from user to admin, filter via AI
+  if (sender === "user") {
+    const check = await filterInquiryMessage({ text: cleanText });
+    if (!check.allowed) {
+      throw new Error(
+        check.reason ||
+          "Сообщение отклонено: администратор принимает сообщения только по вопросам книг, работы магазина или сотрудничества."
+      );
+    }
+  }
   let inquiry = await fetchInquiryById(inquiryId);
   if (!inquiry) {
     // Retry once in case of network latency

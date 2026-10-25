@@ -40,7 +40,7 @@ import {
   searchBiblion,
   getBiblionDetails,
 } from "./biblionService.js";
-import { processLiteraChat } from "./literaAssistantService.js";
+import { processLiteraChat, filterInquiryMessageWithAI } from "./literaAssistantService.js";
 import { sendGuestInquiryEmail } from "./emailService.js";
 
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -571,6 +571,23 @@ const server = createServer(async (req, res) => {
       console.error("Failed to send inquiry email:", err);
       respond(res, 500, {
         error: "Failed to send inquiry email",
+        message: err.message,
+      });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/api/filter-inquiry-message") {
+    try {
+      const body = await readJson(req);
+      const { text, language } = body || {};
+      const result = await filterInquiryMessageWithAI({ text, language });
+      respond(res, 200, result);
+    } catch (err) {
+      console.error("Failed to filter inquiry message:", err);
+      respond(res, 500, {
+        allowed: false,
+        reason: "Ошибка проверки сообщения. Пожалуйста, попробуйте еще раз.",
         message: err.message,
       });
     }

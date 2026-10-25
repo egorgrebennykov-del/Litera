@@ -523,20 +523,46 @@
 }
 
 .litera-messenger-send-error {
-  padding: 8px 14px;
+  padding: 10px 14px;
   background-color: #fef2f2;
-  color: #dc2626;
+  color: #991b1b;
   border-top: 1px solid #fee2e2;
-  font-size: 12.5px;
+  border-bottom: 1px solid #fee2e2;
+  font-size: 12px;
+  line-height: 1.45;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   animation: literaFadeIn 0.2s ease-out;
 }
 
 .litera-messenger-send-error i {
-  font-size: 15px;
+  font-size: 16px;
+  color: #ef4444;
   flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.litera-messenger-send-error-text {
+  flex: 1;
+}
+
+.litera-messenger-send-error-close {
+  background: none;
+  border: none;
+  color: #991b1b;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s;
+}
+
+.litera-messenger-send-error-close:hover {
+  opacity: 1;
 }
 
 /* Nav Messenger Button Badge */

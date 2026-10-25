@@ -2146,3 +2146,118 @@ CRITICAL SPOILER POLICY & INSTRUCTIONS:
     };
   }
 }
+
+/**
+ * Comprehensive profanity, obscenity, and slur detection regex
+ * Covers Russian, Romanian, and English vulgarities, common leetspeak, masking, and offensive terms.
+ */
+const PROFANITY_PATTERN = /(ху[йиеёяю]|пизд|бля[дт]|еб[аеёиу]|ёб|сук[аиое]?\b|муда[кч]|гандон|гондон|чмо|дерьм|шлюх|шалав|сучк|тварь|залуп|отсос|дроч|жоп[аеы]|нах[уй]|пох[уй]|впизд|мраз|ублюд|пидор|педик|говн|членосос|долбо[её]б|curva|pula|pizda|muie|futu|dracu|mata|sugi|cazzo|fuck|shit|bitch|cunt|asshole|bastard|dick|pussy)/iu;
+
+/**
+ * AI Pre-filter for messages sent to the real store administrator.
+ * Only allows messages concerning:
+ * 1. Books (titles, authors, genres, availability, search, editions)
+ * 2. Bookstore operations & services (orders, delivery, payment, returns, website, store hours, cart)
+ * 3. Business cooperation & partnerships (authors, publishers, suppliers, B2B, distribution)
+ *
+ * Strictly filters out:
+ * - Profanity, insults, obscenities (маты, оскорбления)
+ * - Violations of professional / work ethics (рабочая этика)
+ * - Unrelated personal chatter, spam, trolling, dating, abuse
+ */
+export async function filterInquiryMessageWithAI({ text, language = "ru" }) {
+  const clean = (text || "").trim();
+  if (!clean) {
+    return {
+      allowed: false,
+      reason:
+        language === "ru"
+          ? "Сообщение не может быть пустым."
+          : "Message cannot be empty.",
+    };
+  }
+
+  // Tier 1: Fast-path profanity & vulgarity check
+  if (PROFANITY_PATTERN.test(clean)) {
+    return {
+      allowed: false,
+      reason:
+        language === "ru"
+          ? "Сообщение отклонено: обнаружена ненормативная лексика или оскорбления. Пожалуйста, соблюдайте рабочую этику при обращении к администратору."
+          : "Message rejected: contains profanity or offensive language. Please adhere to professional business ethics.",
+    };
+  }
+
+  // Tier 1.5: Keyboard mash or repetitive character gibberish check (e.g. "лллллллллллллллл")
+  const stripped = clean.replace(/[\s\p{P}]+/gu, "");
+  if (stripped.length >= 8 && /^(.)\1+$/u.test(stripped)) {
+    return {
+      allowed: false,
+      reason:
+        language === "ru"
+          ? "Сообщение отклонено: бессмысленный набор символов. Пожалуйста, сформулируйте вопрос о книгах, работе магазина или сотрудничестве."
+          : "Message rejected: meaningless characters. Please formulate a question about books, store services, or business cooperation.",
+    };
+  }
+
+  // Tier 2: Gemini AI Semantic Classifier
+  const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
+  if (!apiKey) {
+    return { allowed: true };
+  }
+
+  const prompt = `You are a strict, professional AI content filter and gatekeeper for a bookstore ("Litera") customer support system.
+A customer is submitting a message to be read by a real human store administrator.
+
+MESSAGE TO EVALUATE:
+"""${clean}"""
+
+RULES & POLICIES:
+1. PERMITTED TOPICS (ONLY THESE ARE ALLOWED):
+   - Books: questions about book titles, authors, genres, plots, availability, editions, translations, prices, recommendations.
+   - Bookstore operations & services: orders, order status, tracking, delivery, shipping, payment methods, shopping cart, website errors, store addresses, opening hours, returns/exchanges, claims about books.
+   - Cooperation & business partnerships: author proposals, publisher partnerships, wholesale, book distribution, supply, events, marketing, B2B proposals.
+
+2. STRICTLY PROHIBITED (MUST REJECT):
+   - Profanity, obscenities, slurs, swear words, vulgarity, swearing in any language (Russian, Romanian, English, etc.).
+   - Insults, abuse, hostility, harassment, personal attacks, disrespect toward staff or anyone else.
+   - Violations of workplace / professional ethics (рабочая этика): spam, promotion of external products/services, phishing, trolling, repetitive harassment.
+   - Off-topic personal chatter: dating requests, romance, personal life questions, chatting about unrelated everyday topics having nothing to do with books or bookstore business.
+
+EVALUATION TASK:
+Carefully analyze the message text.
+If it is a legitimate inquiry about books, bookstore services, or business cooperation and complies with professional ethics, set "allowed": true.
+Otherwise, set "allowed": false and provide a polite, professional, and clear explanation in ${language === "ru" ? "Russian" : "English"} in "reason" explaining why the message was not delivered and guiding the user on allowed topics.`;
+
+  try {
+    const res = await callGeminiJson({
+      apiKey,
+      prompt,
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          allowed: { type: "BOOLEAN" },
+          reason: { type: "STRING" },
+        },
+        required: ["allowed"],
+      },
+    });
+
+    if (res && typeof res.allowed === "boolean") {
+      return {
+        allowed: res.allowed,
+        reason: res.allowed
+          ? ""
+          : (res.reason ||
+            (language === "ru"
+              ? "Сообщение не отправлено: служба поддержки принимает только вопросы о книгах, работе книжного магазина или предложения о сотрудничестве."
+              : "Message not sent: customer support only accepts inquiries concerning books, bookstore services, or business cooperation.")),
+      };
+    }
+  } catch (err) {
+    console.warn("AI inquiry filter fallback:", err.message || err);
+  }
+
+  // Graceful fallback if AI is momentarily unreachable: tier 1 already verified no profanity
+  return { allowed: true };
+}
