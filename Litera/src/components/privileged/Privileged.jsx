@@ -1587,7 +1587,6 @@ export default function Privileged() {
         >
           <i className="ri-github-fill" />
           <span>{t("privileged.tabs.gitActions")}</span>
-          <i className="ri-external-link-line privileged__ext-icon" />
         </button>
       </div>
 
@@ -1616,10 +1615,12 @@ export default function Privileged() {
                 )}
               </div>
               <div className="privileged__users-header-actions">
-                <span className="privileged__stats-text">
-                  {t("privileged.users.found")}{" "}
-                  <strong>{filteredUsers.length}</strong>
-                </span>
+                {Boolean(searchQuery.trim()) && (
+                  <span className="privileged__stats-text">
+                    {t("privileged.users.found")}{" "}
+                    <strong>{filteredUsers.length}</strong>
+                  </span>
+                )}
                 <button
                   type="button"
                   className="button privileged__create-btn"
@@ -1965,209 +1966,238 @@ export default function Privileged() {
                     </button>
                   </div>
 
-                  <form onSubmit={handleCreateUser} className="privileged__modal-body">
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru" ? "Имя" : "First Name"}{" "}
-                        <span className="privileged__required">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="privileged__form-input"
-                        placeholder={language === "ru" ? "Введите имя" : "Enter first name"}
-                        value={createUserForm.firstName}
-                        onChange={(e) =>
-                          setCreateUserForm((prev) => ({
-                            ...prev,
-                            firstName: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru" ? "Фамилия" : "Last Name"}
-                      </label>
-                      <input
-                        type="text"
-                        className="privileged__form-input"
-                        placeholder={language === "ru" ? "Введите фамилию (необязательно)" : "Enter last name (optional)"}
-                        value={createUserForm.lastName}
-                        onChange={(e) =>
-                          setCreateUserForm((prev) => ({
-                            ...prev,
-                            lastName: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru" ? "Email или логин" : "Email or Login"}{" "}
-                        <span className="privileged__required">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="privileged__form-input"
-                        placeholder={language === "ru" ? "Например: ivan@litera.com или test_users" : "e.g. ivan@litera.com or test_users"}
-                        value={createUserForm.email}
-                        onChange={(e) =>
-                          setCreateUserForm((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                      <span className="privileged__form-hint">
-                        {language === "ru"
-                          ? "Можно задать как полноценный email, так и любой логин"
-                          : "Can be a standard email or any custom login/username"}
-                      </span>
-                    </div>
-
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru" ? "Телефон" : "Phone"}
-                      </label>
-                      <input
-                        type="text"
-                        className="privileged__form-input"
-                        placeholder="+373 69 123 456"
-                        value={createUserForm.phone}
-                        onChange={(e) =>
-                          setCreateUserForm((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru" ? "Пароль" : "Password"}{" "}
-                        <span className="privileged__required">*</span>
-                      </label>
-                      <div className="privileged__pw-input-wrap">
-                        <input
-                          type={showCreateUserPassword ? "text" : "password"}
-                          className="privileged__form-input"
-                          placeholder={language === "ru" ? "Придумайте пароль" : "Create password"}
-                          value={createUserForm.password}
-                          onChange={(e) =>
-                            setCreateUserForm((prev) => ({
-                              ...prev,
-                              password: e.target.value,
-                            }))
-                          }
-                          required
-                          minLength={4}
-                        />
-                        <button
-                          type="button"
-                          className="privileged__pw-btn"
-                          onClick={() => setShowCreateUserPassword((prev) => !prev)}
-                          title={showCreateUserPassword ? "Скрыть пароль" : "Показать пароль"}
-                        >
-                          <i className={showCreateUserPassword ? "ri-eye-off-line" : "ri-eye-line"} />
-                        </button>
-                        <button
-                          type="button"
-                          className="privileged__pw-btn privileged__pw-btn--gen"
-                          onClick={handleGeneratePassword}
-                          title={language === "ru" ? "Сгенерировать случайный пароль" : "Generate random password"}
-                        >
-                          <i className="ri-magic-line" />
-                          <span>{language === "ru" ? "Сгенерировать" : "Generate"}</span>
-                        </button>
-                      </div>
-                      <span className="privileged__form-hint">
-                        <i className="ri-shield-check-line" />{" "}
-                        {language === "ru"
-                          ? "Пароль сохраняется в базу данных уже зашифрованным (хэш bcrypt)"
-                          : "Password is saved to the database already hashed (bcrypt)"}
-                      </span>
-                    </div>
-
-                    <div className="privileged__form-group">
-                      <label className="privileged__form-label">
-                        {language === "ru" ? "Статус пользователя" : "User Status"}
-                      </label>
-                      <div className="privileged__radio-group">
-                        <label className={`privileged__radio-label ${createUserForm.status === "user" ? "privileged__radio-label--active" : ""}`}>
+                  <form onSubmit={handleCreateUser} className="privileged__create-user-form">
+                    <div className="privileged__create-user-body">
+                      <div className="privileged__form-row-2">
+                        <div className="privileged__form-group">
+                          <label className="privileged__form-label">
+                            {language === "ru" ? "Имя" : "First Name"}{" "}
+                            <span className="privileged__required">*</span>
+                          </label>
                           <input
-                            type="radio"
-                            name="create-user-status"
-                            value="user"
-                            checked={createUserForm.status === "user"}
-                            onChange={() =>
+                            type="text"
+                            className="privileged__form-input"
+                            placeholder={language === "ru" ? "Введите имя" : "Enter first name"}
+                            value={createUserForm.firstName}
+                            onChange={(e) =>
                               setCreateUserForm((prev) => ({
                                 ...prev,
-                                status: "user",
-                                roles: ["user"],
+                                firstName: e.target.value,
+                              }))
+                            }
+                            required
+                          />
+                        </div>
+
+                        <div className="privileged__form-group">
+                          <label className="privileged__form-label">
+                            {language === "ru" ? "Фамилия" : "Last Name"}
+                          </label>
+                          <input
+                            type="text"
+                            className="privileged__form-input"
+                            placeholder={language === "ru" ? "Введите фамилию (необязательно)" : "Enter last name (optional)"}
+                            value={createUserForm.lastName}
+                            onChange={(e) =>
+                              setCreateUserForm((prev) => ({
+                                ...prev,
+                                lastName: e.target.value,
                               }))
                             }
                           />
-                          <span>{language === "ru" ? "Обычный пользователь" : "Standard User"}</span>
-                        </label>
-                        <label className={`privileged__radio-label ${createUserForm.status === "privileged" ? "privileged__radio-label--active" : ""}`}>
-                          <input
-                            type="radio"
-                            name="create-user-status"
-                            value="privileged"
-                            checked={createUserForm.status === "privileged"}
-                            onChange={() =>
-                              setCreateUserForm((prev) => ({
-                                ...prev,
-                                status: "privileged",
-                                roles: prev.roles.includes("privileged") ? prev.roles : [...prev.roles, "privileged"],
-                              }))
-                            }
-                          />
-                          <i className="ri-vip-crown-line" />
-                          <span>{language === "ru" ? "Привилегированный" : "Privileged"}</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    {createUserForm.status === "privileged" && (
-                      <div className="privileged__form-group">
-                        <label className="privileged__form-label">
-                          {language === "ru" ? "Назначить роли" : "Assign Roles"}
-                        </label>
-                        <div className="privileged__roles-checkboxes">
-                          {["user", "admin", "developer"].map((roleKey) => {
-                            const isChecked = createUserForm.roles.includes(roleKey);
-                            return (
-                              <label key={roleKey} className="privileged__checkbox-label">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {
-                                    setCreateUserForm((prev) => {
-                                      const nextRoles = isChecked
-                                        ? prev.roles.filter((r) => r !== roleKey)
-                                        : [...prev.roles, roleKey];
-                                      return {
-                                        ...prev,
-                                        roles: nextRoles.length > 0 ? nextRoles : ["user"],
-                                      };
-                                    });
-                                  }}
-                                />
-                                <span>{formatRoleName(roleKey, language)}</span>
-                              </label>
-                            );
-                          })}
                         </div>
                       </div>
-                    )}
 
-                    <div className="privileged__modal-actions">
+                      <div className="privileged__form-row-2">
+                        <div className="privileged__form-group">
+                          <label className="privileged__form-label">
+                            {language === "ru" ? "Email или логин" : "Email or Login"}{" "}
+                            <span className="privileged__required">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="privileged__form-input"
+                            placeholder={language === "ru" ? "ivan@litera.com или test_users" : "ivan@litera.com or test_users"}
+                            value={createUserForm.email}
+                            onChange={(e) =>
+                              setCreateUserForm((prev) => ({
+                                ...prev,
+                                email: e.target.value,
+                              }))
+                            }
+                            required
+                          />
+                          <span className="privileged__form-hint">
+                            {language === "ru"
+                              ? "Любой email или логин"
+                              : "Standard email or custom username"}
+                          </span>
+                        </div>
+
+                        <div className="privileged__form-group">
+                          <label className="privileged__form-label">
+                            {language === "ru" ? "Телефон" : "Phone"}
+                          </label>
+                          <input
+                            type="text"
+                            className="privileged__form-input"
+                            placeholder="+373 69 123 456"
+                            value={createUserForm.phone}
+                            onChange={(e) =>
+                              setCreateUserForm((prev) => ({
+                                ...prev,
+                                phone: e.target.value,
+                              }))
+                            }
+                          />
+                          <span className="privileged__form-hint">
+                            {language === "ru" ? "Необязательно" : "Optional"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="privileged__form-group">
+                        <label className="privileged__form-label">
+                          {language === "ru" ? "Пароль" : "Password"}{" "}
+                          <span className="privileged__required">*</span>
+                        </label>
+                        <div className="privileged__pw-input-wrap">
+                          <input
+                            type={showCreateUserPassword ? "text" : "password"}
+                            className="privileged__form-input"
+                            placeholder={language === "ru" ? "Придумайте пароль" : "Create password"}
+                            value={createUserForm.password}
+                            onChange={(e) =>
+                              setCreateUserForm((prev) => ({
+                                ...prev,
+                                password: e.target.value,
+                              }))
+                            }
+                            required
+                            minLength={4}
+                          />
+                          <button
+                            type="button"
+                            className="privileged__pw-btn"
+                            onClick={() => setShowCreateUserPassword((prev) => !prev)}
+                            title={showCreateUserPassword ? "Скрыть пароль" : "Показать пароль"}
+                          >
+                            <i className={showCreateUserPassword ? "ri-eye-off-line" : "ri-eye-line"} />
+                          </button>
+                          <button
+                            type="button"
+                            className="privileged__pw-btn privileged__pw-btn--gen"
+                            onClick={handleGeneratePassword}
+                            title={language === "ru" ? "Сгенерировать безопасный пароль" : "Generate random password"}
+                          >
+                            <i className="ri-magic-line" />
+                            <span>{language === "ru" ? "Сгенерировать" : "Generate"}</span>
+                          </button>
+                        </div>
+                        <span className="privileged__form-hint">
+                          <i className="ri-shield-check-line" />{" "}
+                          {language === "ru"
+                            ? "Пароль сохраняется в базу данных уже хэшированным (bcrypt)"
+                            : "Password will be saved already hashed (bcrypt)"}
+                        </span>
+                      </div>
+
+                      <div className="privileged__form-group">
+                        <label className="privileged__form-label">
+                          {language === "ru" ? "Статус пользователя" : "User Status"}
+                        </label>
+                        <div className="privileged__radio-group">
+                          <label className={`privileged__radio-card ${createUserForm.status === "user" ? "privileged__radio-card--active" : ""}`}>
+                            <input
+                              type="radio"
+                              name="create-user-status"
+                              value="user"
+                              checked={createUserForm.status === "user"}
+                              onChange={() =>
+                                setCreateUserForm((prev) => ({
+                                  ...prev,
+                                  status: "user",
+                                  roles: ["user"],
+                                }))
+                              }
+                            />
+                            <div className="privileged__radio-card-info">
+                              <span className="privileged__radio-card-title">
+                                <i className="ri-user-line" />
+                                {language === "ru" ? "Обычный пользователь" : "Standard User"}
+                              </span>
+                              <span className="privileged__radio-card-desc">
+                                {language === "ru" ? "Стандартный аккаунт покупателя" : "Regular customer account"}
+                              </span>
+                            </div>
+                          </label>
+                          <label className={`privileged__radio-card ${createUserForm.status === "privileged" ? "privileged__radio-card--active" : ""}`}>
+                            <input
+                              type="radio"
+                              name="create-user-status"
+                              value="privileged"
+                              checked={createUserForm.status === "privileged"}
+                              onChange={() =>
+                                setCreateUserForm((prev) => ({
+                                  ...prev,
+                                  status: "privileged",
+                                  roles: prev.roles.includes("privileged") ? prev.roles : [...prev.roles, "privileged"],
+                                }))
+                              }
+                            />
+                            <div className="privileged__radio-card-info">
+                              <span className="privileged__radio-card-title">
+                                <i className="ri-vip-crown-fill" />
+                                {language === "ru" ? "Привилегированный" : "Privileged"}
+                              </span>
+                              <span className="privileged__radio-card-desc">
+                                {language === "ru" ? "Доступ к панели управления" : "Access to dashboard & tools"}
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {createUserForm.status === "privileged" && (
+                        <div className="privileged__form-group">
+                          <label className="privileged__form-label">
+                            {language === "ru" ? "Назначить роли" : "Assign Roles"}
+                          </label>
+                          <div className="privileged__roles-box">
+                            <div className="privileged__roles-checkboxes">
+                              {["user", "admin", "developer"].map((roleKey) => {
+                                const isChecked = createUserForm.roles.includes(roleKey);
+                                return (
+                                  <label
+                                    key={roleKey}
+                                    className={`privileged__checkbox-pill ${isChecked ? "privileged__checkbox-pill--active" : ""}`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => {
+                                        setCreateUserForm((prev) => {
+                                          const nextRoles = isChecked
+                                            ? prev.roles.filter((r) => r !== roleKey)
+                                            : [...prev.roles, roleKey];
+                                          return {
+                                            ...prev,
+                                            roles: nextRoles.length > 0 ? nextRoles : ["user"],
+                                          };
+                                        });
+                                      }}
+                                    />
+                                    <span>{isChecked ? "✓ " : "+ "}{formatRoleName(roleKey, language)}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="privileged__modal-actions privileged__create-user-actions">
                       <button
                         type="button"
                         className="privileged__modal-action-btn privileged__modal-action-btn--cancel"
