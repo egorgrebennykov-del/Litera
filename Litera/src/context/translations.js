@@ -6,6 +6,7 @@ export const translations = {
     "nav.discount": "Скидки",
     "nav.newBooks": "Новинки",
     "nav.testimonial": "Отзывы",
+    "nav.contacts": "Контакты",
     "nav.search": "Поиск",
     "nav.cart": "Корзина",
     "nav.profile": "Профиль",
@@ -514,6 +515,27 @@ export const translations = {
     "notFound.new": "Новинки",
     "notFound.askAssistant": "Спросить ассистентку Литеру",
     "notFound.quickNavTitle": "Или перейдите в популярные разделы:",
+
+    // Contacts
+    "contacts.title": "Контакты",
+    "contacts.subtitle": "Основатель проекта Litera и прямая связь",
+    "contacts.role": "Основатель и разработчик Litera",
+    "contacts.name": "Егор Гребенников",
+    "contacts.aboutP1":
+      "Litera — проект, направленный на то, чтобы сделать русскоязычную литературу доступнее для читателей в Европе и за её пределами.",
+    "contacts.aboutP2":
+      "Создавая Litera, я стремлюсь упростить поиск и приобретение книг на родном языке, предоставляя читателям больше возможностей для интеллектуального и личностного развития. Я убеждён, что книги играют важную роль в приобретении знаний, расширении кругозора и формировании жизненных ценностей.",
+    "contacts.aboutP3":
+      "Моя цель — развивать проект, который помогает людям сохранять связь с родным языком, открывать новые идеи и находить литературу, способствующую их развитию.",
+    "contacts.direct": "Прямая связь",
+    "contacts.phone": "Телефон",
+    "contacts.email": "Электронная почта",
+    "contacts.address": "Адрес",
+    "contacts.addressValue": "Болгария, Несебр, улица Парва 8240",
+    "contacts.socials": "Социальные сети",
+    "contacts.copy": "Скопировать",
+    "contacts.copied": "Скопировано!",
+    "contacts.openChat": "Связаться с администратором",
   },
 
   en: {
@@ -523,6 +545,7 @@ export const translations = {
     "nav.discount": "Discount",
     "nav.newBooks": "New Books",
     "nav.testimonial": "Reviews",
+    "nav.contacts": "Contacts",
     "nav.search": "Search",
     "nav.cart": "Cart",
     "nav.profile": "Profile",
@@ -1025,5 +1048,26 @@ export const translations = {
     "notFound.new": "New Arrivals",
     "notFound.askAssistant": "Ask Litera Assistant",
     "notFound.quickNavTitle": "Or explore popular sections:",
+
+    // Contacts
+    "contacts.title": "Contacts",
+    "contacts.subtitle": "Founder of Litera and direct contact",
+    "contacts.role": "Founder and developer of Litera",
+    "contacts.name": "Yegor Grebennykov",
+    "contacts.aboutP1":
+      "Litera is a project aimed at making Russian-language literature more accessible to readers in Europe and beyond.",
+    "contacts.aboutP2":
+      "By creating Litera, I strive to simplify the search and purchase of books in their native language, providing readers with more opportunities for intellectual and personal growth. I am convinced that books play an essential role in acquiring knowledge, broadening horizons, and shaping life values.",
+    "contacts.aboutP3":
+      "My goal is to develop a project that helps people maintain a connection with their native language, discover new ideas, and find literature that contributes to their development.",
+    "contacts.direct": "Direct Contact",
+    "contacts.phone": "Phone",
+    "contacts.email": "Email",
+    "contacts.address": "Address",
+    "contacts.addressValue": "Parva St, 8240 Nesebar, Bulgaria",
+    "contacts.socials": "Social Networks",
+    "contacts.copy": "Copy",
+    "contacts.copied": "Copied!",
+    "contacts.openChat": "Contact Administrator",
   },
 };

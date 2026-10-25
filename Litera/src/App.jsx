@@ -18,6 +18,7 @@ import Checkout from "./components/checkout/Checkout";
 import SignUp from "./components/signup/SignUp";
 import LiteraAssistant from "./components/litera/LiteraAssistant";
 import NotFound from "./components/notfound/NotFound";
+import Contacts from "./components/contacts/Contacts";
 import { useEffect, useState } from "react";
 import {
   Routes,
@@ -145,6 +146,7 @@ function App() {
         <Route path="/discount" element={<Discount />} />
         <Route path="/new" element={<NewBooks />} />
         <Route path="/testimonial" element={<Testimonial />} />
+        <Route path="/contacts" element={<Contacts />} />
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

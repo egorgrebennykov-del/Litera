@@ -197,6 +197,12 @@ export default function Header({ theme, isLight, onSearch }) {
                 <span>{t("nav.testimonial")}</span>
               </NavLink>
             </li>
+            <li className="nav__item">
+              <NavLink to="/contacts" className={navClass}>
+                <i className="ri-contacts-book-2-line" />
+                <span>{t("nav.contacts")}</span>
+              </NavLink>
+            </li>
           </ul>
         </div>
         <div className="nav__actions">

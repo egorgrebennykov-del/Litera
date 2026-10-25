@@ -13,6 +13,7 @@ export default function Footer() {
     { to: "/discount", label: t("nav.discount") },
     { to: "/new", label: t("nav.newBooks") },
     { to: "/testimonial", label: t("nav.testimonial") },
+    { to: "/contacts", label: t("nav.contacts") },
   ];
 
   return (
