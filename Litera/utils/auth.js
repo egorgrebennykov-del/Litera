@@ -108,8 +108,10 @@ export const setUserCookie = ({ id, firstName, lastName, email, role, status, ro
 };
 
 async function findByEmail(email) {
+  const normalized = (email || "").trim();
+  if (!normalized) return null;
   const response = await fetch(
-    `${TABLE_URL}?select=id,firstName,lastName,email,password_hash,status,role&email=eq.${encodeURIComponent(email)}&limit=1`,
+    `${TABLE_URL}?select=id,firstName,lastName,email,password_hash,status,role&email=ilike.${encodeURIComponent(normalized)}&limit=1`,
     { headers },
   );
   if (!response.ok) throw new Error("Server error, try again later");
@@ -187,7 +189,11 @@ export async function register({ firstName, lastName, email, password, phone }) 
 }
 
 export async function login(email, password) {
-  const user = await findByEmail(checkEmail(email));
+  const identifier = (email || "").trim();
+  if (!identifier) {
+    throw new Error("Enter an email or login");
+  }
+  const user = await findByEmail(identifier);
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new Error("Invalid email or password");
   }

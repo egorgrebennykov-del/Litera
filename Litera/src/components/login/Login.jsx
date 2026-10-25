@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { login } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
+import {
+  showValidationTooltip,
+  hideValidationTooltip,
+} from "../../utils/validationTooltip";
 
 export default function Login({ onSignUp, onClose }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [email, setEmail] = useState("");
@@ -12,6 +16,15 @@ export default function Login({ onSignUp, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      hideValidationTooltip();
+    };
+  }, []);
 
   const handlePasswordCopy = (e) => {
     const input = e.currentTarget;
@@ -76,9 +89,28 @@ export default function Login({ onSignUp, onClose }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+
+    const trimmedIdentifier = email.trim();
+    if (!trimmedIdentifier) {
+      const msg =
+        language === "ru" ? "Заполните это поле." : "Please fill out this field.";
+      showValidationTooltip(emailRef.current, msg);
+      emailRef.current?.focus();
+      return;
+    }
+
+    if (!password) {
+      const msg =
+        language === "ru" ? "Заполните это поле." : "Please fill out this field.";
+      showValidationTooltip(passwordRef.current, msg);
+      passwordRef.current?.focus();
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(trimmedIdentifier, password);
+      hideValidationTooltip();
       const destination = params.get("redirect");
       navigate(
         destination?.startsWith("/") && !destination.startsWith("//")
@@ -86,7 +118,16 @@ export default function Login({ onSignUp, onClose }) {
           : "/",
       );
     } catch (err) {
-      setError(err.message);
+      const isRu = language === "ru";
+      let displayMsg = err.message;
+      if (err.message === "Invalid email or password") {
+        displayMsg = isRu
+          ? "Неверный логин или пароль"
+          : "Invalid email/login or password";
+      }
+      setError(displayMsg);
+      showValidationTooltip(emailRef.current, displayMsg);
+      emailRef.current?.focus();
     } finally {
       setSubmitting(false);
     }
@@ -94,13 +135,16 @@ export default function Login({ onSignUp, onClose }) {
 
   return (
     <div className="login grid show-login" id="login-content">
-      <form className="login__form grid" onSubmit={handleSubmit}>
+      <form className="login__form grid" onSubmit={handleSubmit} noValidate>
         <button
           type="button"
           className="auth-close"
           id="login-close"
           aria-label="Close login"
-          onClick={onClose}
+          onClick={() => {
+            hideValidationTooltip();
+            onClose();
+          }}
         >
           ×
         </button>
@@ -111,14 +155,15 @@ export default function Login({ onSignUp, onClose }) {
               {t("auth.email")}
             </label>
             <input
-              type="email"
+              type="text"
               placeholder={t("auth.emailPlaceholder")}
               id="login-email"
               className="login__input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              autoComplete="username"
               required
+              ref={emailRef}
             />
           </div>
           <div>
@@ -138,6 +183,7 @@ export default function Login({ onSignUp, onClose }) {
                 onKeyDown={handlePasswordKeyDown}
                 autoComplete="current-password"
                 required
+                ref={passwordRef}
               />
               <button
                 type="button"
@@ -164,6 +210,7 @@ export default function Login({ onSignUp, onClose }) {
               href="#"
               onClick={(event) => {
                 event.preventDefault();
+                hideValidationTooltip();
                 onSignUp();
               }}
             >

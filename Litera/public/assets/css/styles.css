@@ -1637,3 +1637,125 @@ body.dark-theme {
   opacity: 1;
   background-color: var(--body-color);
 }
+
+/* ==========================================================================
+   Custom Litera Form Validation Bubble (replaces browser native tooltips)
+   ========================================================================== */
+.litera-validation-bubble {
+  position: fixed;
+  z-index: 100000;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--container-color, #ffffff);
+  color: var(--title-color, #1e1b4b);
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.2), 0 3px 10px -1px rgba(139, 92, 246, 0.22);
+  padding: 8px 12px 8px 10px;
+  max-width: 340px;
+  font-family: var(--body-font, "Montserrat", sans-serif);
+  font-size: 0.84rem;
+  font-weight: var(--font-medium, 500);
+  line-height: 1.35;
+  pointer-events: auto;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.litera-validation-bubble--visible {
+  display: flex !important;
+}
+
+.litera-validation-bubble--animate {
+  animation: literaValidationBubblePop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Arrow when bubble is placed ABOVE target input */
+.litera-validation-bubble--above::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: var(--arrow-left, 24px);
+  width: 11px;
+  height: 11px;
+  background-color: var(--container-color, #ffffff);
+  border-right: 1.5px solid rgba(139, 92, 246, 0.45);
+  border-bottom: 1.5px solid rgba(139, 92, 246, 0.45);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+/* Arrow when bubble is placed BELOW target input */
+.litera-validation-bubble--below::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: var(--arrow-left, 24px);
+  width: 11px;
+  height: 11px;
+  background-color: var(--container-color, #ffffff);
+  border-left: 1.5px solid rgba(139, 92, 246, 0.45);
+  border-top: 1.5px solid rgba(139, 92, 246, 0.45);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.litera-validation-bubble__icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.4);
+  user-select: none;
+}
+
+.litera-validation-bubble__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.litera-validation-bubble__text {
+  display: block;
+  color: var(--title-color, #1e1b4b);
+  word-break: break-word;
+}
+
+.litera-validation-bubble__close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-color, #64748b);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  margin-left: 4px;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.litera-validation-bubble__close:hover {
+  opacity: 1;
+  color: var(--title-color, #1e1b4b);
+}
+
+@keyframes literaValidationBubblePop {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

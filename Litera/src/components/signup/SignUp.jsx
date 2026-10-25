@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { register } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
 import PhoneInput from "../common/PhoneInput";
 import { countries } from "../checkout/countryPhoneCodes";
+import {
+  showValidationTooltip,
+  hideValidationTooltip,
+} from "../../utils/validationTooltip";
 
 export default function SignUp({ onLogin, onClose }) {
   const { t } = useLanguage();
@@ -22,6 +26,12 @@ export default function SignUp({ onLogin, onClose }) {
   const [countryIso, setCountryIso] = useState("MD");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      hideValidationTooltip();
+    };
+  }, []);
 
   const handlePasswordCopy = (e, fieldName) => {
     const input = e.currentTarget;
@@ -98,11 +108,15 @@ export default function SignUp({ onLogin, onClose }) {
     event.preventDefault();
     setError("");
     if (!phone.trim()) {
-      setError(t("checkout.phoneRequired"));
+      const msg = t("checkout.phoneRequired");
+      setError(msg);
+      showValidationTooltip(document.getElementById("signup-phone"), msg);
       return;
     }
     if (form.password !== form.repeat) {
-      setError(t("auth.passwordsMismatch"));
+      const msg = t("auth.passwordsMismatch");
+      setError(msg);
+      showValidationTooltip(document.getElementById("signup-repeat") || document.getElementById("signup-password"), msg);
       return;
     }
     setSubmitting(true);
@@ -117,6 +131,7 @@ export default function SignUp({ onLogin, onClose }) {
         password: form.password,
         phone: fullPhone,
       });
+      hideValidationTooltip();
       const destination = params.get("redirect");
       navigate(
         destination?.startsWith("/") && !destination.startsWith("//")
@@ -125,6 +140,7 @@ export default function SignUp({ onLogin, onClose }) {
       );
     } catch (err) {
       setError(err.message);
+      showValidationTooltip(document.getElementById("signup-email"), err.message);
     } finally {
       setSubmitting(false);
     }
@@ -138,7 +154,10 @@ export default function SignUp({ onLogin, onClose }) {
           className="auth-close"
           id="signup-close"
           aria-label="Close sign up"
-          onClick={onClose}
+          onClick={() => {
+            hideValidationTooltip();
+            onClose();
+          }}
         >
           ×
         </button>
@@ -274,6 +293,7 @@ export default function SignUp({ onLogin, onClose }) {
               href="#"
               onClick={(event) => {
                 event.preventDefault();
+                hideValidationTooltip();
                 onLogin();
               }}
             >

@@ -4,6 +4,7 @@ import App from "./App.jsx";
 import SearchCacheProvider from "./context/SearchCacheProvider";
 import LanguageProvider from "./context/LanguageProvider";
 import { ConfirmProvider } from "./context/ConfirmContext";
+import "./utils/validationTooltip";
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
