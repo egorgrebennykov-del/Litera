@@ -1867,7 +1867,8 @@
 
 .privileged__inquiries-layout {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   height: 680px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -1883,6 +1884,8 @@
   flex-direction: column;
   background-color: var(--body-color);
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .privileged__inquiries-search {
@@ -2084,10 +2087,14 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
   background-color: var(--container-color);
 }
 
 .privileged__chat-header {
+  flex-shrink: 0;
   padding: 0.95rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   background-color: var(--body-color);
@@ -2202,9 +2209,10 @@
 }
 
 .privileged__guest-email-alert {
+  flex-shrink: 0;
   background: linear-gradient(to right, #fffbeb, #fef3c7);
   border-bottom: 1px solid #fde68a;
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1.25rem;
   display: flex;
   align-items: flex-start;
   gap: 0.65rem;
@@ -2232,7 +2240,8 @@
 
 /* Chat Feed */
 .privileged__chat-feed {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   padding: 1.25rem;
   overflow-y: auto;
   display: flex;
@@ -2372,6 +2381,7 @@
 
 /* Chat Composer */
 .privileged__chat-composer {
+  flex-shrink: 0;
   padding: 0.85rem 1.25rem;
   border-top: 1px solid var(--border-color);
   background-color: var(--body-color);
@@ -2437,15 +2447,27 @@
 @media screen and (max-width: 900px) {
   .privileged__inquiries-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
     height: auto;
   }
   .privileged__inquiries-sidebar {
-    height: 350px;
+    height: 320px;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
   }
   .privileged__inquiries-chat {
-    height: 480px;
+    height: 540px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .privileged__chat-composer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .privileged__chat-send-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
