@@ -2181,6 +2181,7 @@ export async function filterInquiryMessageWithAI({ text, language = "ru" }) {
   if (PROFANITY_PATTERN.test(clean)) {
     return {
       allowed: false,
+      redirectToLitera: false,
       reason:
         language === "ru"
           ? "Сообщение отклонено: обнаружена ненормативная лексика или оскорбления. Пожалуйста, соблюдайте рабочую этику при обращении к администратору."
@@ -2193,6 +2194,7 @@ export async function filterInquiryMessageWithAI({ text, language = "ru" }) {
   if (stripped.length >= 8 && /^(.)\1+$/u.test(stripped)) {
     return {
       allowed: false,
+      redirectToLitera: false,
       reason:
         language === "ru"
           ? "Сообщение отклонено: бессмысленный набор символов. Пожалуйста, сформулируйте вопрос о книгах, работе магазина или сотрудничестве."
@@ -2200,34 +2202,54 @@ export async function filterInquiryMessageWithAI({ text, language = "ru" }) {
     };
   }
 
-  // Tier 2: Gemini AI Semantic Classifier
+  // Tier 2: Gemini AI Semantic Classifier & Router
   const apiKey = process.env.GEMINI_API_KEY || DEFAULT_API_KEY;
   if (!apiKey) {
-    return { allowed: true };
+    return { allowed: true, redirectToLitera: false };
   }
 
   const prompt = `You are a strict, professional AI content filter and gatekeeper for a bookstore ("Litera") customer support system.
-A customer is submitting a message to be read by a real human store administrator.
+A customer is attempting to send a message to the REAL HUMAN STORE ADMINISTRATOR.
 
 MESSAGE TO EVALUATE:
 """${clean}"""
 
-RULES & POLICIES:
-1. PERMITTED TOPICS (ONLY THESE ARE ALLOWED):
-   - Books: questions about book titles, authors, genres, plots, availability, editions, translations, prices, recommendations.
-   - Bookstore operations & services: orders, order status, tracking, delivery, shipping, payment methods, shopping cart, website errors, store addresses, opening hours, returns/exchanges, claims about books.
-   - Cooperation & business partnerships: author proposals, publisher partnerships, wholesale, book distribution, supply, events, marketing, B2B proposals.
+ROUTING & EVALUATION POLICIES:
 
-2. STRICTLY PROHIBITED (MUST REJECT):
-   - Profanity, obscenities, slurs, swear words, vulgarity, swearing in any language (Russian, Romanian, English, etc.).
-   - Insults, abuse, hostility, harassment, personal attacks, disrespect toward staff or anyone else.
-   - Violations of workplace / professional ethics (рабочая этика): spam, promotion of external products/services, phishing, trolling, repetitive harassment.
-   - Off-topic personal chatter: dating requests, romance, personal life questions, chatting about unrelated everyday topics having nothing to do with books or bookstore business.
+1. VIRTUAL AI ASSISTANT "LITERA" DOMAIN (MUST SET "redirectToLitera": true, "allowed": false):
+The real human administrator should NOT be bothered with questions that our virtual AI assistant "Litera" can answer immediately.
+These include:
+- Finding or recommending books ("найди книгу", "посоветуй что почитать", "есть ли книги про космос", "выбери детектив", "что интересного есть").
+- Book plots, summaries, spoilers, or characters ("расскажи про сюжет", "о чем книга", "кто убийца", "чем закончилось", "расскажи кратко").
+- Authors, their biography, and bibliographies ("расскажи об авторе", "кто написал", "какие еще книги у автора").
+- Shopping cart contents or in-chat status ("что у меня в корзине", "сколько книг в корзине", "покажи мою корзину").
+- General literary discussions, book trivia, or conversational questions about Litera.
 
-EVALUATION TASK:
-Carefully analyze the message text.
-If it is a legitimate inquiry about books, bookstore services, or business cooperation and complies with professional ethics, set "allowed": true.
-Otherwise, set "allowed": false and provide a polite, professional, and clear explanation in ${language === "ru" ? "Russian" : "English"} in "reason" explaining why the message was not delivered and guiding the user on allowed topics.`;
+If the message falls into any of these categories:
+Set "allowed": false
+Set "redirectToLitera": true
+Set "reason": "Наш ИИ-ассистент Литера с удовольствием ответит на этот вопрос о книгах, сюжете, авторах или корзине! Нажмите на Литеру в углу экрана, чтобы получить мгновенный ответ."
+
+2. REAL ADMINISTRATOR DOMAIN (MUST SET "allowed": true, "redirectToLitera": false):
+Inquiries that genuinely require human staff / real store administration:
+- Specific customer order delivery delays or courier issues ("где мой заказ #1234", "заказ задерживается", "курьер не приехал").
+- Payment errors or billing issues ("деньги списались дважды", "ошибка при оплате картой на сайте").
+- Returns, exchanges, refunds, or damaged book claims ("книга пришла с браком, хочу вернуть", "как оформить возврат").
+- Physical bookstore branches, offline pickup point questions, local store opening hours.
+- Business cooperation, partnerships, author publishing requests, wholesale/distributor proposals, B2B ("мы издательство, предлагаем книги", "хочу продавать свои книги у вас", "коммерческое предложение", "сотрудничество").
+
+3. PROHIBITED / UNETHICAL CONTENT (MUST SET "allowed": false, "redirectToLitera": false):
+- Profanity, obscenities, slurs, swear words, vulgarity, swearing in any language (Russian, Romanian, English, etc.).
+- Insults, abuse, hostility, harassment, personal attacks, disrespect toward staff or anyone else.
+- Violations of workplace / professional ethics (рабочая этика): spam, promotion of external products/crypto, phishing, trolling.
+- Off-topic personal chatter: dating requests, romance, personal life questions ("давай познакомимся", "ты красивая").
+
+If the message falls into this category:
+Set "allowed": false
+Set "redirectToLitera": false
+Set "reason": (A polite explanation in ${language === "ru" ? "Russian" : "English"} explaining why it cannot be delivered and requesting respectful business communication).
+
+Return JSON matching the schema.`;
 
   try {
     const res = await callGeminiJson({
@@ -2237,21 +2259,26 @@ Otherwise, set "allowed": false and provide a polite, professional, and clear ex
         type: "OBJECT",
         properties: {
           allowed: { type: "BOOLEAN" },
+          redirectToLitera: { type: "BOOLEAN" },
           reason: { type: "STRING" },
         },
-        required: ["allowed"],
+        required: ["allowed", "redirectToLitera"],
       },
     });
 
     if (res && typeof res.allowed === "boolean") {
+      const isLiteraRedirect = Boolean(res.redirectToLitera);
       return {
         allowed: res.allowed,
+        redirectToLitera: isLiteraRedirect,
         reason: res.allowed
           ? ""
           : (res.reason ||
-            (language === "ru"
-              ? "Сообщение не отправлено: служба поддержки принимает только вопросы о книгах, работе книжного магазина или предложения о сотрудничестве."
-              : "Message not sent: customer support only accepts inquiries concerning books, bookstore services, or business cooperation.")),
+            (isLiteraRedirect
+              ? "Наш ИИ-ассистент Литера с удовольствием ответит на этот вопрос о книгах, сюжете, авторах или корзине! Нажмите на Литеру в углу экрана."
+              : (language === "ru"
+                ? "Сообщение не отправлено: служба поддержки принимает вопросы о работе книжного магазина или сотрудничестве."
+                : "Message not sent: customer support only accepts inquiries concerning store operations or business cooperation."))),
       };
     }
   } catch (err) {
@@ -2259,5 +2286,5 @@ Otherwise, set "allowed": false and provide a polite, professional, and clear ex
   }
 
   // Graceful fallback if AI is momentarily unreachable: tier 1 already verified no profanity
-  return { allowed: true };
+  return { allowed: true, redirectToLitera: false };
 }

@@ -47,6 +47,7 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
   const [sending, setSending] = useState(false);
   const [isEditingGuest, setIsEditingGuest] = useState(false);
   const [expandedMsgIds, setExpandedMsgIds] = useState(() => new Set());
+  const [literaRedirectQuery, setLiteraRedirectQuery] = useState(null);
 
   const toggleMsgExpand = (id) => {
     setExpandedMsgIds((prev) => {
@@ -233,18 +234,37 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
     setSending(true);
 
     try {
-      // 1. AI Pre-filtering: Books, bookstore operations, cooperation only; no profanity or unethical content
+      // 1. AI Pre-filtering & Routing: Check if message is for Litera or prohibited
       const check = await filterInquiryMessage({ text, language });
       if (!check.allowed) {
-        setSendError(
-          check.reason ||
-            (language === "ru"
-              ? "Сообщение не отправлено: служба поддержки принимает вопросы исключительно о книгах, работе книжного магазина или сотрудничестве."
-              : "Message rejected: inquiries must relate to books, bookstore services, or business cooperation.")
-        );
+        if (check.redirectToLitera) {
+          setLiteraRedirectQuery(text);
+          setSendError(
+            check.reason ||
+              (language === "ru"
+                ? "Наш ИИ-ассистент Литера с удовольствием ответит на этот вопрос о книгах, сюжете, авторах или корзине! Нажмите на Литеру в углу экрана."
+                : "Our AI assistant Litera will gladly answer this question about books, plots, authors, or your cart! Click on Litera in the corner.")
+          );
+          // Trigger Litera's floating speech bubble with help offer
+          window.dispatchEvent(
+            new CustomEvent("litera-offer-help", {
+              detail: { query: text },
+            })
+          );
+        } else {
+          setLiteraRedirectQuery(null);
+          setSendError(
+            check.reason ||
+              (language === "ru"
+                ? "Сообщение не отправлено: служба поддержки принимает вопросы о работе книжного магазина или сотрудничестве."
+                : "Message rejected: inquiries must relate to store operations or business cooperation.")
+          );
+        }
         setSending(false);
         return;
       }
+
+      setLiteraRedirectQuery(null);
 
       let activeInquiry = inquiryRef.current || inquiry;
       if (!activeInquiry?.id) {
@@ -566,15 +586,51 @@ export default function MessengerModal({ isOpen, onClose, onUnreadChange }) {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Error Banner if sending or connecting failed or AI filter rejected */}
+            {/* Error or Litera Suggestion Banner */}
             {sendError && (
-              <div className="litera-messenger-send-error">
-                <i className="ri-shield-keyhole-line" />
-                <span className="litera-messenger-send-error-text">{sendError}</span>
+              <div
+                className={`litera-messenger-send-error ${
+                  literaRedirectQuery ? "litera-messenger-send-error--litera" : ""
+                }`}
+              >
+                <i
+                  className={
+                    literaRedirectQuery
+                      ? "ri-sparkling-fill"
+                      : "ri-shield-keyhole-line"
+                  }
+                />
+                <div className="litera-messenger-send-error-content">
+                  <span className="litera-messenger-send-error-text">{sendError}</span>
+                  {literaRedirectQuery && (
+                    <button
+                      type="button"
+                      className="litera-messenger-ask-litera-btn"
+                      onClick={() => {
+                        window.dispatchEvent(
+                          new CustomEvent("open-litera-assistant", {
+                            detail: { query: literaRedirectQuery },
+                          })
+                        );
+                        onClose?.();
+                      }}
+                    >
+                      <i className="ri-chat-smile-3-line" />
+                      <span>
+                        {language === "ru"
+                          ? "Спросить Литеру прямо сейчас"
+                          : "Ask Litera right now"}
+                      </span>
+                    </button>
+                  )}
+                </div>
                 <button
                   type="button"
                   className="litera-messenger-send-error-close"
-                  onClick={() => setSendError("")}
+                  onClick={() => {
+                    setSendError("");
+                    setLiteraRedirectQuery(null);
+                  }}
                   aria-label="Close error"
                 >
                   <i className="ri-close-line" />

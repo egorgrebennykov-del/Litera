@@ -536,6 +536,13 @@
   animation: literaFadeIn 0.2s ease-out;
 }
 
+.litera-messenger-send-error--litera {
+  background: linear-gradient(135deg, #f7f3ff 0%, #efe7fd 100%);
+  color: #4c1d95;
+  border-top-color: #e9d5ff;
+  border-bottom-color: #e9d5ff;
+}
+
 .litera-messenger-send-error i {
   font-size: 16px;
   color: #ef4444;
@@ -543,14 +550,48 @@
   margin-top: 1px;
 }
 
+.litera-messenger-send-error--litera i {
+  color: #7952b3;
+}
+
+.litera-messenger-send-error-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .litera-messenger-send-error-text {
   flex: 1;
+  font-weight: 500;
+}
+
+.litera-messenger-ask-litera-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #7952b3 0%, #9d7cd8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+  box-shadow: 0 2px 8px rgba(121, 82, 179, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.litera-messenger-ask-litera-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(121, 82, 179, 0.5);
 }
 
 .litera-messenger-send-error-close {
   background: none;
   border: none;
-  color: #991b1b;
+  color: inherit;
   opacity: 0.6;
   cursor: pointer;
   padding: 0;

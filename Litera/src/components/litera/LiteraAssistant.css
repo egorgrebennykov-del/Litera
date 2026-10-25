@@ -73,6 +73,60 @@
   transform: rotate(45deg);
 }
 
+.litera-trigger-bubble--offer {
+  background: linear-gradient(135deg, #7952b3 0%, #9d7cd8 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 8px 24px rgba(121, 82, 179, 0.45) !important;
+  cursor: pointer;
+  padding: 10px 14px !important;
+  animation: literaPulseBubble 2.5s ease-in-out infinite !important;
+  max-width: 250px;
+  white-space: normal !important;
+  text-align: left;
+  line-height: 1.4;
+  font-size: 0.84rem;
+  z-index: 10010;
+}
+
+.litera-trigger-bubble--offer::after {
+  background: #9d7cd8 !important;
+  border-right-color: rgba(255, 255, 255, 0.45) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.litera-offer-badge-icon {
+  font-size: 1.15rem;
+  margin-right: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.litera-offer-badge-text {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.litera-trigger-bubble--offer .litera-trigger-bubble__close {
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin-left: 4px;
+}
+
+.litera-trigger-bubble--offer .litera-trigger-bubble__close:hover {
+  color: #ffffff !important;
+}
+
+@keyframes literaPulseBubble {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 8px 24px rgba(121, 82, 179, 0.4);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.03);
+    box-shadow: 0 14px 30px rgba(121, 82, 179, 0.6);
+  }
+}
+
 .litera-trigger-bubble__close {
   background: none;
   border: none;

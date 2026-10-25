@@ -39,6 +39,7 @@ export default function LiteraAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [showGreetingBubble, setShowGreetingBubble] = useState(true);
+  const [showHelpOfferBubble, setShowHelpOfferBubble] = useState(false);
   const [emotion, setEmotion] = useState("greeting");
   const [input, setInput] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
@@ -53,6 +54,7 @@ export default function LiteraAssistant() {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const pendingQueryRef = useRef(null);
 
   // Initialize messages from sessionStorage or default welcome
   const [messages, setMessages] = useState(() => {
@@ -127,18 +129,45 @@ export default function LiteraAssistant() {
     }
   }, [input, isExpanded]);
 
-  // Global listener to trigger assistant from other components (e.g. 404 page)
+  // Global listeners to trigger assistant from other components (404 page, admin messenger redirect)
   useEffect(() => {
-    const handleTrigger = () => handleOpen();
+    const handleTrigger = (e) => {
+      const query = e?.detail?.query || e?.detail?.text || null;
+      handleOpen(query);
+    };
+
+    const handleOfferHelp = (e) => {
+      const query = e?.detail?.query || e?.detail?.text || "";
+      if (query) {
+        pendingQueryRef.current = query;
+        setShowHelpOfferBubble(true);
+        setShowGreetingBubble(false);
+        setEmotion("speaking");
+      }
+    };
+
     window.addEventListener("open-litera-assistant", handleTrigger);
-    return () => window.removeEventListener("open-litera-assistant", handleTrigger);
+    window.addEventListener("litera-offer-help", handleOfferHelp);
+    return () => {
+      window.removeEventListener("open-litera-assistant", handleTrigger);
+      window.removeEventListener("litera-offer-help", handleOfferHelp);
+    };
   }, []);
 
-  const handleOpen = () => {
+  const handleOpen = (autoSendText = null) => {
     setIsOpen(true);
     setHasUnread(false);
     setShowGreetingBubble(false);
+    setShowHelpOfferBubble(false);
     setEmotion("happy");
+
+    const textToSubmit = autoSendText || pendingQueryRef.current;
+    if (textToSubmit) {
+      pendingQueryRef.current = null;
+      setTimeout(() => {
+        handleSendMessage(textToSubmit);
+      }, 200);
+    }
   };
 
   const handleClose = () => {
@@ -437,7 +466,37 @@ export default function LiteraAssistant() {
       {/* Floating trigger button when closed */}
       {!isOpen && (
         <div className="litera-trigger-container">
-          {showGreetingBubble && (
+          {showHelpOfferBubble ? (
+            <div
+              className="litera-trigger-bubble litera-trigger-bubble--offer"
+              onClick={() => handleOpen()}
+              title={
+                language === "ru"
+                  ? "Нажмите, чтобы задать вопрос Литере"
+                  : "Click to ask Litera"
+              }
+              role="button"
+              tabIndex={0}
+            >
+              <span className="litera-offer-badge-icon">✨</span>
+              <span className="litera-offer-badge-text">
+                {language === "ru"
+                  ? "Я с радостью отвечу на этот вопрос! Нажмите на меня 💜"
+                  : "I'll gladly answer this question! Click me 💜"}
+              </span>
+              <button
+                type="button"
+                className="litera-trigger-bubble__close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowHelpOfferBubble(false);
+                }}
+                aria-label="Close bubble"
+              >
+                ×
+              </button>
+            </div>
+          ) : showGreetingBubble ? (
             <div className="litera-trigger-bubble">
               <span>{t("assistant.badge")}</span>
               <button
@@ -452,7 +511,7 @@ export default function LiteraAssistant() {
                 ×
               </button>
             </div>
-          )}
+          ) : null}
           <button
             type="button"
             className="litera-trigger-btn"
