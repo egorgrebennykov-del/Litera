@@ -4,7 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Litera</title>
+    <meta name="application-name" content="Litera" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Litera" />
+    <meta name="theme-color" content="#4d62f0" />
+    <link rel="icon" type="image/png" sizes="128x128" href="/assets/img/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/img/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/img/icon-512.png" />
     <link rel="shortcut icon" href="/assets/img/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
@@ -12,16 +24,36 @@
     <link rel="preconnect" href="https://cdn.librarius.md" crossorigin />
     <link rel="preconnect" href="https://librarius.md" crossorigin />
     <link rel="preconnect" href="https://carturesti.md" crossorigin />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css"
+      media="print"
+      onload="this.media='all'"
     />
-    <link rel="stylesheet" href="/assets/css/swiper-bundle.min.css" />
-    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="/assets/css/swiper-bundle.min.css"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap"
+        rel="stylesheet"
+      />
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css"
+      />
+      <link rel="stylesheet" href="/assets/css/swiper-bundle.min.css" />
+    </noscript>
     <script>
       (function () {
         try {
@@ -32,9 +64,111 @@
         } catch (e) {}
       })();
     </script>
+    <style>
+      .litera-boot-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.15rem;
+        background-color: hsl(230, 100%, 96%);
+        color: hsl(230, 70%, 16%);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      html.dark-theme .litera-boot-loader {
+        background-color: hsl(230, 12%, 8%);
+        color: hsl(230, 48%, 92%);
+      }
+      .litera-boot-loader__ring-wrap {
+        position: relative;
+        width: 84px;
+        height: 84px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .litera-boot-loader__ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 3.5px solid hsla(230, 62%, 56%, 0.18);
+        border-top-color: hsl(230, 62%, 56%);
+        animation: literaBootSpin 0.85s cubic-bezier(0.5, 0.15, 0.5, 0.85) infinite;
+      }
+      .litera-boot-loader__logo {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        object-fit: contain;
+        box-shadow: 0 8px 22px hsla(230, 62%, 56%, 0.25);
+        animation: literaBootPulse 1.6s ease-in-out infinite;
+      }
+      .litera-boot-loader__title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin: 0;
+      }
+      .litera-boot-loader__bar {
+        width: 140px;
+        height: 4px;
+        border-radius: 999px;
+        background: hsla(230, 62%, 56%, 0.16);
+        overflow: hidden;
+        position: relative;
+      }
+      .litera-boot-loader__bar::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -45%;
+        width: 45%;
+        height: 100%;
+        border-radius: 999px;
+        background: hsl(230, 62%, 56%);
+        animation: literaBootSlide 1.15s ease-in-out infinite;
+      }
+      @keyframes literaBootSpin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes literaBootPulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.06);
+        }
+      }
+      @keyframes literaBootSlide {
+        0% {
+          left: -45%;
+        }
+        100% {
+          left: 100%;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="litera-boot-loader" role="status" aria-label="Loading Litera">
+        <div class="litera-boot-loader__ring-wrap">
+          <div class="litera-boot-loader__ring"></div>
+          <img
+            src="/assets/img/favicon.png"
+            alt="Litera"
+            class="litera-boot-loader__logo"
+          />
+        </div>
+        <p class="litera-boot-loader__title">Litera</p>
+        <div class="litera-boot-loader__bar"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

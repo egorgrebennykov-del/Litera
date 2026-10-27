@@ -2076,6 +2076,55 @@ body.dark-theme {
     top: 1.25rem;
     right: 1.25rem;
   }
+
+  /* Privileged mobile tabs: label on the left, icon on the right */
+  .privileged__nav-buttons {
+    flex-direction: column;
+  }
+
+  .privileged__nav-btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .privileged__nav-btn > span:first-of-type {
+    order: 1;
+    text-align: left;
+    flex: 1;
+  }
+
+  .privileged__nav-btn > .privileged__unread-indicator {
+    order: 2;
+    margin-right: 0.45rem;
+  }
+
+  .privileged__nav-btn > i {
+    order: 3;
+    margin-left: auto;
+  }
+}
+
+.app-route-loader {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+}
+
+.app-route-loader__spinner {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 3.5px solid hsla(230, 62%, 56%, 0.18);
+  border-top-color: var(--first-color);
+  animation: appRouteSpin 0.8s linear infinite;
+}
+
+@keyframes appRouteSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ---------- Small phones (< 380px) ---------- */

@@ -1813,7 +1813,7 @@
   font-weight: 500;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 767px) {
   .privileged__header {
     flex-direction: column;
     align-items: flex-start;
@@ -1826,6 +1826,22 @@
   .privileged__nav-btn {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .privileged__nav-btn > span:first-of-type {
+    order: 1;
+    text-align: left;
+    flex: 1;
+  }
+
+  .privileged__nav-btn > .privileged__unread-indicator {
+    order: 2;
+    margin-right: 0.45rem;
+  }
+
+  .privileged__nav-btn > i {
+    order: 3;
+    margin-left: auto;
   }
 
   .privileged__search-box {

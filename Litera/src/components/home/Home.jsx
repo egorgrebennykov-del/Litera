@@ -213,11 +213,10 @@ export default function Home() {
             </div>
             <CarouselControls className="carousel__controls--home" />
             {books.length === 0 && (
-              <p className="home__books-status">
-                {booksError
-                  ? t("featured.error")
-                  : t("featured.loading")}
-              </p>
+              <div className="home__books-status" role="status">
+                {!booksError && <div className="app-route-loader__spinner" style={{ margin: "0 auto 0.75rem" }} />}
+                <p>{booksError ? t("featured.error") : t("featured.loading")}</p>
+              </div>
             )}
           </div>
         </div>

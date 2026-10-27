@@ -106,18 +106,40 @@ export async function fetchAllAnnouncementsAdmin() {
   }
 }
 
+const ACTIVE_STORAGE_KEY = "kazbook_active_announcements_v1";
 const ACTIVE_CACHE_TTL_MS = 2 * 60 * 1000;
 let cachedActiveAnnouncements = null;
 let activeCacheExpiry = 0;
 let activeInflight = null;
 
 export function getCachedActiveAnnouncements() {
+  if (cachedActiveAnnouncements !== null) return cachedActiveAnnouncements;
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(ACTIVE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          cachedActiveAnnouncements = parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
   return cachedActiveAnnouncements;
 }
 
 export function invalidateAnnouncementsCache() {
   cachedActiveAnnouncements = null;
   activeCacheExpiry = 0;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem(ACTIVE_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }
 }
 
 /**
@@ -165,6 +187,13 @@ export async function fetchActiveAnnouncements() {
       });
       cachedActiveAnnouncements = sorted;
       activeCacheExpiry = Date.now() + ACTIVE_CACHE_TTL_MS;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(sorted));
+        } catch {
+          // ignore
+        }
+      }
       return sorted;
     } catch (err) {
       console.warn("Error fetching active announcements:", err);

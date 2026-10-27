@@ -97,21 +97,27 @@ function App() {
   );
 
   useEffect(() => {
-    fetch("/api/warmup", { method: "POST" }).catch(() => {});
-
-    // Prefetch primary navigation pages and catalogue snapshots immediately after initial paint
-    const timer = setTimeout(() => {
+    // Defer background prefetching until after initial page render is complete
+    // so it never competes with homepage critical resources on first load
+    const runIdlePrefetch = () => {
+      fetch("/api/warmup", { method: "POST" }).catch(() => {});
       getBookPicks().catch(() => {});
       getDiscountSnapshot().catch(() => {});
       getNewBooks().catch(() => {});
       loadFeatured();
       loadDiscount();
       loadNewBooks();
-      loadTestimonial();
-      loadContacts();
       loadBookDetails();
       loadSearchResults();
-    }, 150);
+    };
+
+    const timer = setTimeout(() => {
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(runIdlePrefetch, { timeout: 4000 });
+      } else {
+        runIdlePrefetch();
+      }
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, []);
@@ -142,7 +148,13 @@ function App() {
         onSearch={() => setShowSearch(true)}
       />
       <Search show={showSearch} onClose={() => setShowSearch(false)} />
-      <Suspense fallback={<div style={{ minHeight: "65vh" }} />}>
+      <Suspense
+        fallback={
+          <div className="app-route-loader" role="status" aria-live="polite">
+            <div className="app-route-loader__spinner" />
+          </div>
+        }
+      >
         <Routes>
           <Route path="/" element={<Home />} />
           <Route
