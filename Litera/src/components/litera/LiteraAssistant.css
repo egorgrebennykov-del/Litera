@@ -1150,3 +1150,21 @@
     transition: none !important;
   }
 }
+
+/* Dialog translation banner (language switch) */
+.litera-translating-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--first-color, #4d62f0);
+  background: hsla(230, 62%, 56%, 0.1);
+  border-top: 1px solid hsla(230, 62%, 56%, 0.2);
+}
+
+.litera-translating-banner i {
+  font-size: 1rem;
+}

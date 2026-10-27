@@ -30,6 +30,7 @@ import {
 import {
   processLiteraChat,
   filterInquiryMessageWithAI,
+  translateLiteraDialog,
 } from "./literaAssistantService.js";
 import { sendGuestInquiryEmail } from "./emailService.js";
 import { executeCatalogActionById } from "./catalogActionsService.js";
@@ -483,6 +484,19 @@ export default {
           },
           500,
         );
+      }
+    }
+
+    if (method === "POST" && pathname === "/api/litera-translate") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const result = await translateLiteraDialog({
+          messages: body?.messages,
+          targetLanguage: body?.targetLanguage,
+        });
+        return jsonResponse(result);
+      } catch (err) {
+        return jsonResponse({ translations: [], error: err.message }, 500);
       }
     }
 

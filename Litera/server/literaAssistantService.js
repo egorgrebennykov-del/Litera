@@ -2351,3 +2351,102 @@ Return JSON matching the schema.`;
   // Graceful fallback if AI is momentarily unreachable: tier 1 already verified no profanity
   return { allowed: true, redirectToLitera: false };
 }
+
+
+/**
+ * Translates the whole Litera dialog into the target interface language via Gemini.
+ * Only message texts are translated; URLs, links, book cards (titles/urls/images) stay untouched.
+ * @param {{ messages: Array<{id: string, content: string}>, targetLanguage: "ru" | "en" }} params
+ * @returns {Promise<{ translations: Array<{id: string, content: string}> }>}
+ */
+export async function translateLiteraDialog({ messages, targetLanguage = "ru" } = {}) {
+  const items = (Array.isArray(messages) ? messages : [])
+    .filter((m) => m && m.id && typeof m.content === "string" && m.content.trim())
+    .slice(-60)
+    .map((m) => ({ id: String(m.id), content: String(m.content).slice(0, 4000) }));
+
+  if (items.length === 0) return { translations: [] };
+
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) return { translations: [] };
+
+  const langName = targetLanguage === "en" ? "English" : "Russian";
+
+  const prompt = `You are a professional translator for the bookstore chat assistant "Litera".
+Translate the "content" of EVERY message below into ${langName}.
+
+STRICT RULES:
+- Keep the exact same "id" for every message and return ALL messages in the same order.
+- If a message is already in ${langName}, return it unchanged.
+- NEVER change, translate, or remove URLs, links, email addresses, paths (e.g. /cart, /profile), promo codes, prices, numbers, or emojis.
+- Keep book titles in their original form inside «» quotes if they are Russian book titles.
+- Preserve line breaks, tone, and the friendly persona of Litera.
+- Capitalize names of religions (e.g. Islam / Ислам).
+
+MESSAGES (JSON):
+${JSON.stringify(items)}
+
+Return strictly JSON: { "translations": [ { "id": "...", "content": "..." } ] }`;
+
+  const requestBody = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      maxOutputTokens: 8192,
+      temperature: 0.2,
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          translations: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                id: { type: "STRING" },
+                content: { type: "STRING" },
+              },
+              required: ["id", "content"],
+            },
+          },
+        },
+        required: ["translations"],
+      },
+    },
+  };
+
+  let lastError = null;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        lastError = new Error(`HTTP ${response.status}`);
+        continue;
+      }
+      const data = await response.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) {
+        lastError = new Error("Empty text from Gemini");
+        continue;
+      }
+      const parsed = JSON.parse(rawText);
+      const validIds = new Set(items.map((i) => i.id));
+      const translations = (Array.isArray(parsed?.translations) ? parsed.translations : [])
+        .filter((t) => t && validIds.has(String(t.id)) && typeof t.content === "string" && t.content.trim())
+        .map((t) => ({ id: String(t.id), content: capitalizeReligionNames(t.content) }));
+      return { translations };
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  console.warn("Litera dialog translation failed:", lastError?.message || lastError);
+  return { translations: [] };
+}

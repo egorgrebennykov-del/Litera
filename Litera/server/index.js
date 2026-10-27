@@ -40,7 +40,11 @@ import {
   searchBiblion,
   getBiblionDetails,
 } from "./biblionService.js";
-import { processLiteraChat, filterInquiryMessageWithAI } from "./literaAssistantService.js";
+import {
+  processLiteraChat,
+  filterInquiryMessageWithAI,
+  translateLiteraDialog,
+} from "./literaAssistantService.js";
 import { sendGuestInquiryEmail } from "./emailService.js";
 import { executeCatalogActionById } from "./catalogActionsService.js";
 import { setHttpAdapter } from "./httpClient.js";
@@ -594,6 +598,21 @@ const server = createServer(async (req, res) => {
         error: "Failed to send inquiry email",
         message: err.message,
       });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/api/litera-translate") {
+    try {
+      const body = await readJson(req);
+      const result = await translateLiteraDialog({
+        messages: body?.messages,
+        targetLanguage: body?.targetLanguage,
+      });
+      respond(res, 200, result);
+    } catch (err) {
+      console.error("Failed to translate Litera dialog:", err);
+      respond(res, 500, { translations: [], error: err.message });
     }
     return;
   }

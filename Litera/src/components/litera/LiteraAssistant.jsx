@@ -9,6 +9,7 @@ import { isLoggedIn, getCookieUser, isPrivileged } from "../../../utils/auth";
 import "./LiteraAssistant.css";
 
 const STORAGE_KEY = "litera_assistant_history_v2";
+const DIALOG_LANG_KEY = "litera_assistant_dialog_lang_v1";
 
 const isSearchQuery = (text) =>
   /(посоветуй|порекомендуй|найди|что почитать|подобрать книгу|выбери книгу|какие книги|книги про|книгу про|recommend|suggest|search catalogue|find book)/i.test(
@@ -92,6 +93,94 @@ export default function LiteraAssistant() {
       // Ignore sessionStorage errors
     }
   }, [messages]);
+
+  // Track which language the current dialog is written in
+  const [isTranslating, setIsTranslating] = useState(false);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const translateRequestRef = useRef(0);
+  const dialogLanguageRef = useRef(
+    (() => {
+      try {
+        return sessionStorage.getItem(DIALOG_LANG_KEY) || language;
+      } catch {
+        return language;
+      }
+    })(),
+  );
+
+  // When the interface language changes, translate the whole dialog via Gemini
+  useEffect(() => {
+    if (dialogLanguageRef.current === language) return;
+    const targetLanguage = language;
+    const requestId = ++translateRequestRef.current;
+    const current = messagesRef.current;
+    const hasUserMessages = current.some((m) => m.role === "user");
+
+    const finish = () => {
+      dialogLanguageRef.current = targetLanguage;
+      try {
+        sessionStorage.setItem(DIALOG_LANG_KEY, targetLanguage);
+      } catch {
+        // Ignore sessionStorage errors
+      }
+    };
+
+    // Fresh dialog with only the welcome message: swap it locally, no API call needed
+    if (!hasUserMessages) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.role === "assistant" ? { ...m, content: t("assistant.welcome") } : m,
+        ),
+      );
+      finish();
+      return;
+    }
+
+    const toTranslate = current
+      .filter((m) => typeof m.content === "string" && m.content.trim())
+      .map((m) => ({ id: m.id, content: m.content }));
+
+    setIsTranslating(true);
+    fetch("/api/litera-translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ messages: toTranslate, targetLanguage }),
+    })
+      .then((res) => (res.ok ? res.json() : { translations: [] }))
+      .catch(async () => {
+        // Local dev fallback: call the service directly
+        try {
+          const { translateLiteraDialog } = await import(
+            "../../../server/literaAssistantService"
+          );
+          return await translateLiteraDialog({ messages: toTranslate, targetLanguage });
+        } catch {
+          return { translations: [] };
+        }
+      })
+      .then((data) => {
+        if (requestId !== translateRequestRef.current) return;
+        const map = new Map(
+          (Array.isArray(data?.translations) ? data.translations : []).map((tr) => [
+            tr.id,
+            tr.content,
+          ]),
+        );
+        if (map.size > 0) {
+          // Only message texts change — book cards, URLs and links stay exactly the same
+          setMessages((prev) =>
+            prev.map((m) => (map.has(m.id) ? { ...m, content: map.get(m.id) } : m)),
+          );
+          finish();
+        }
+      })
+      .finally(() => {
+        if (requestId === translateRequestRef.current) {
+          setIsTranslating(false);
+        }
+      });
+  }, [language, t]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -235,11 +324,17 @@ export default function LiteraAssistant() {
     setMessages(freshWelcome);
     setEmotion("greeting");
     sessionStorage.removeItem(STORAGE_KEY);
+    dialogLanguageRef.current = language;
+    try {
+      sessionStorage.setItem(DIALOG_LANG_KEY, language);
+    } catch {
+      // Ignore sessionStorage errors
+    }
   };
 
   const handleSendMessage = async (textToSend) => {
     const queryText = (textToSend || input).trim();
-    if (!queryText || loading) return;
+    if (!queryText || loading || isTranslating) return;
 
     setInput("");
     setIsExpanded(false);
@@ -920,6 +1015,17 @@ export default function LiteraAssistant() {
               <div ref={messagesEndRef} />
             </div>
 
+            {isTranslating && (
+              <div className="litera-translating-banner" role="status">
+                <i className="ri-translate-2 ri-spin" />
+                <span>
+                  {language === "ru"
+                    ? "Литера переводит диалог на русский..."
+                    : "Litera is translating the dialog into English..."}
+                </span>
+              </div>
+            )}
+
             {/* 5 Suggestion Questions in a Scrollable Row (When starting a new dialog) */}
             {isNewDialog && !loading && (
               <div className="litera-questions-bar">
@@ -962,7 +1068,7 @@ export default function LiteraAssistant() {
                       : t("assistant.placeholder")
                   }
                   rows={1}
-                  disabled={loading}
+                  disabled={loading || isTranslating}
                 />
                 <div className="litera-input-actions">
                   {(isTooLarge || isExpanded) && (
@@ -995,7 +1101,7 @@ export default function LiteraAssistant() {
                   <button
                     type="submit"
                     className="litera-send-btn"
-                    disabled={!input.trim() || loading}
+                    disabled={!input.trim() || loading || isTranslating}
                     aria-label={t("assistant.send")}
                     title={t("assistant.send")}
                   >
