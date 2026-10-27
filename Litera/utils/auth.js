@@ -8,8 +8,13 @@ async function getEmailJs() {
   return mod.default || mod;
 }
 
-const TABLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user`;
-const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ||
+  "https://qgxiisgzwcsevzyaoxvl.supabase.co";
+const TABLE_URL = `${SUPABASE_URL}/rest/v1/user`;
+const KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  "sb_publishable_b9UI3PiZhUvPTcroS9oMOg_NyHBwtxw";
 const headers = {
   apikey: KEY,
   Authorization: `Bearer ${KEY}`,

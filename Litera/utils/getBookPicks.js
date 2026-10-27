@@ -1,7 +1,9 @@
 const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ??
+  import.meta.env.VITE_SUPABASE_URL ||
   "https://qgxiisgzwcsevzyaoxvl.supabase.co";
-const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  "sb_publishable_b9UI3PiZhUvPTcroS9oMOg_NyHBwtxw";
 const TABLE_URL = `${SUPABASE_URL}/rest/v1/book_picks`;
 
 const CACHE_TTL_MS = 5 * 60 * 1000;

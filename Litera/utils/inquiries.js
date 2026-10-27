@@ -5,8 +5,12 @@ async function getEmailJs() {
   return mod.default || mod;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ||
+  "https://qgxiisgzwcsevzyaoxvl.supabase.co";
+const SUPABASE_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  "sb_publishable_b9UI3PiZhUvPTcroS9oMOg_NyHBwtxw";
 
 const EMAILJS_SERVICE_ID =
   import.meta.env.VITE_EMAILJS_SERVICE_ID || "default_service";

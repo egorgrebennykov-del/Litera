@@ -7,7 +7,9 @@
 ## 🌐 Live Deployment & Repository Links
 
 - **Live Deployed Application:** [https://litera.egor-grebennykov.workers.dev](https://litera.egor-grebennykov.workers.dev)
-- **Backend Database & BaaS (Supabase):** `https://qgxiisgzwcsevzyaoxvl.supabase.co`
+- **Supabase Project Dashboard:** [https://supabase.com/dashboard/project/qgxiisgzwcsevzyaoxvl](https://supabase.com/dashboard/project/qgxiisgzwcsevzyaoxvl)
+- **Backend Database & BaaS (Supabase URL):** [https://qgxiisgzwcsevzyaoxvl.supabase.co](https://qgxiisgzwcsevzyaoxvl.supabase.co)
+- **Supabase Publishable Key:** `sb_publishable_b9UI3PiZhUvPTcroS9oMOg_NyHBwtxw`
 - **GitHub Repository:** [https://github.com/egorgrebennykov-del/Litera](https://github.com/egorgrebennykov-del/Litera)
 
 ---
@@ -41,10 +43,10 @@ npm install
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the `Litera/` project root:
+The public Supabase URL and publishable key are already pre-configured as defaults in the application, or you can specify them in a `.env` file in the `Litera/` project root:
 ```env
 VITE_SUPABASE_URL=https://qgxiisgzwcsevzyaoxvl.supabase.co
-VITE_SUPABASE_ANON_KEY=<your_supabase_anon_or_publishable_key>
+VITE_SUPABASE_ANON_KEY=sb_publishable_b9UI3PiZhUvPTcroS9oMOg_NyHBwtxw
 VITE_GEMINI_API_KEY=<your_gemini_api_key>
 VITE_EMAILJS_PUBLIC_KEY=<your_emailjs_public_key>
 VITE_EMAILJS_SERVICE_ID=service_zzl5x89

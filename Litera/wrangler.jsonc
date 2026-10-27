@@ -4,6 +4,11 @@
   "main": "server/worker.js",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SUPABASE_URL": "https://qgxiisgzwcsevzyaoxvl.supabase.co",
+    "VITE_SUPABASE_URL": "https://qgxiisgzwcsevzyaoxvl.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "sb_publishable_b9UI3PiZhUvPTcroS9oMOg_NyHBwtxw"
+  },
   "triggers": {
     "crons": ["0 3 * * *"]
   },
