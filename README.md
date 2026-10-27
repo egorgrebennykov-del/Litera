@@ -6,15 +6,15 @@
 
 ## 🌐 Live Deployment & Repository Links
 
-- **Live Deployed Application (Frontend & Backend Worker):** [https://litera.egorgrebennykov.workers.dev](https://litera.egorgrebennykov.workers.dev) *(replace with your custom domain or Cloudflare Workers / Pages URL if different)*
-- **Backend Database & BaaS (Supabase):** `https://qgxiisgzwcsevzyaoxvl.supabase.co` (Live cloud PostgreSQL + REST API)
+- **Live Deployed Application:** [https://litera.egor-grebennykov.workers.dev](https://litera.egor-grebennykov.workers.dev)
+- **Backend Database & BaaS (Supabase):** `https://qgxiisgzwcsevzyaoxvl.supabase.co`
 - **GitHub Repository:** [https://github.com/egorgrebennykov-del/Litera](https://github.com/egorgrebennykov-del/Litera)
 
 ---
 
-## 🔑 Test Users / Demo Accounts (For Reviewers)
+## 🔑 Test Users & Demo Promo Coupon
 
-There are **3 pre-configured test accounts** in the database (2 privileged administrators/VIPs and 1 standard user). Enter the **Name (Login / Email)** and **Password** on the `/login` page:
+There are **3 pre-configured test accounts** in the database — 2 privileged accounts and 1 standard user account. Enter the **Name (Login)** and **Password** on the `/login` page:
 
 | Account Type / Role | Name (Login) | Password | Access Level |
 | :--- | :--- | :--- | :--- |
@@ -22,12 +22,16 @@ There are **3 pre-configured test accounts** in the database (2 privileged admin
 | **Privileged User 2** (`privileged`) | `test_vip_2` | `test_vip_2` | Full access + Admin Control Panel (`/privileged`), store badges, coupons, announcements, orders & inquiries management |
 | **Standard User** (`user`) | `test_user` | `test_user` | Standard authenticated user access (`/profile`, `/cart`, `/checkout`, `/orders`, creating/editing/deleting own reviews on `/testimonial`) |
 
+### 🎟️ Test Promo Coupon (`TEST`)
+- **Promo Code:** `TEST`
+- Entering the promo code **`TEST`** on the checkout page (`/checkout`) applies a **100% discount on the entire order and shipping (delivery)**, allowing you to test the complete order placement flow for free.
+
 ---
 
 ## 🚀 How to Install Packages and Run the Project Locally
 
 ### Prerequisites
-- **Node.js** `v20+` (or `v22+`) and **npm**
+- **Node.js** `v20+` and **npm**
 
 ### 1. Clone the Repository & Install Dependencies
 ```bash
@@ -37,7 +41,7 @@ npm install
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the `Litera/` project root (or use the pre-configured public Supabase connection):
+Create a `.env` file in the `Litera/` project root:
 ```env
 VITE_SUPABASE_URL=https://qgxiisgzwcsevzyaoxvl.supabase.co
 VITE_SUPABASE_ANON_KEY=<your_supabase_anon_or_publishable_key>
@@ -126,7 +130,7 @@ Litera/
 
 - **Application Name:** Litera
 - **Application Category / Topic:** E-commerce Site & Book Discovery Platform (Online Bookstore)
-- **Main Purpose (2–4 sentences):**
+- **Main Purpose:**
   Litera is an online bookstore and book discovery platform designed to make Russian-language literature easily accessible to readers across Europe. It aggregates books in real time from multiple bookstores, automatically converts local prices into Euros (`EUR`) using daily synchronized exchange rates, and provides an interactive AI assistant (*Litera*) to help readers find books by plot, mood, or author. Users can browse curated catalogs (Book Picks, Discounts, New Arrivals), read and publish verified customer reviews, manage their shopping cart and delivery addresses, apply promotional coupons, place orders, and communicate directly with administrators.
 
 ---
