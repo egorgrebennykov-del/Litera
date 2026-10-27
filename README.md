@@ -154,7 +154,7 @@ Litera/
   - All public catalog pages (`/`, `/featured`, `/discount`, `/new`, `/search`, `/book`, `/testimonial`, `/contacts`)
   - `/profile` (Private user profile page displaying personal details, roles, phones, and saved addresses)
   - `/cart` (Interactive shopping cart with quantity controls and item removal)
-  - `/checkout` (2-step order checkout with saved delivery addresses, phone book, and promo coupon application)
+  - `/checkout` (2-step order checkout with saved delivery addresses, phone book, and promo coupon application — use test promo code `TEST` for a **100% discount** on the entire order and delivery)
   - `/orders`, `/orders/current`, `/orders/completed`, `/orders/:tab` (Order history split into active and completed orders)
   - `/privileged` / `/admin` (Role-restricted Admin Control Panel available to users with `privileged` status: `vip`, `admin`, `developer`)
 - **Details pages:**
@@ -165,12 +165,14 @@ Litera/
   - **Saved Delivery Addresses & Phones (`user.adresses` & `user.phones` on `/checkout`):** Logged-in users can **Create**, **Read**, and **Delete** saved delivery addresses and phone numbers.
   - **Orders & Inquiries:** Logged-in users can **Create** orders (`/checkout`) and real-time support chat threads with administrators.
   - **Privileged / Admin Users (`/privileged`):** Can also perform full CRUD on site-wide **Announcements** (`announcements`), **Discount Coupons** (`coupons`), **Users** (`user`), and manage **Orders** and **GitHub Actions**.
-- **Pre-configured Test Accounts for Reviewers:**
+- **Pre-configured Test Accounts & Promo Coupon for Reviewers:**
   - **Privileged Users (2 accounts):**
     1. Name / Login: `test_vip_1` | Password: `test_vip_1`
     2. Name / Login: `test_vip_2` | Password: `test_vip_2`
   - **Standard Authenticated User (1 account):**
     3. Name / Login: `test_user` | Password: `test_user`
+  - **Test Promo Coupon (`/checkout`):**
+    - Promo Code: `TEST` — entering this coupon at checkout gives a **100% discount on the entire order and shipping (delivery)** so reviewers can test the full checkout and order placement flow for free.
 
 ---
 
