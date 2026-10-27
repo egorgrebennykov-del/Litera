@@ -1666,7 +1666,11 @@ export default function Privileged() {
                         ? "Статус (нажмите чтобы изменить)"
                         : "Status (click to change)"}
                     </th>
-                    <th>{language === "ru" ? "Роли" : "Roles"}</th>
+                    <th>
+                      {language === "ru"
+                        ? "Роли (нажмите чтобы сменить)"
+                        : "Roles (click to change)"}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1903,9 +1907,20 @@ export default function Privileged() {
                                 })}
                               </div>
                             ) : (
-                              <span className="privileged__role-pill privileged__role-pill--user">
+                              <button
+                                type="button"
+                                className="privileged__role-pill privileged__role-pill--user privileged__role-pill--clickable"
+                                onClick={() =>
+                                  showNotice(
+                                    language === "ru"
+                                      ? "Непривилегированный пользователь не может иметь других ролей"
+                                      : "An unprivileged user cannot have other roles",
+                                    true,
+                                  )
+                                }
+                              >
                                 {formatRoleName("user", language)}
-                              </span>
+                              </button>
                             )}
                           </div>
                         </td>

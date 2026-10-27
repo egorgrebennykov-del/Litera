@@ -585,6 +585,22 @@
   border: 1px solid var(--border-color);
 }
 
+.privileged__role-pill--clickable {
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.privileged__role-pill--clickable:hover {
+  border-color: hsl(0, 70%, 60%);
+  color: hsl(0, 70%, 45%);
+}
+
+.dark-theme .privileged__role-pill--clickable:hover {
+  border-color: hsl(0, 70%, 55%);
+  color: hsl(0, 80%, 70%);
+}
+
 .privileged__roles-cell {
   display: flex;
   flex-direction: column;
