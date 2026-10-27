@@ -299,6 +299,19 @@
   border-bottom: 1px solid var(--border-color);
   background-color: var(--body-color);
   white-space: nowrap;
+  vertical-align: top;
+}
+
+.privileged__th-main {
+  display: block;
+}
+
+.privileged__th-sub {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: var(--font-regular, 400);
+  opacity: 0.78;
+  margin-top: 0.15rem;
 }
 
 .privileged__table td {

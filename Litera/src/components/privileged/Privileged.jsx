@@ -1662,14 +1662,24 @@ export default function Privileged() {
                     <th>{t("privileged.users.thPhone")}</th>
                     <th>{t("privileged.users.thRegistered")}</th>
                     <th>
-                      {language === "ru"
-                        ? "Статус (нажмите чтобы изменить)"
-                        : "Status (click to change)"}
+                      <span className="privileged__th-main">
+                        {language === "ru" ? "Статус" : "Status"}
+                      </span>
+                      <span className="privileged__th-sub">
+                        {language === "ru"
+                          ? "(нажмите чтобы изменить)"
+                          : "(click to change)"}
+                      </span>
                     </th>
                     <th>
-                      {language === "ru"
-                        ? "Роли (нажмите чтобы сменить)"
-                        : "Roles (click to change)"}
+                      <span className="privileged__th-main">
+                        {language === "ru" ? "Роли" : "Roles"}
+                      </span>
+                      <span className="privileged__th-sub">
+                        {language === "ru"
+                          ? "(нажмите чтобы сменить)"
+                          : "(click to change)"}
+                      </span>
                     </th>
                   </tr>
                 </thead>
