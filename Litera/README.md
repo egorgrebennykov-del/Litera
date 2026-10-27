@@ -7,6 +7,7 @@
 ## 🌐 Live Deployment & Repository Links
 
 - **Live Deployed Application:** [https://litera.egor-grebennykov.workers.dev](https://litera.egor-grebennykov.workers.dev)
+- **Cloudflare Worker Service View (View Worker status & config without login):** [https://litera.egor-grebennykov.workers.dev/cloudflare.html](https://litera.egor-grebennykov.workers.dev/cloudflare.html)
 - **Supabase Database Explorer (View all tables without login):** [https://litera.egor-grebennykov.workers.dev/supabase.html](https://litera.egor-grebennykov.workers.dev/supabase.html)
 - **GitHub Repository:** [https://github.com/egorgrebennykov-del/Litera](https://github.com/egorgrebennykov-del/Litera)
 
