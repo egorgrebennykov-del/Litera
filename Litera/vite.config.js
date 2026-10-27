@@ -6,13 +6,4 @@ export default defineConfig({
   server: {
     proxy: { "/api": "http://localhost:3001" },
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom", "react-router"],
-        },
-      },
-    },
-  },
 });
