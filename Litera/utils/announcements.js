@@ -108,6 +108,32 @@ export async function fetchAllAnnouncementsAdmin() {
 
 const ACTIVE_STORAGE_KEY = "kazbook_active_announcements_v1";
 const ACTIVE_CACHE_TTL_MS = 2 * 60 * 1000;
+
+const DEFAULT_ACTIVE_ANNOUNCEMENTS = [
+  normalizeAnnouncement({
+    id: "624b6192-89a5-4756-b0c2-cdf98118d318",
+    created_at: "2026-10-25T10:39:59.929661+00:00",
+    from: "2026-10-25T10:37:00+00:00",
+    until: "2026-11-30T22:00:00+00:00",
+    content_ru: {
+      type: "small",
+      text: "Пока Litera находится в разработке, реальные заказы недоступны. Используйте промокод TEST, чтобы получить скидку 100% на весь заказ.",
+      imageUrl: "",
+      linkUrl: "",
+      order: 1,
+      active: true,
+    },
+    content_en: {
+      type: "small",
+      text: "Litera is currently under development, and real orders are not yet available. Use promo code TEST to get 100% off your entire order.",
+      imageUrl: "",
+      linkUrl: "",
+      order: 1,
+      active: true,
+    },
+  }),
+];
+
 let cachedActiveAnnouncements = null;
 let activeCacheExpiry = 0;
 let activeInflight = null;
@@ -121,13 +147,14 @@ export function getCachedActiveAnnouncements() {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           cachedActiveAnnouncements = parsed;
+          return cachedActiveAnnouncements;
         }
       }
     } catch {
       // ignore
     }
   }
-  return cachedActiveAnnouncements;
+  return DEFAULT_ACTIVE_ANNOUNCEMENTS;
 }
 
 export function invalidateAnnouncementsCache() {

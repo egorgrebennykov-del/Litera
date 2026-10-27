@@ -1,5 +1,12 @@
-import bcrypt from "bcryptjs";
-import emailjs from "@emailjs/browser";
+async function getBcrypt() {
+  const mod = await import("bcryptjs");
+  return mod.default || mod;
+}
+
+async function getEmailJs() {
+  const mod = await import("@emailjs/browser");
+  return mod.default || mod;
+}
 
 const TABLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user`;
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -214,6 +221,7 @@ export async function sendVerificationCodeEmail({
   };
 
   if (typeof window !== "undefined") {
+    const emailjs = await getEmailJs();
     const candidateServices = Array.from(
       new Set([EMAILJS_SERVICE_ID, "default_service", "service_zzl5x89"]),
     );
@@ -266,6 +274,7 @@ export async function resetPasswordByEmail(email, newPassword) {
     throw new Error("No account found with this email");
   }
 
+  const bcrypt = await getBcrypt();
   const password_hash = await bcrypt.hash(newPassword, 10);
   const response = await fetch(
     `${TABLE_URL}?id=eq.${encodeURIComponent(user.id)}`,
@@ -330,6 +339,7 @@ export async function register({ firstName, lastName, email, password, phone }) 
 
   const phoneArray = phone && phone.trim() ? [phone.trim()] : [];
 
+  const bcrypt = await getBcrypt();
   const response = await fetch(TABLE_URL, {
     method: "POST",
     headers: { ...headers, Prefer: "return=representation" },
@@ -359,7 +369,7 @@ export async function login(email, password) {
   if (!identifier) {
     throw new Error("Enter an email or login");
   }
-  const user = await findByEmail(identifier);
+  const [user, bcrypt] = await Promise.all([findByEmail(identifier), getBcrypt()]);
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new Error("Invalid email or password");
   }
@@ -556,6 +566,7 @@ export async function createUserByAdmin({
         : [];
 
   // Hash the password with bcrypt (10 salt rounds)
+  const bcrypt = await getBcrypt();
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const isPriv = status === "privileged";

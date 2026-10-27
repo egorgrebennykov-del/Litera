@@ -6,6 +6,55 @@ const TABLE_URL = `${SUPABASE_URL}/rest/v1/books_on_home_page`;
 
 const STORAGE_KEY = "kazbook_homepage_books_v1";
 const CACHE_TTL_MS = 5 * 60 * 1000;
+
+const DEFAULT_HOMEPAGE_BOOKS = [
+  {
+    title: "Загадочное происшествие в Стайлзе",
+    url: "https://librarius.md/ru/book/zagadochnoe-proisshestvie-v-staylze-623066",
+    image: "/assets/img/home/home-1.webp",
+    price: 115,
+    currency: "MDL",
+    store: "librarius.md",
+    publisher: "Эксмо",
+  },
+  {
+    title: "Идиот",
+    url: "https://librarius.md/ru/book/idiot-680616",
+    image: "/assets/img/home/home-2.webp",
+    price: 95,
+    currency: "MDL",
+    store: "librarius.md",
+    publisher: "АСТ",
+  },
+  {
+    title: "Миссия выполнима. Технология счастливой жизни",
+    url: "https://librarius.md/ru/book/missiya-vypolnima-tehnologiya-schastlivoy-zhizni-720759",
+    image: "/assets/img/home/home-3.webp",
+    price: 290,
+    currency: "MDL",
+    store: "librarius.md",
+    publisher: "Альпина Паблишер",
+  },
+  {
+    title: "Искусство любить",
+    url: "https://librarius.md/ru/book/iskusstvo-lyubiti-372609",
+    image: "/assets/img/home/home-4.webp",
+    price: 110,
+    currency: "MDL",
+    store: "librarius.md",
+    publisher: "АСТ",
+  },
+  {
+    title: "Смерть на Ниле",
+    url: "https://librarius.md/ru/book/smerti-na-nile-602898",
+    image: "/assets/img/home/home-5.webp",
+    price: 125,
+    currency: "MDL",
+    store: "librarius.md",
+    publisher: "Эксмо",
+  },
+];
+
 let cachedBooks = null;
 let cacheExpiry = 0;
 let inflight = null;
@@ -27,8 +76,9 @@ export function getCachedHomepageBooks() {
   const stored = readStoredBooks();
   if (stored) {
     cachedBooks = stored;
+    return cachedBooks;
   }
-  return cachedBooks;
+  return DEFAULT_HOMEPAGE_BOOKS;
 }
 
 export default async function getHomepageBooks() {

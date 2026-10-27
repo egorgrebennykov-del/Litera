@@ -227,10 +227,19 @@ function resolveHighResImageUrl(sourceUrl) {
   return target;
 }
 
-async function handleEnhanceImage(urlObj) {
+async function handleEnhanceImage(request, urlObj, ctx) {
   const sourceUrl = urlObj.searchParams.get("url") || "";
   if (!sourceUrl) {
     return jsonResponse({ error: "Invalid image URL" }, 400);
+  }
+  const cache = globalThis.caches?.default;
+  if (cache) {
+    try {
+      const cachedRes = await cache.match(request);
+      if (cachedRes) return cachedRes;
+    } catch {
+      // ignore cache read errors
+    }
   }
   const resolved = resolveHighResImageUrl(sourceUrl);
   try {
@@ -246,13 +255,22 @@ async function handleEnhanceImage(urlObj) {
     if (!res.ok) {
       return Response.redirect(resolved, 302);
     }
-    return new Response(res.body, {
+    const response = new Response(res.body, {
       status: 200,
       headers: {
         "Content-Type": res.headers.get("content-type") || "image/jpeg",
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
+    if (cache) {
+      try {
+        const putTask = cache.put(request, response.clone());
+        if (ctx?.waitUntil) ctx.waitUntil(putTask);
+      } catch {
+        // ignore cache write errors
+      }
+    }
+    return response;
   } catch {
     return jsonResponse({ error: "Could not load image" }, 502);
   }
@@ -285,7 +303,7 @@ export default {
     }
 
     if (method === "GET" && pathname === "/api/enhance-image") {
-      return handleEnhanceImage(urlObj);
+      return handleEnhanceImage(request, urlObj, ctx);
     }
 
     if (method === "GET" && pathname === "/api/search-librarius") {

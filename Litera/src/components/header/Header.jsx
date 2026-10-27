@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import {
   getCookieUser,
@@ -10,9 +10,10 @@ import {
   formatRoleName,
 } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
-import MessengerModal from "../messenger/MessengerModal";
 import { fetchUserInquiry, fetchAdminUnreadCount } from "../../../utils/inquiries";
 import "./Header.css";
+
+const MessengerModal = lazy(() => import("../messenger/MessengerModal"));
 
 const navClass = ({ isActive }) =>
   isActive ? "nav__link active-link" : "nav__link";
@@ -66,8 +67,10 @@ export default function Header({ theme, isLight, onSearch }) {
     const checkUnread = async () => {
       try {
         const guestEmail = localStorage.getItem("litera_guest_inquiry_email");
+        const activeUserId = loggedIn ? (user?.id || getCookieUser()?.id) : null;
+        if (!activeUserId && !guestEmail) return;
         const inq = await fetchUserInquiry({
-          userId: loggedIn ? (user?.id || getCookieUser()?.id) : null,
+          userId: activeUserId,
           userEmail: loggedIn ? null : guestEmail,
         });
         if (inq?.notifications_user) {
@@ -79,11 +82,12 @@ export default function Header({ theme, isLight, onSearch }) {
         // ignore
       }
     };
-    checkUnread();
-    const interval = setInterval(checkUnread, 5000);
+    const initTimer = setTimeout(checkUnread, 2000);
+    const interval = setInterval(checkUnread, 15000);
     const onUpdated = () => checkUnread();
     window.addEventListener("litera-inquiries-updated", onUpdated);
     return () => {
+      clearTimeout(initTimer);
       clearInterval(interval);
       window.removeEventListener("litera-inquiries-updated", onUpdated);
     };
@@ -101,11 +105,12 @@ export default function Header({ theme, isLight, onSearch }) {
         // ignore
       }
     };
-    checkAdminUnread();
-    const interval = setInterval(checkAdminUnread, 5000);
+    const initTimer = setTimeout(checkAdminUnread, 2000);
+    const interval = setInterval(checkAdminUnread, 15000);
     const onUpdated = () => checkAdminUnread();
     window.addEventListener("litera-inquiries-updated", onUpdated);
     return () => {
+      clearTimeout(initTimer);
       clearInterval(interval);
       window.removeEventListener("litera-inquiries-updated", onUpdated);
     };
@@ -528,11 +533,15 @@ export default function Header({ theme, isLight, onSearch }) {
         </div>
       </nav>
 
-      <MessengerModal
-        isOpen={isMessengerOpen}
-        onClose={() => setIsMessengerOpen(false)}
-        onUnreadChange={(cnt) => setUnreadCount(cnt)}
-      />
+      {isMessengerOpen && (
+        <Suspense fallback={null}>
+          <MessengerModal
+            isOpen={isMessengerOpen}
+            onClose={() => setIsMessengerOpen(false)}
+            onUnreadChange={(cnt) => setUnreadCount(cnt)}
+          />
+        </Suspense>
+      )}
     </header>
   );
 }

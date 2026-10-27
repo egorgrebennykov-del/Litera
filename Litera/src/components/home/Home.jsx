@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import CarouselControls from "../carouselcontrols/CarouselControls";
 import getHomepageBooks, { getCachedHomepageBooks } from "../../../utils/getHomepageBooks";
-import getBookDetails from "../../../utils/getBookDetails";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
@@ -15,11 +14,11 @@ import {
 import "./Home.css";
 
 const FALLBACK_PUBLISHERS = [
+  "Эксмо",
+  "АСТ",
+  "Альпина Паблишер",
   "АСТ",
   "Эксмо",
-  "Азбука",
-  "Альпина Паблишер",
-  "Бомбора",
 ];
 
 function isStoreLabel(value) {
@@ -31,20 +30,10 @@ function isStoreLabel(value) {
   );
 }
 
-function extractPublisherFromDetails(details) {
-  if (!details) return "";
-  const prop = (details.additionalProperties ?? []).find((item) =>
-    /^(издательство|издание|publisher)$/i.test(String(item?.name ?? "").trim()),
-  );
-  const val = String(prop?.value ?? details.brand?.name ?? "").trim();
-  return isStoreLabel(val) ? "" : val;
-}
-
 export default function Home() {
   const { t } = useLanguage();
   const location = useLocation();
   const [books, setBooks] = useState(() => getCachedHomepageBooks() ?? []);
-  const [resolvedPublishers, setResolvedPublishers] = useState({});
   const [booksError, setBooksError] = useState(false);
   const [booksReady, setBooksReady] = useState(() => Boolean(getCachedHomepageBooks()));
   const [announcements, setAnnouncements] = useState(
@@ -69,46 +58,13 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
     getHomepageBooks()
-      .then((items) => !cancelled && setBooks(items))
+      .then((items) => !cancelled && Array.isArray(items) && items.length > 0 && setBooks(items))
       .catch(() => !cancelled && setBooksError(true))
       .finally(() => !cancelled && setBooksReady(true));
     return () => {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const toResolve = books.filter(
-      (b) => b?.url && isStoreLabel(b.publisher) && !resolvedPublishers[b.url],
-    );
-    if (toResolve.length === 0) return;
-
-    Promise.all(
-      toResolve.map(async (b) => {
-        try {
-          const details = await getBookDetails(b.url);
-          const pub = extractPublisherFromDetails(details);
-          return [b.url, pub];
-        } catch {
-          return [b.url, ""];
-        }
-      }),
-    ).then((entries) => {
-      if (cancelled) return;
-      const updates = {};
-      for (const [url, pub] of entries) {
-        if (pub) updates[url] = pub;
-      }
-      if (Object.keys(updates).length > 0) {
-        setResolvedPublishers((prev) => ({ ...prev, ...updates }));
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [books, resolvedPublishers]);
 
   useEffect(() => {
     if (!booksReady || !location.state?.restoreHomeScroll) return;
@@ -203,7 +159,6 @@ export default function Home() {
                       </span>
                       <span className="home__book-publisher">
                         {(!isStoreLabel(book.publisher) && book.publisher) ||
-                          resolvedPublishers[book.url] ||
                           FALLBACK_PUBLISHERS[index % FALLBACK_PUBLISHERS.length]}
                       </span>
                     </Link>

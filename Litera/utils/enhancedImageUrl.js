@@ -73,9 +73,19 @@ export function decodeBiblionImage(url) {
   }
 }
 
+const LOCAL_HOME_COVERS = [
+  ["zagadochnoe-proisshestvie-v-staylze_1561396259", "/assets/img/home/home-1.webp"],
+  ["idiot_1645512389", "/assets/img/home/home-2.webp"],
+  ["missiya-vypolnima-tehnologiya-schastlivoy-zhizni_1690538879", "/assets/img/home/home-3.webp"],
+  ["iskusstvo-lyubiti_1563466168", "/assets/img/home/home-4.webp"],
+  ["smerti-na-nile_1552219429", "/assets/img/home/home-5.webp"],
+];
+
 export default function enhancedImageUrl(sourceUrl) {
   if (!sourceUrl || typeof sourceUrl !== "string") return "";
-  if (sourceUrl.startsWith("/api/enhance-image")) return sourceUrl;
+  if (sourceUrl.startsWith("/assets/") || sourceUrl.startsWith("/api/enhance-image")) {
+    return sourceUrl;
+  }
 
   let resolved = sourceUrl;
 
@@ -89,6 +99,12 @@ export default function enhancedImageUrl(sourceUrl) {
     resolved = decodeCarteameaImage(resolved);
   } else if (resolved.includes("biblion.md")) {
     resolved = decodeBiblionImage(resolved);
+  }
+
+  for (const [slug, localPath] of LOCAL_HOME_COVERS) {
+    if (resolved.includes(slug)) {
+      return localPath;
+    }
   }
 
   if (/^https?:\/\//i.test(resolved)) {

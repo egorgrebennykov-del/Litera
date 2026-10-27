@@ -1,5 +1,9 @@
-import emailjs from "@emailjs/browser";
 import { getAllUsers, resolveUserRoles, isPrivileged } from "./auth.js";
+
+async function getEmailJs() {
+  const mod = await import("@emailjs/browser");
+  return mod.default || mod;
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -67,6 +71,7 @@ async function dispatchGuestEmailViaEmailJs({
 
   // 1. Primary: send directly from browser via @emailjs/browser
   if (typeof window !== "undefined") {
+    const emailjs = await getEmailJs();
     const candidateServices = Array.from(
       new Set([EMAILJS_SERVICE_ID, "default_service", "service_zzl5x89"]),
     );
