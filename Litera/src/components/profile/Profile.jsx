@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import {
-  getProfile,
-  isLoggedIn,
-  logout,
   isPrivileged,
   resolveUserRoles,
   formatRoleName,
 } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
+import { useAuth } from "../../context/AuthContext";
 import "./Profile.css";
 
 function TruncatedField({
@@ -143,25 +141,25 @@ function TruncatedField({
 export default function Profile() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const loggedIn = isLoggedIn();
-  const [profile, setProfile] = useState(null);
+  const { user, isLoggedIn: loggedIn, logout: authLogout, refreshUser } = useAuth();
+  const [profile, setProfile] = useState(() => user);
   const [notice, setNotice] = useState(null);
 
   useEffect(() => {
     if (!loggedIn) return;
     let cancelled = false;
-    getProfile()
-      .then((data) => !cancelled && setProfile(data))
+    refreshUser()
+      .then((data) => !cancelled && data && setProfile(data))
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [loggedIn]);
+  }, [loggedIn, refreshUser]);
 
   if (!loggedIn) return <Navigate to="/login" replace />;
 
   const handleLogout = () => {
-    logout();
+    authLogout();
     navigate("/");
   };
 

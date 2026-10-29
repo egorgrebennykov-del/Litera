@@ -23,6 +23,7 @@ import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { useAuth } from "../../context/AuthContext";
 import PhoneInput from "../common/PhoneInput";
 import {
   findCountryByPhone,
@@ -59,10 +60,9 @@ function formatPrice(price, currency, language) {
 
 export default function Checkout() {
   const { language, t } = useLanguage();
+  const { user, isLoggedIn: loggedIn } = useAuth();
   const confirm = useConfirm();
   const navigate = useNavigate();
-  const loggedIn = isLoggedIn();
-  const user = getCookieUser();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(loggedIn);

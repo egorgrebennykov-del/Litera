@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
-  login,
   checkUserExistsForReset,
   generateVerificationCode,
   sendVerificationCodeEmail,
   resetPasswordByEmail,
 } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
+import { useAuth } from "../../context/AuthContext";
 import {
   showValidationTooltip,
   hideValidationTooltip,
@@ -15,6 +15,7 @@ import {
 
 export default function Login({ onSignUp, onClose }) {
   const { t, language } = useLanguage();
+  const { login: authLogin, refreshUser } = useAuth();
   const isRu = language !== "en";
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -157,7 +158,7 @@ export default function Login({ onSignUp, onClose }) {
 
     setSubmitting(true);
     try {
-      await login(trimmedIdentifier, password);
+      await authLogin(trimmedIdentifier, password);
       hideValidationTooltip();
       const destination = params.get("redirect");
       navigate(
@@ -301,6 +302,7 @@ export default function Login({ onSignUp, onClose }) {
     setSubmitting(true);
     try {
       await resetPasswordByEmail(resetEmail, newPassword);
+      await refreshUser().catch(() => {});
       hideValidationTooltip();
       setError("");
       setMode("resetSuccess");

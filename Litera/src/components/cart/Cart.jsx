@@ -5,10 +5,10 @@ import {
   removeFromCart,
   updateCartQuantity,
 } from "../../../utils/cart";
-import { getCookieUser, isLoggedIn, isPrivileged } from "../../../utils/auth";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
+import { useAuth } from "../../context/AuthContext";
 import "./Cart.css";
 
 function formatPrice(price, currency, language) {
@@ -23,8 +23,7 @@ function formatPrice(price, currency, language) {
 export default function Cart({ onSearch }) {
   const { language, t } = useLanguage();
   const location = useLocation();
-  const [loggedIn] = useState(isLoggedIn);
-  const [user] = useState(getCookieUser);
+  const { user, isLoggedIn: loggedIn } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(loggedIn);
   const [error, setError] = useState("");

@@ -1,15 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import {
-  getCookieUser,
-  getProfile,
-  isLoggedIn,
-  logout,
-  isPrivileged,
-  resolveUserRoles,
   formatRoleName,
 } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
+import { useAuth } from "../../context/AuthContext";
 import { fetchUserInquiry, fetchAdminUnreadCount } from "../../../utils/inquiries";
 import "./Header.css";
 
@@ -25,12 +20,13 @@ export default function Header({ theme, isLight, onSearch }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const profileMenuRef = useRef(null);
 
-  const loggedIn = isLoggedIn();
-  const user = getCookieUser();
-  const [isPrivilegedUser, setIsPrivilegedUser] = useState(() =>
-    isPrivileged(user),
-  );
-  const [userRoles, setUserRoles] = useState(() => resolveUserRoles(user));
+  const {
+    user,
+    isLoggedIn: loggedIn,
+    isPrivileged: isPrivilegedUser,
+    roles: userRoles,
+    logout: authLogout,
+  } = useAuth();
   const [isMessengerOpen, setIsMessengerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [adminUnreadCount, setAdminUnreadCount] = useState(0);
@@ -117,24 +113,6 @@ export default function Header({ theme, isLight, onSearch }) {
   }, [isPrivilegedUser, isAdminOrDev, user?.id]);
 
   useEffect(() => {
-    if (!loggedIn) {
-      return;
-    }
-    let cancelled = false;
-    getProfile()
-      .then((p) => {
-        if (!cancelled && p) {
-          setIsPrivilegedUser(isPrivileged(p));
-          setUserRoles(resolveUserRoles(p));
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [loggedIn]);
-
-  useEffect(() => {
     const handleOutside = (e) => {
       if (
         profileMenuRef.current &&
@@ -151,7 +129,7 @@ export default function Header({ theme, isLight, onSearch }) {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
-    logout();
+    authLogout();
     navigate("/");
   };
 

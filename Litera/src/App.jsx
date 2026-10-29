@@ -11,6 +11,7 @@ import Header from "./components/header/Header";
 import Home from "./components/home/Home";
 import Search from "./components/search/Search";
 import { isLoggedIn } from "../utils/auth";
+import { useAuth } from "./context/AuthContext";
 import { getCookie, setCookie } from "../utils/cookies";
 import getBookPicks from "../utils/getBookPicks";
 import getDiscountSnapshot from "../utils/getDiscountSnapshot";
@@ -78,11 +79,41 @@ function getInitialTheme() {
 }
 
 function GuestOnly({ children }) {
-  return isLoggedIn() ? <Navigate to="/" replace /> : children;
+  const { isLoggedIn, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="app-route-loader" role="status" aria-live="polite">
+        <div className="app-route-loader__spinner" />
+      </div>
+    );
+  }
+  return isLoggedIn ? <Navigate to="/" replace /> : children;
 }
 
-function PrivateRoute({ children, redirectTo = "/login" }) {
-  return isLoggedIn() ? children : <Navigate to={redirectTo} replace />;
+function PrivateRoute({ children, redirectTo, privilegedOnly = false }) {
+  const location = useLocation();
+  const { isLoggedIn, isPrivileged, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="app-route-loader" role="status" aria-live="polite">
+        <div className="app-route-loader__spinner" />
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    const target =
+      redirectTo ||
+      `/login?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+    return <Navigate to={target} replace />;
+  }
+
+  if (privilegedOnly && !isPrivileged) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 }
 
 function App() {
@@ -177,17 +208,31 @@ function App() {
           <Route
             path="/profile"
             element={
-              <PrivateRoute redirectTo="/login?redirect=%2Fprofile">
+              <PrivateRoute>
                 <Profile />
               </PrivateRoute>
             }
           />
-          <Route path="/orders" element={<Orders defaultTab="current" key="orders-current" />} />
-          <Route path="/orders/:tab" element={<Orders />} />
+          <Route
+            path="/orders"
+            element={
+              <PrivateRoute>
+                <Orders defaultTab="current" key="orders-current" />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/orders/:tab"
+            element={
+              <PrivateRoute>
+                <Orders />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/privileged"
             element={
-              <PrivateRoute redirectTo="/login">
+              <PrivateRoute privilegedOnly>
                 <Privileged />
               </PrivateRoute>
             }
@@ -195,16 +240,27 @@ function App() {
           <Route
             path="/admin"
             element={
-              <PrivateRoute redirectTo="/login">
+              <PrivateRoute privilegedOnly>
                 <Privileged />
               </PrivateRoute>
             }
           />
           <Route
             path="/cart"
-            element={<Cart onSearch={() => setShowSearch(true)} />}
+            element={
+              <PrivateRoute>
+                <Cart onSearch={() => setShowSearch(true)} />
+              </PrivateRoute>
+            }
           />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route
+            path="/checkout"
+            element={
+              <PrivateRoute>
+                <Checkout />
+              </PrivateRoute>
+            }
+          />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/search/:query" element={<SearchResults />} />
           <Route path="/book" element={<BookDetails />} />

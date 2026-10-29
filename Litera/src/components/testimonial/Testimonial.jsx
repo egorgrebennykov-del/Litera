@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { getCookieUser, getProfile, isLoggedIn } from "../../../utils/auth";
 import {
   getFeedbacks,
   addFeedback,
@@ -10,6 +9,7 @@ import {
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
 import { useLanguage } from "../../context/languageContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { useAuth } from "../../context/AuthContext";
 import "./Testimonial.css";
 
 function formatReviewDate(dateString, language) {
@@ -37,8 +37,7 @@ function getInitials(firstName, lastName) {
 export default function Testimonial() {
   const { language, t } = useLanguage();
   const confirm = useConfirm();
-  const loggedIn = isLoggedIn();
-  const [user, setUser] = useState(getCookieUser);
+  const { user, isLoggedIn: loggedIn } = useAuth();
 
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);

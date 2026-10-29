@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import { getCookieUser, isLoggedIn } from "../../../utils/auth";
+import { useAuth } from "../../context/AuthContext";
 import { getCurrentOrders, getCompletedOrders } from "../../../utils/orders";
 import BookImage from "../common/BookImage";
 import decodeHtmlEntities from "../../../utils/decodeHtmlEntities";
@@ -37,8 +37,7 @@ export default function Orders({ defaultTab = "current" }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { tab } = useParams();
-  const loggedIn = isLoggedIn();
-  const user = getCookieUser();
+  const { user, isLoggedIn: loggedIn } = useAuth();
 
   const isCompletedTab =
     tab === "completed" ||

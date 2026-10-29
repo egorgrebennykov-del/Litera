@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router";
+import { useAuth } from "../../context/AuthContext";
 import {
   getAllUsers,
   getCookieUser,
@@ -68,15 +69,22 @@ export default function Privileged() {
   const { language, t } = useLanguage();
   const confirm = useConfirm();
   const customAlert = useAlert();
-  const loggedIn = isLoggedIn();
-  const cookieUser = getCookieUser();
+  const { user: authUser, isLoggedIn: loggedIn, isPrivileged: isPrivContext } = useAuth();
+  const cookieUser = authUser || getCookieUser();
 
   const [checkingAuth, setCheckingAuth] = useState(
-    !loggedIn ? false : !isPrivileged(cookieUser),
+    !loggedIn ? false : !isPrivContext && !isPrivileged(cookieUser),
   );
   const [isPrivilegedUser, setIsPrivilegedUser] = useState(() =>
-    isPrivileged(cookieUser),
+    isPrivContext || isPrivileged(cookieUser),
   );
+
+  useEffect(() => {
+    if (isPrivContext) {
+      setIsPrivilegedUser(true);
+      setCheckingAuth(false);
+    }
+  }, [isPrivContext]);
 
   const [activeSection, setActiveSection] = useState("users");
   const [users, setUsers] = useState([]);

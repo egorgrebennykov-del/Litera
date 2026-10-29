@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
-  register,
   checkEmailAvailable,
   generateVerificationCode,
   sendVerificationCodeEmail,
 } from "../../../utils/auth";
 import { useLanguage } from "../../context/languageContext";
+import { useAuth } from "../../context/AuthContext";
 import PhoneInput from "../common/PhoneInput";
 import { countries } from "../checkout/countryPhoneCodes";
 import {
@@ -16,6 +16,7 @@ import {
 
 export default function SignUp({ onLogin, onClose }) {
   const { t, language } = useLanguage();
+  const { register: authRegister } = useAuth();
   const isRu = language !== "en";
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -236,7 +237,7 @@ export default function SignUp({ onLogin, onClose }) {
       const selectedCountry =
         countries.find((c) => c.iso2 === countryIso) || countries[0];
       const fullPhone = `${selectedCountry.dialCode} ${phone.trim()}`;
-      await register({
+      await authRegister({
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
